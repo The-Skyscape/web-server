@@ -16,5 +16,6 @@ func main() {
 		application.WithDaisyTheme("light"),
 		application.WithHostPrefix(os.Getenv("PREFIX")),
 		application.WithController(controllers.Home()),
+		application.WithController(controllers.Auth()),
 	)
 }
