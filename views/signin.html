@@ -1,0 +1,53 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+</head>
+
+<body>
+  <div class="hero min-h-screen bg-[url('{{host}}/public/background.png')] bg-cover bg-center" data-theme="light">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="hero-content max-w-screen-2xl w-full mx-auto">
+      <div class="error-message text-center text-error mb-4" role="alert" aria-live="polite"></div>
+
+      <div class="card bg-base-100 shadow max-w-sm w-full">
+        <div class="card-body">
+          <form hx-post="{{host}}/_auth/signin" hx-target="previous .error-message" hx-swap="innerHTML"
+            class="flex flex-col gap-4" aria-labelledby="signin-title">
+
+            <!-- Handle Input -->
+            <label class="form-control w-full">
+              <div class="label">
+                <span class="label-text font-medium">Username or Email</span>
+              </div>
+              <input type="text" name="handle" class="input input-bordered w-full"
+                placeholder="Enter your username or email" required autofocus aria-label="Username or email"
+                autocomplete="username" />
+            </label>
+
+            <!-- Password Input -->
+            <label class="form-control w-full">
+              <div class="label">
+                <span class="label-text font-medium">Password</span>
+              </div>
+              <input type="password" name="password" class="input input-bordered w-full" placeholder="••••••••"
+                minlength="8" required aria-label="Password" autocomplete="current-password" />
+            </label>
+
+            <div class="form-control mt-4">
+              <button type="submit" class="btn btn-primary btn-block">
+                Sign In
+              </button>
+            </div>
+          </form>
+
+          <a href="{{host}}/" class="btn btn-ghost" hx-boost="true">
+            Need an account?
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

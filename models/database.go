@@ -15,5 +15,5 @@ var (
 
 	Auth = authentication.Manage(DB)
 
-	Activities = database.Manage(DB, new(Activity))
+	Repos = database.Manage(DB, new(Repo))
 )

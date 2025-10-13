@@ -13,9 +13,9 @@ var views embed.FS
 
 func main() {
 	application.Serve(views,
-		application.WithDaisyTheme("light"),
+		application.WithDaisyTheme("dark"),
 		application.WithHostPrefix(os.Getenv("PREFIX")),
-		application.WithController(controllers.Home()),
 		application.WithController(controllers.Auth()),
+		application.WithController(controllers.Feed()),
 	)
 }
