@@ -5,10 +5,11 @@
 </head>
 
 <body>
-  <div class="hero min-h-screen bg-[url('{{host}}/public/background.png')] bg-cover bg-center" data-theme="light">
+  <div class="relative hero min-h-screen bg-[url('{{host}}/public/background.png')] bg-cover bg-center"
+    data-theme="light">
     <div class="absolute inset-0 bg-black/40"></div>
-    <div class="hero-content max-w-screen-2xl w-full mx-auto flex justify-around gap-8">
-      <div class="flex flex-col max-w-screen-sm gap-8">
+    <div class="hero-content max-w-screen-2xl w-full mx-auto flex justify-around gap-8 flex-col md:flex-row p-12">
+      <div class="flex flex-col max-w-screen-sm gap-4">
         <h1 class="text-4xl font-bold text-white">
           Join the Fastest Growing Network of Developers
         </h1>
@@ -19,7 +20,8 @@
           of their background or experience, with features like forums, code hosting, app hosting, and more.
         </p>
 
-        <a href="{{host}}/manifesto" class="btn btn-lg w-max mt-4">
+        <a href="{{host}}/manifesto"
+          class="btn btn-lg btn-link text-white w-max mx-auto md:ml-6 mt-6 order-last md:order-none">
           Read More on Our Manifesto
         </a>
       </div>

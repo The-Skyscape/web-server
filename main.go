@@ -17,5 +17,6 @@ func main() {
 		application.WithHostPrefix(os.Getenv("PREFIX")),
 		application.WithController(controllers.Auth()),
 		application.WithController(controllers.Feed()),
+		application.WithController(controllers.Profile()),
 	)
 }

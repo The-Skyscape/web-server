@@ -1,24 +1,45 @@
-<div class="bg-base-200 min-h-full w-80 px-2 py-4">
-  {{with auth.CurrentUser}}
-  <a href="{{host}}/profile" class="w-full btn btn-ghost btn-xl mb-4">
-    <div class="w-full flex gap-4">
-      <div class="avatar w-12">
-        <div class="w-12 rounded-full bg-base-100 border border-base-300 p-1">
-          <img src="{{.Avatar}}" alt="Avatar">
+<div class="bg-base-300 min-h-full w-80 px-4 py-8 flex flex-col gap-6 items-center">
+  <ul class="menu menu-xl w-full">
+    <li>
+      {{with auth.CurrentUser}}
+      <a href="{{host}}/profile">
+        <div class="w-full flex gap-4">
+          <div class="avatar w-12">
+            <div class="h-12 rounded-full bg-base-100 border border-base-300 p-1">
+              <img src="{{.Avatar}}" alt="Avatar">
+            </div>
+          </div>
+
+          <div class="flex flex-col items-start justify-between">
+            <span class="text-lg font-semibold truncate text-ellipsis">{{.Name}}</span>
+            <span class="text-sm font-bold opacity-60">@{{.Handle}}</span>
+          </div>
         </div>
-      </div>
-
-      <div class="flex flex-col items-start justify-between">
-        <span class="text-lg font-semibold">{{.Name}}</span>
-        <span class="text-base font-bold opacity-60">@{{.Handle}}</span>
-      </div>
-    </div>
-  </a>
-  {{end}}
-
-  <ul class="menu menu-xl space-y-2 w-full px-2 py-4" hx-boost="true">
+      </a>
+      {{else}}
     <li>
       <a href="{{host}}/">
+        <div class="w-full flex gap-4">
+          <div class="avatar w-12">
+            <div class="h-12 rounded-full bg-base-100 border border-white/20 px-1 py-2.5">
+              <img src="{{host}}/public/logo.svg" alt="Logo">
+            </div>
+          </div>
+
+          <div class="flex flex-col items-start justify-between">
+            <span class="text-lg font-semibold truncate text-ellipsis">The Skyscape</span>
+            <span class="text-sm font-bold opacity-60">Join Today</span>
+          </div>
+        </div>
+      </a>
+    </li>
+    {{end}}
+    </li>
+  </ul>
+
+  <ul class="menu menu-xl space-y-4 w-full" hx-boost="true">
+    <li>
+      <a href="{{host}}/" {{if path_eq "" }}class="menu-active" {{end}}>
         <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="1em"
           width="1em" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round"
@@ -30,7 +51,7 @@
     </li>
 
     <li>
-      <a href="{{host}}/profile">
+      <a href="{{host}}/profile" {{if path_eq "profile" }}class="menu-active" {{end}}>
         <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
           stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
           <path d="M18 20a6 6 0 0 0-12 0"></path>
@@ -42,7 +63,7 @@
     </li>
 
     <li>
-      <a href="{{host}}/profile">
+      <a href="{{host}}/repos" {{if path_eq "repos" }}class="menu-active" {{end}}>
         <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em"
           xmlns="http://www.w3.org/2000/svg">
           <path
@@ -55,7 +76,7 @@
     </li>
 
     <li>
-      <a href="{{host}}/profile">
+      <a href="{{host}}/apps" {{if path_eq "apps" }}class="menu-active" {{end}}>
         <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="1em"
           width="1em" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -64,4 +85,51 @@
       </a>
     </li>
   </ul>
+
+
+  {{with auth.CurrentUser}}
+  {{if .IsAdmin}}
+  <div class="w-full mt-auto shadow">
+    <div class="card bg-warning/30 text-white w-full">
+      <div class="card-body">
+        <h2 class="text-xl font-semibold">
+          Admin Account
+        </h2>
+
+        <a target="_blank" href="http://hq.skysca.pe" class="btn btn-sm btn-warning mt-4">
+          Open Admin Panel
+        </a>
+      </div>
+    </div>
+  </div>
+  {{else}}
+  <div class="w-full mt-auto shadow">
+    <div class="card bg-primary/20 text-primary-content w-full">
+      <div class="card-body">
+        <h2 class="text-xl text-center font-semibold">
+          Get Verified
+        </h2>
+
+        <div class="btn btn-sm btn-primary mt-4">
+          Learn More
+        </div>
+      </div>
+    </div>
+  </div>
+  {{end}}
+  {{else}}
+  <div class="w-full mt-auto shadow">
+    <div class="card bg-primary/20 text-primary-content w-full">
+      <div class="card-body" hx-boost="true">
+        <h2 class="text-xl text-center font-semibold">
+          Signin To Join
+        </h2>
+
+        <a href="{{host}}/" class="btn btn-sm btn-primary mt-4">
+          Create an Account
+        </a>
+      </div>
+    </div>
+  </div>
+  {{end}}
 </div>

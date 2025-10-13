@@ -1,5 +1,5 @@
-<div class="dock md:hidden">
-  <button>
+<div class="h-24 pb-6 dock md:hidden shadow-xl z-40" hx-boost="true">
+  <a href="{{host}}/" {{if path_eq "" }}class="dock-active" {{end}}>
     <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
       <g fill="currentColor" stroke-linejoin="miter" stroke-linecap="butt">
         <polyline points="1 11 12 2 23 11" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="2">
@@ -11,9 +11,9 @@
       </g>
     </svg>
     <span class="dock-label">Home</span>
-  </button>
+  </a>
 
-  <button class="dock-active">
+  <a href="{{host}}/profile" {{if path_eq "profile" }}class="dock-active" {{end}}>
     <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
       <g fill="currentColor" stroke-linejoin="miter" stroke-linecap="butt">
         <polyline points="3 14 9 14 9 17 15 17 15 14 21 14" fill="none" stroke="currentColor" stroke-miterlimit="10"
@@ -22,10 +22,10 @@
           stroke-miterlimit="10" stroke-width="2"></rect>
       </g>
     </svg>
-    <span class="dock-label">Inbox</span>
-  </button>
+    <span class="dock-label">Profile</span>
+  </a>
 
-  <button>
+  <a href="{{host}}/repos" {{if path_eq "repos" }}class="dock-active" {{end}}>
     <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
       <g fill="currentColor" stroke-linejoin="miter" stroke-linecap="butt">
         <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10"
@@ -35,6 +35,19 @@
           fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2"></path>
       </g>
     </svg>
-    <span class="dock-label">Settings</span>
-  </button>
+    <span class="dock-label">Repos</span>
+  </a>
+
+  <a href="{{host}}/apps" {{if path_eq "apps" }}class="dock-active" {{end}}>
+    <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <g fill="currentColor" stroke-linejoin="miter" stroke-linecap="butt">
+        <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10"
+          stroke-width="2"></circle>
+        <path
+          d="m22,13.25v-2.5l-2.318-.966c-.167-.581-.395-1.135-.682-1.654l.954-2.318-1.768-1.768-2.318.954c-.518-.287-1.073-.515-1.654-.682l-.966-2.318h-2.5l-.966,2.318c-.581.167-1.135.395-1.654.682l-2.318-.954-1.768,1.768.954,2.318c-.287.518-.515,1.073-.682,1.654l-2.318.966v2.5l2.318.966c.167.581.395,1.135.682,1.654l-.954,2.318,1.768,1.768,2.318-.954c.518.287,1.073.515,1.654.682l.966,2.318h2.5l.966-2.318c.581-.167,1.135-.395,1.654-.682l2.318.954,1.768-1.768-.954-2.318c.287-.518.515-1.073.682-1.654l2.318-.966Z"
+          fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2"></path>
+      </g>
+    </svg>
+    <span class="dock-label">Apps</span>
+  </a>
 </div>
