@@ -33,5 +33,12 @@ func (c *FeedController) serveFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	profile := c.Use("profile").(*ProfileController)
+	profile.Request = r
+	if profile.CurrentProfile() == nil {
+		c.Render(w, r, "setup.html", nil)
+		return
+	}
+
 	c.Render(w, r, "feed.html", nil)
 }

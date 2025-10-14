@@ -8,9 +8,61 @@
 <body>
   {{template "layout/start"}}
 
-  <div
-    class="relative w-full h-40 bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/20">
-    <div class="absolute inset-0 bg-black/40"></div>
+  {{template "profile-header.html"}}
+
+  <div class="max-w-screen-lg flex flex-col md:flex-row md:justify-between gap-4 w-full mx-auto relative z-20">
+    {{template "profile-info.html"}}
+
+    {{with profile.CurrentProfile}}
+    {{with .Apps}}
+    <div class="card bg-base-100 shadow w-full">
+      <div class="card-body">
+        <h2 class="text-xl font-bold">
+          Apps
+        </h2>
+      </div>
+    </div>
+    {{end}}
+
+    <div class="px-4 w-full">
+      <div class="card bg-base-100 shadow w-full">
+        <div class="card-body">
+          <h2 class="card-title mb-4">
+            Repos
+          </h2>
+          {{with .Repos}}
+          <ul class="menu w-full p-0" hx-boost="true">
+            {{range .}}
+            <li>
+              <a href="{{host}}/repo/{{.ID}}">
+                <div class="flex flex-col">
+                  <span class="text-lg font-semibold">
+                    {{.Name}}
+                  </span>
+                  <span class="text-xs font-bold opacity-60">
+                    {{.Owner.Handle}}/{{.ID}}
+                  </span>
+                </div>
+
+                <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em"
+                  width="1em" xmlns="http://www.w3.org/2000/svg" class="ml-auto">
+                  <path
+                    d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z">
+                  </path>
+                </svg>
+              </a>
+            </li>
+            {{end}}
+          </ul>
+          {{else}}
+          <h2 class="my-4 text-center text-lg font-semibold opacity-80">
+            No repos yet
+          </h2>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+    </div>
   </div>
 
   {{template "layout/end"}}

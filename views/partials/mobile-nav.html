@@ -14,40 +14,44 @@
   </a>
 
   <a href="{{host}}/profile" {{if path_eq "profile" }}class="dock-active" {{end}}>
-    <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-      <g fill="currentColor" stroke-linejoin="miter" stroke-linecap="butt">
-        <polyline points="3 14 9 14 9 17 15 17 15 14 21 14" fill="none" stroke="currentColor" stroke-miterlimit="10"
-          stroke-width="2"></polyline>
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-linecap="square"
-          stroke-miterlimit="10" stroke-width="2"></rect>
-      </g>
+    <svg class="size-[1.2em]" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"
+      stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 20a6 6 0 0 0-12 0"></path>
+      <circle cx="12" cy="10" r="4"></circle>
+      <circle cx="12" cy="12" r="10"></circle>
     </svg>
     <span class="dock-label">Profile</span>
   </a>
 
+  <a href="{{host}}/users" {{if path_eq "users" }}class="dock-active" {{end}}>
+    <svg class="size-[1.2em]" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"
+      stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </svg>
+    <span class="dock-label">Users</span>
+  </a>
+
   <a href="{{host}}/repos" {{if path_eq "repos" }}class="dock-active" {{end}}>
-    <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-      <g fill="currentColor" stroke-linejoin="miter" stroke-linecap="butt">
-        <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10"
-          stroke-width="2"></circle>
-        <path
-          d="m22,13.25v-2.5l-2.318-.966c-.167-.581-.395-1.135-.682-1.654l.954-2.318-1.768-1.768-2.318.954c-.518-.287-1.073-.515-1.654-.682l-.966-2.318h-2.5l-.966,2.318c-.581.167-1.135.395-1.654.682l-2.318-.954-1.768,1.768.954,2.318c-.287.518-.515,1.073-.682,1.654l-2.318.966v2.5l2.318.966c.167.581.395,1.135.682,1.654l-.954,2.318,1.768,1.768,2.318-.954c.518.287,1.073.515,1.654.682l.966,2.318h2.5l.966-2.318c.581-.167,1.135-.395,1.654-.682l2.318.954,1.768-1.768-.954-2.318c.287-.518.515-1.073.682-1.654l2.318-.966Z"
-          fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2"></path>
-      </g>
+    <svg class="size-[1.2em]" stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24"
+      height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M21 4c0-1.103-.897-2-2-2H5c-1.103 0-2 .897-2 2v16c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2V4zM5 4h14v7H5V4zm0 16v-7h14.001v7H5z">
+      </path>
+      <path d="M14 7h-4V6H8v3h8V6h-2zm0 8v1h-4v-1H8v3h8v-3z"></path>
     </svg>
     <span class="dock-label">Repos</span>
   </a>
 
   <a href="{{host}}/apps" {{if path_eq "apps" }}class="dock-active" {{end}}>
-    <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-      <g fill="currentColor" stroke-linejoin="miter" stroke-linecap="butt">
-        <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10"
-          stroke-width="2"></circle>
-        <path
-          d="m22,13.25v-2.5l-2.318-.966c-.167-.581-.395-1.135-.682-1.654l.954-2.318-1.768-1.768-2.318.954c-.518-.287-1.073-.515-1.654-.682l-.966-2.318h-2.5l-.966,2.318c-.581.167-1.135.395-1.654.682l-2.318-.954-1.768,1.768.954,2.318c-.287.518-.515,1.073-.682,1.654l-2.318.966v2.5l2.318.966c.167.581.395,1.135.682,1.654l-.954,2.318,1.768,1.768,2.318-.954c.518.287,1.073.515,1.654.682l.966,2.318h2.5l.966-2.318c.581-.167,1.135-.395,1.654-.682l2.318.954,1.768-1.768-.954-2.318c.287-.518.515-1.073.682-1.654l2.318-.966Z"
-          fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10" stroke-width="2"></path>
-      </g>
+    <svg class="size-[1.2em]" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"
+      height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
     </svg>
     <span class="dock-label">Apps</span>
   </a>
+
+  <a></a>
 </div>

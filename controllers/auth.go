@@ -32,6 +32,21 @@ func (c AuthController) Handle(r *http.Request) application.Handler {
 	return &c
 }
 
+func (c *AuthController) Required(app *application.App, w http.ResponseWriter, r *http.Request) bool {
+	if ok := c.Controller.Required(app, w, r); !ok {
+		return ok
+	}
+
+	profile := c.Use("profile").(*ProfileController)
+	profile.Request = r
+	if profile.CurrentProfile() == nil {
+		c.Render(w, r, "setup.html", nil)
+		return false
+	}
+
+	return true
+}
+
 func (c *AuthController) signin(w http.ResponseWriter, r *http.Request) {
 	if user, _, _ := c.Authenticate(r); user != nil {
 		c.Redirect(w, r, "/")

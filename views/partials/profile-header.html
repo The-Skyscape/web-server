@@ -1,0 +1,41 @@
+<div
+  class="relative -mb-12 w-full h-40 md:h-64 bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/20">
+  <div class="absolute inset-0 bg-black/40"></div>
+</div>
+
+{{with $profile := profile.CurrentProfile}}
+<div class="max-w-screen-lg w-full mx-auto relative z-20">
+  <div class="flex flex-col md:flex-row gap-4 items-center">
+    <div class="avatar">
+      <div class="w-24 rounded-full p-4 bg-base-100 border-2 border-white/40">
+        <img src="{{$profile.Avatar}}" alt="Avatar">
+      </div>
+    </div>
+    <div class="flex flex-col items-center md:items-start justify-center gap-2 pb-2.5">
+      <span class="text-2xl font-semibold">{{$profile.Name}}</span>
+      <span class="text-lg font-bold opacity-60">@{{$profile.Handle}}</span>
+    </div>
+    <div class="flex items-center gap-2 md:ml-auto bg-transparent" data-theme="light">
+      <div class="btn shadow-xl" _="on click 
+                          call navigator.clipboard.writeText('https://web.skysca.pe/user/{{$profile.Handle}}') then 
+                            set my textContent to 'Copied ✓' then 
+                            add .btn-success to me then 
+                            wait 2s then 
+                            set my textContent to 'Share Link' then 
+                            remove .btn-success from me then 
+                           ">
+        Share Link
+      </div>
+      {{with $user := auth.CurrentUser}}
+      {{if eq $profile.UserID $user.ID}}
+      <button class="btn btn-primary shadow-xl" _="on click call edit_profile_modal.showModal()">
+        Edit My Profile
+      </button>
+      {{end}}
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{template "edit-profile-modal.html"}}
