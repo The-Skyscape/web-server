@@ -10,10 +10,10 @@
 
   {{template "profile-header.html"}}
 
-  <div class="max-w-screen-lg flex flex-col md:flex-row md:justify-between gap-4 w-full mx-auto relative z-20">
-    {{template "profile-info.html"}}
-
+  <div class="max-w-screen-lg flex flex-col md:flex-row md:justify-between gap-4 w-full mx-auto relative z-20 px-4">
     {{with profile.CurrentProfile}}
+    {{template "profile-info.html" .}}
+
     {{with .Apps}}
     <div class="card bg-base-100 shadow w-full">
       <div class="card-body">
@@ -24,23 +24,25 @@
     </div>
     {{end}}
 
-    <div class="px-4 w-full">
-      <div class="card bg-base-100 shadow w-full">
+    <div class="w-full">
+      <div class="card bg-base-100 shadow-lg w-full">
         <div class="card-body">
           <h2 class="card-title mb-4">
             Repos
           </h2>
           {{with .Repos}}
-          <ul class="menu w-full p-0" hx-boost="true">
+          <ul class="menu gap-2 w-full p-0" hx-boost="true">
             {{range .}}
             <li>
               <a href="{{host}}/repo/{{.ID}}">
-                <div class="flex flex-col">
+                <div class="flex flex-col gap-1">
                   <span class="text-lg font-semibold">
                     {{.Name}}
                   </span>
-                  <span class="text-xs font-bold opacity-60">
-                    {{.Owner.Handle}}/{{.ID}}
+                  <span class="text-sm font-bold opacity-60">
+                    {{with .Description}}{{.}}{{else}}
+                    <span class="italic opacity-80">No description</span>
+                    {{end}}
                   </span>
                 </div>
 

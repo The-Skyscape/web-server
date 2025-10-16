@@ -6,7 +6,7 @@
     {{template "nav-drawer.html"}}
   </div>
 
-  <div
+  <div id="layout-content"
     class="drawer-content flex flex-col items-center bg-base-200 border-l border-base-100 min-h-screen md:shadow-xl z-20 pb-40 md:pb-0">
     {{end}} {{define "layout/end"}}
     {{template "mobile-nav.html"}}
@@ -16,4 +16,6 @@
   {{template "fab-button.html"}}
   {{end}}
 </div>
+
+{{template "create-repo-modal.html"}}
 {{end}}

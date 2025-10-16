@@ -1,0 +1,45 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "app-deps"}}
+
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div
+    class="max-w-screen-lg flex flex-col md:flex-row md:justify-between gap-4 w-full mx-auto px-4 py-12 relative z-20">
+    {{with repos.CurrentRepo}}
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center gap-2">
+        {{with .Owner}}
+        <a hx-boost="true" href="{{host}}/user/{{.ID}}" class="btn btn-ghost btn-circle">
+          <div class="avatar">
+            <div class="w-8 rounded-full p-1 bg-base-100 border-2 border-white/40 shadow">
+              <img src="{{.Avatar}}" alt="{{.Name}}">
+            </div>
+          </div>
+        </a>
+        {{end}}
+        <svg class="size-[1.2em] opacity-60" stroke="currentColor" fill="currentColor" stroke-width="0"
+          viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+          <path fill="none" stroke-linecap="square" stroke-miterlimit="10" stroke-width="48"
+            d="m184 112 144 144-144 144"></path>
+        </svg>
+        <h1 class="text-2xl font-semibold">{{.Name}}</h1>
+      </div>
+      <p class="p-2 text-lg font-bold opacity-80">{{.Description}}</p>
+    </div>
+    {{else}}
+    <h1 class="text-2xl font-semibold">
+      Repo not found
+    </h1>
+    {{end}}
+  </div>
+
+
+  {{template "layout/end"}}
+</body>
+
+</html>

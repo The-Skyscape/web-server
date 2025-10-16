@@ -18,5 +18,7 @@ func main() {
 		application.WithController(controllers.Auth()),
 		application.WithController(controllers.Feed()),
 		application.WithController(controllers.Profile()),
+		application.WithController(controllers.Repos()),
+		application.WithController(controllers.Git()),
 	)
 }

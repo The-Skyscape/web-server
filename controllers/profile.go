@@ -3,6 +3,7 @@ package controllers
 import (
 	"cmp"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -22,8 +23,9 @@ func (c *ProfileController) Setup(app *application.App) {
 	c.Controller.Setup(app)
 	auth := c.Use("auth").(*AuthController)
 
-	http.Handle("/profile", app.ProtectFunc(c.profile, auth.Optional))
-	http.Handle("/user/{id}", app.Serve("profile.html", auth.Optional))
+	http.Handle("GET /users", app.Serve("users.html", auth.Optional))
+	http.Handle("GET /profile", app.Serve("profile.html", auth.Required))
+	http.Handle("GET /user/{id}", app.Serve("profile.html", auth.Optional))
 	http.Handle("POST /setup", app.ProtectFunc(c.setup, auth.Optional))
 }
 
@@ -108,4 +110,18 @@ func (c *ProfileController) setup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Refresh(w, r)
+}
+
+func (p *ProfileController) AllProfiles() []*models.Profile {
+	query := p.URL.Query().Get("query")
+	users, err := models.Profiles.Search(`
+	  INNER JOIN users on users.ID = profiles.UserID
+		WHERE 
+			users.Name           LIKE $1        OR
+			users.Handle         LIKE LOWER($1) OR
+			profiles.Description LIKE $1
+		ORDER BY profiles.CreatedAt
+	`, "%"+query+"%")
+	log.Println("Error:", err)
+	return users
 }
