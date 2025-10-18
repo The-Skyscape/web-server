@@ -1,0 +1,35 @@
+<div class="flex items-center gap-2">
+  {{with .Owner}}
+  <a hx-boost="true" href="{{host}}/user/{{.ID}}" class="btn btn-ghost text-lg px-2">
+    <div class="avatar">
+      <div class="w-8 rounded-full p-1 bg-base-100 border-2 border-white/40 shadow">
+        <img src="{{.Avatar}}" alt="{{.Name}}">
+      </div>
+    </div>
+
+    <div class="hidden md:flex">{{.Handle}}</div>
+  </a>
+  {{end}}
+
+  <svg class="size-[1.2em] opacity-60" stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512"
+    height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+    <path fill="none" stroke-linecap="square" stroke-miterlimit="10" stroke-width="48" d="m184 112 144 144-144 144">
+    </path>
+  </svg>
+
+  <a hx-boost="true" href="{{host}}/repo/{{.ID}}" class="text-xl font-semibold">
+    {{.Name}}
+  </a>
+
+  <div class="btn btn-sm btn-primary ml-auto hidden md:flex" _="on click 
+        call navigator.clipboard.writeText('git clone https://web.skysca.pe/repo/{{.ID}}') then 
+        set my textContent to 'Command Copied ✓' then 
+        remove .btn-primary from me then
+        add .btn-success to me then 
+        wait 2s then 
+        set my textContent to 'Clone Repo' then 
+        remove .btn-success from me then 
+        add .btn-primary to me then">
+    Clone Repo
+  </div>
+</div>

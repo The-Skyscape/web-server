@@ -1,0 +1,52 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "app-deps"}}
+
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-lg flex flex-col gap-4 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{with $repo := repos.CurrentRepo}}
+
+    {{template "repo-header.html" $repo}}
+
+    <div class="flex flex-col md:flex-row justify-between gap-12 w-full">
+      <div class="flex flex-col gap-4 grow-2">
+        {{$path := req.PathValue "path"}}
+
+        <div class="breadcrumbs breadcrumbs-sm text-sm px-4 py-1">
+          <ul>
+            {{range repos.FilePath}}
+            <li>
+              <a href="{{host}}/repo/{{$repo.ID}}/file/{{.Href}}">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-4 w-4 stroke-current">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                </svg>
+                {{.Label}}
+              </a>
+            </li>
+            {{end}}
+          </ul>
+        </div>
+
+        {{with $file := repos.CurrentFile}}
+        {{if $file.IsDir}}
+        {{template "repo-dir.html" $file}}
+        {{else}}
+        {{template "repo-file.html" $file}}
+        {{end}}
+        {{end}}
+      </div>
+    </div>
+
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

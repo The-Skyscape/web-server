@@ -3,7 +3,11 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -61,27 +65,32 @@ func (r *Repo) Owner() *authentication.User {
 }
 
 func (r *Repo) Git(args ...string) (stdout, stderr bytes.Buffer, err error) {
-	host := containers.Local()
-	host.SetStdout(&stdout)
-	host.SetStderr(&stderr)
-	return stdout, stderr, host.Exec(append([]string{"git"}, args...)...)
-
+	cmd := exec.Command("git", args...)
+	cmd.Dir = r.Path()
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	return stdout, stderr, cmd.Run()
 }
 
 func (r *Repo) ListCommits(branch string, limit int) ([]*Commit, error) {
-	stdout, _, err := r.Git("log", "--format=format:%H", "--reverse", fmt.Sprintf("%s..%s", branch, "HEAD"), fmt.Sprintf("--max-count=%d", limit))
+	stdout, stderr, err := r.Git("log", "--format=format:%h %ae %s", "--reverse", branch, fmt.Sprintf("--max-count=%d", limit))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list commits")
+		return nil, errors.Wrapf(err, "failed to list commits: %s", stderr.String())
 	}
 
 	commits := strings.Split(stdout.String(), "\n")
-	commits = commits[:len(commits)-1]
+	log.Println("Commits:", commits)
 
 	var commitsList []*Commit
 	for _, commit := range commits {
+		log.Println("Commit whole:", commit)
+		parts := strings.SplitN(commit, " ", 3)
+		log.Println("Commit parts:", parts)
 		c := &Commit{
-			Repo: r,
-			Hash: commit,
+			Repo:    r,
+			Hash:    parts[0],
+			UserID:  parts[1],
+			Subject: parts[2],
 		}
 		commitsList = append(commitsList, c)
 	}
@@ -92,13 +101,12 @@ func (r *Repo) ListCommits(branch string, limit int) ([]*Commit, error) {
 type Commit struct {
 	*Repo
 	Hash    string
-	Subject string
-	Message string
 	UserID  string
+	Subject string
 }
 
 func (c *Commit) User() *authentication.User {
-	u, err := Auth.Users.First("WHERE Handle = ?", c.UserID)
+	u, err := Auth.Users.First("WHERE Handle = $1 OR Email = $1", c.UserID)
 	if err != nil {
 		return &authentication.User{Handle: c.UserID}
 	}
@@ -106,36 +114,112 @@ func (c *Commit) User() *authentication.User {
 	return u
 }
 
-func (r *Repo) Open(branch, path string) (*File, error) {
-	stdout, _, err := r.Git("show", fmt.Sprintf("%s:%s", branch, path))
+func (r *Repo) ListFiles(branch, path string) ([]*File, error) {
+	stdout, _, err := r.Git("ls-tree", branch, filepath.Join(".", path)+"/")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to show file")
+		return nil, errors.Wrapf(err, "Failed to list files: %s @ %s", branch, path)
 	}
 
-	file := &File{
+	var files []*File
+	for line := range strings.SplitSeq(strings.TrimSpace(stdout.String()), "\n") {
+		if parts := strings.Fields(line); len(parts) >= 4 {
+			files = append(files, &File{
+				Repo:   r,
+				Branch: branch,
+				Path:   parts[3],
+				IsDir:  parts[1] == "tree",
+			})
+		}
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		if files[i].IsDir && !files[j].IsDir {
+			return true
+		}
+		if !files[i].IsDir && files[j].IsDir {
+			return false
+		}
+		return files[i].Path < files[j].Path
+	})
+
+	return files, nil
+}
+
+func (r *Repo) Open(branch, path string) (*File, error) {
+	isDir, err := r.IsDir(branch, path)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read location: "+path)
+	}
+
+	return &File{
 		Repo:   r,
 		Branch: branch,
 		Path:   path,
+		IsDir:  isDir,
+	}, nil
+}
+
+func (r *Repo) IsDir(branch, path string) (bool, error) {
+	if path == "" || path == "." {
+		return true, nil
 	}
 
-	if strings.Contains(file.Content, "\x00") {
-		file.IsBinary = true
-	} else {
-		file.Content = stdout.String()
+	stdout, _, err := r.Git("ls-tree", branch, filepath.Join(".", path))
+	if err != nil {
+		return false, errors.Wrap(err, "failed to list files")
 	}
 
-	if strings.HasSuffix(file.Path, "/") {
-		file.IsDir = true
+	output := strings.TrimSpace(stdout.String())
+	if output == "" {
+		return false, errors.New("no such file or directory")
 	}
 
-	return file, nil
+	parts := strings.Fields(output)
+	return parts[1] == "tree", nil
 }
 
 type File struct {
 	*Repo
-	Branch   string
-	Path     string
+	Branch string
+	Path   string
+	IsDir  bool
+}
+
+func (f *File) Name() string {
+	return filepath.Base(f.Path)
+}
+
+func (f *File) Read() (*Content, error) {
+	stdout, _, err := f.Repo.Git("show", fmt.Sprintf("%s:%s", f.Branch, f.Path))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to show file")
+	}
+
+	c := &Content{
+		File:    f,
+		Content: stdout.String(),
+	}
+
+	if strings.Contains(c.Content, "\x00") {
+		c.Content = "File "
+		c.IsBinary = true
+	} else {
+		c.Content = stdout.String()
+	}
+
+	if strings.HasSuffix(f.Path, "/") {
+		c.IsDir = true
+	}
+
+	return c, nil
+}
+
+type Content struct {
+	*File
 	Content  string
-	IsDir    bool
 	IsBinary bool
+}
+
+func (c *Content) Lines() []string {
+	return strings.Split(c.Content, "\n")
 }

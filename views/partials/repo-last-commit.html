@@ -1,0 +1,19 @@
+{{range .ListCommits "main" 1}}
+<div class="flex items-center gap-2 px-2">
+  {{with .User}}
+  <div class="avatar">
+    <div class="w-6 rounded-full p-1 bg-base-white/20 shadow">
+      <img src="{{.Avatar}}" alt="{{.Name}}">
+    </div>
+  </div>
+  {{end}}
+
+  <span class="text-sm opacity-80">
+    {{.Hash}}:
+  </span>
+
+  <span class="text-sm opacity-60">
+    {{.Subject}}
+  </span>
+</div>
+{{end}}

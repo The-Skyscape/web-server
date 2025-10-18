@@ -1,0 +1,9 @@
+<div class="card bg-base-100 w-full max-w-screen-sm shadow-lg">
+  <div class="text-lg font-semibold tracking-wide px-4 py-2">{{.Name}}</div>
+
+  <div class="mockup-code w-full before:hidden border-none!">
+    {{range $i, $line := .Read.Lines}}
+    <pre data-prefix="{{$i}}"><code>{{$line}}</code></pre>
+    {{end}}
+  </div>
+</div>
