@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"www.theskyscape.com/models"
 )
 
 func Feed() (string, *FeedController) {
@@ -18,7 +19,8 @@ func (c *FeedController) Setup(app *application.App) {
 	c.Controller.Setup(app)
 	auth := c.Use("auth").(*AuthController)
 
-	http.Handle("/", app.ProtectFunc(c.serveFeed, auth.Optional))
+	http.Handle("/", app.Serve("tbd.html", auth.Required))
+	http.Handle("/{$}", app.ProtectFunc(c.serveFeed, auth.Optional))
 }
 
 func (c FeedController) Handle(r *http.Request) application.Handler {
@@ -41,4 +43,9 @@ func (c *FeedController) serveFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Render(w, r, "feed.html", nil)
+}
+
+func (c *FeedController) RecentActivities() []*models.Activity {
+	activities, _ := models.Activities.Search(`ORDER BY CreatedAt DESC`)
+	return activities
 }

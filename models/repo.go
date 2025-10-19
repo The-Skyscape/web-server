@@ -48,6 +48,13 @@ func NewRepo(ownerID, name, description string) (*Repo, error) {
 		return nil, errors.Wrap(err, "failed to insert repo")
 	}
 
+	Activities.Insert(&Activity{
+		UserID:      ownerID,
+		Action:      "created",
+		SubjectType: "repo",
+		SubjectID:   r.ID,
+	})
+
 	return r, nil
 }
 
@@ -145,18 +152,9 @@ func (r *Repo) ListFiles(branch, path string) ([]*File, error) {
 	return files, nil
 }
 
-func (r *Repo) Open(branch, path string) (*File, error) {
-	isDir, err := r.IsDir(branch, path)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read location: "+path)
-	}
-
-	return &File{
-		Repo:   r,
-		Branch: branch,
-		Path:   path,
-		IsDir:  isDir,
-	}, nil
+func (r *Repo) IsEmpty(branch string) bool {
+	_, err := r.ListCommits(branch, 1)
+	return err != nil
 }
 
 func (r *Repo) IsDir(branch, path string) (bool, error) {
@@ -176,6 +174,20 @@ func (r *Repo) IsDir(branch, path string) (bool, error) {
 
 	parts := strings.Fields(output)
 	return parts[1] == "tree", nil
+}
+
+func (r *Repo) Open(branch, path string) (*File, error) {
+	isDir, err := r.IsDir(branch, path)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read location: "+path)
+	}
+
+	return &File{
+		Repo:   r,
+		Branch: branch,
+		Path:   path,
+		IsDir:  isDir,
+	}, nil
 }
 
 type File struct {

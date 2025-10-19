@@ -9,23 +9,75 @@
   {{template "layout/start"}}
 
   <div class="max-w-screen-lg flex flex-col gap-4 w-full mx-auto px-4 py-8 md:py-12 z-20">
-    {{with repos.CurrentRepo}}
+    {{with $repo := repos.CurrentRepo}}
 
     {{template "repo-header.html" .}}
 
-    <div class="flex flex-col md:flex-row justify-between gap-12 w-full">
-      <div class="flex flex-col gap-4 grow-2">
+    {{if $repo.IsEmpty "main"}}
+    <div class="px-4 space-y-2">
+      <div class="px-2">
+        <h1 class="text-xl font-semibold">
+          This Repo is Empty
+        </h1>
+      </div>
+
+      <div class="card bg-base-100 shadow-lg w-max">
+        <div class="card-body">
+          <h2 class="card-title">
+            Getting Started
+          </h2>
+
+          <ul class="list-decimal px-6 space-y-2">
+            <li>Clone the repo using the "Clone Repo" button</li>
+            <li>Create files and folders for your project</li>
+            <li>
+              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git add .</code> to stage your changes
+            </li>
+            <li>
+              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git commit -m "Initial commit"</code> to commit your
+              changes
+            </li>
+            <li>
+              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git push -u origin main</code> to push your changes
+              to The Skyscape
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    {{else}}
+    <div class="flex flex-col md:flex-row justify-between gap-4 w-full">
+      <div class="flex flex-col gap-4 w-full max-w-screen-sm">
         {{template "repo-last-commit.html" .}}
 
         {{template "repo-dir.html" .}}
       </div>
 
-      <div class="flex flex-col gap-4 grow-1">
-        <p class="px-4 text-base font-semibold opacity-80">
+      <div class="flex flex-col gap-4 px-2 w-full max-w-88">
+        <label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+          About This Project
+        </label>
+        <p class="px-2 text-base font-semibold opacity">
           {{.Description}}
         </p>
+
+        <label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+          Launched Apps
+        </label>
+        <div class="p-2">
+          <div class="card bg-neutral/40 shadow-lg shadow-primary">
+            <div class="card-body">
+              <h2 class="text-base font-semibold opacity-90 mx-auto mb-4">
+                No apps yet
+              </h2>
+              <div class="btn btn-sm btn-primary">Launch an App</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+    {{end}}
 
     {{else}}
     <h1 class="text-2xl font-semibold">

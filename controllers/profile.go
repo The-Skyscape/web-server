@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
-	"github.com/The-Skyscape/devtools/pkg/database"
 	"www.theskyscape.com/models"
 )
 
@@ -32,23 +31,6 @@ func (c *ProfileController) Setup(app *application.App) {
 func (c ProfileController) Handle(r *http.Request) application.Handler {
 	c.Request = r
 	return &c
-}
-
-func (c *ProfileController) profile(w http.ResponseWriter, r *http.Request) {
-	auth := c.Use("auth").(*AuthController)
-	if user, _, _ := auth.Authenticate(r); user == nil {
-		c.Render(w, r, "signup.html", nil)
-		return
-	}
-
-	profile := c.Use("profile").(*ProfileController)
-	profile.Request = r
-	if profile.CurrentProfile() == nil {
-		c.Render(w, r, "setup.html", nil)
-		return
-	}
-
-	c.Render(w, r, "profile.html", nil)
 }
 
 func (c *ProfileController) CurrentProfile() *models.Profile {
@@ -83,14 +65,9 @@ func (c *ProfileController) setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	desc := r.FormValue("description")
 	if p, err := models.Profiles.Get(user.ID); err != nil {
-		_, err = models.Profiles.Insert(&models.Profile{
-			Model:       database.Model{ID: user.ID},
-			UserID:      user.ID,
-			Description: r.FormValue("description"),
-		})
-
-		if err != nil {
+		if _, err = models.CreateProfile(user.ID, desc); err != nil {
 			c.Render(w, r, "error-message.html", err)
 			return
 		}
@@ -102,7 +79,7 @@ func (c *ProfileController) setup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p.Description = cmp.Or(r.FormValue("description"), p.Description)
+		p.Description = cmp.Or(desc, p.Description)
 		if err = models.Profiles.Update(p); err != nil {
 			c.Render(w, r, "error-message.html", err)
 			return

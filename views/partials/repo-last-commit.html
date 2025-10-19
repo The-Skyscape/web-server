@@ -1,5 +1,5 @@
-{{range .ListCommits "main" 1}}
-<div class="flex items-center gap-2 px-2">
+{{with repos.LatestCommit}}
+<div class="flex items-center gap-2 px-2 pt-2">
   {{with .User}}
   <div class="avatar">
     <div class="w-6 rounded-full p-1 bg-base-white/20 shadow">

@@ -18,4 +18,6 @@ var (
 	Profiles = database.Manage(DB, new(Profile))
 
 	Repos = database.Manage(DB, new(Repo))
+
+	Activities = database.Manage(DB, new(Activity))
 )

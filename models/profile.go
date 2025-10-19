@@ -5,6 +5,7 @@ import (
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
+	"github.com/The-Skyscape/devtools/pkg/database"
 )
 
 type Profile struct {
@@ -39,4 +40,25 @@ func (p *Profile) Handle() string {
 
 func (p *Profile) Avatar() string {
 	return cmp.Or(p.User(), &authentication.User{}).Avatar
+}
+
+func CreateProfile(userID, description string) (*Profile, error) {
+	p, err := Profiles.Insert(&Profile{
+		Model:       database.Model{ID: userID},
+		UserID:      userID,
+		Description: description,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	Activities.Insert(&Activity{
+		UserID:      userID,
+		Action:      "joined",
+		SubjectType: "profile",
+		SubjectID:   userID,
+	})
+
+	return p, err
 }

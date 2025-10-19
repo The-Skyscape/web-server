@@ -57,6 +57,21 @@ func (c *ReposController) CurrentFile() *models.File {
 	return nil
 }
 
+func (c *ReposController) LatestCommit() *models.Commit {
+	repo := c.CurrentRepo()
+	if repo == nil {
+		return nil
+	}
+
+	branch := cmp.Or(c.URL.Query().Get("branch"), "main")
+	commits, err := repo.ListCommits(branch, 1)
+	if err != nil {
+		return nil
+	}
+
+	return commits[0]
+}
+
 func (c *ReposController) FilePath() []PathPart {
 	path := c.PathValue("path")
 	if path == "" {

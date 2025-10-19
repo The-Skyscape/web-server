@@ -1,18 +1,20 @@
 <html data-theme="{{theme}}">
 
 <head>
-    {{template "app-deps"}}
+  {{template "app-deps"}}
 
 </head>
 
 <body>
-    {{template "layout/start"}}
+  {{template "layout/start"}}
 
-    <div class="m-auto">
-        <h1 class="text-3xl font-bold">Under Construction</h1>
-    </div>
+  <div class="py-12 w-full max-w-screen-md flex flex-col gap-4 w-full">
+    {{range feed.RecentActivities}}
+    {{template "feed-post.html" .}}
+    {{ end }}
+  </div>
 
-    {{template "layout/end"}}
+  {{template "layout/end"}}
 </body>
 
 </html>
