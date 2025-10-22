@@ -1,0 +1,75 @@
+<label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+  About This Project
+</label>
+<p class="px-3 text-base font-semibold opacity">
+  {{.Description}}
+</p>
+
+<label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+  Launched Apps
+</label>
+<div class="py-2">
+  <div class="card bg-neutral/40 shadow-lg shadow-primary">
+    <div class="card-body">
+      <h2 class="text-base font-semibold opacity-90 mx-auto">
+        No apps yet
+      </h2>
+
+      {{with auth.CurrentUser}}
+      {{if eq .ID $.OwnerID}}
+      <div class="btn btn-sm btn-primary mt-4">
+        Launch an App
+      </div>
+      {{end}}
+      {{end}}
+    </div>
+  </div>
+</div>
+
+<div class="flex flex-col gap-2">
+  <label class="text-xs font-bold opacity-60 tracking-wider">
+    User Comments
+  </label>
+
+  {{with auth.CurrentUser}}
+  <form class="flex flex-col w-full" hx-post="{{host}}/repos/{{$.ID}}/comments" hx-target=".error">
+    <textarea required name="content" class="textarea w-full"
+      placeholder="Leave a comment for this project..."></textarea>
+    <div class="flex items-center justify-between px-4 pt-2">
+      <span class="text-sm font-semibold opacity-60">
+        @{{.Handle}}
+      </span>
+
+      <button class="btn btn-xs btn-secondary">
+        Post
+      </button>
+    </div>
+
+    <div class="error"></div>
+  </form>
+  {{end}}
+
+  {{range .Comments}}
+  <div class="flex flex-col gap-2 w-full py-2">
+    {{with .User}}
+    <div class="flex items-center gap-2 px-2">
+      <div class="avatar">
+        <div class="w-4 bg-base-100 shadow-xl rounded-full">
+          <img src="{{.Avatar}}" alt="{{.Name}}">
+        </div>
+      </div>
+
+      <span class="text-xs font-semibold opacity-70">
+        @{{.Handle}}
+      </span>
+    </div>
+    {{end}}
+
+    <div class="chat chat-start">
+      <div class="chat-bubble w-full shadow max-w-none bg-neutral/60 min-h-20">
+        {{.Content}}
+      </div>
+    </div>
+  </div>
+  {{end}}
+</div>

@@ -71,6 +71,14 @@ func (r *Repo) Owner() *authentication.User {
 	return u
 }
 
+func (r *Repo) Comments() ([]*Comment, error) {
+	return Comments.Search(`
+		WHERE SubjectID = $1
+			AND Content != ''
+		ORDER BY CreatedAt DESC
+	`, r.ID)
+}
+
 func (r *Repo) Git(args ...string) (stdout, stderr bytes.Buffer, err error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = r.Path()

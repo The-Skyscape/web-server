@@ -1,4 +1,4 @@
-<div class="card bg-base-100 w-full max-w-screen-sm shadow-lg">
+<div class="card bg-base-100 w-full max-w-screen-md shadow-lg">
   <div class="menu gap-2 w-full">
     {{range .ListFiles "main" (req.PathValue "path")}}
     <li>
@@ -19,9 +19,7 @@
         </svg>
         {{end}}
 
-        <span>
-          {{.Name}}
-        </span>
+        <span>{{.Name}}</span>
       </a>
     </li>
     {{end}}

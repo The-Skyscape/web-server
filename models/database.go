@@ -9,15 +9,11 @@ import (
 )
 
 var (
-	url, token = os.Getenv("DB_URL"), os.Getenv("DB_TOKEN")
+	DB = remote.Database("website.db", os.Getenv("DB_URL"), os.Getenv("DB_TOKEN"))
 
-	DB = remote.Database("website.db", url, token)
-
-	Auth = authentication.Manage(DB)
-
-	Profiles = database.Manage(DB, new(Profile))
-
-	Repos = database.Manage(DB, new(Repo))
-
+	Auth       = authentication.Manage(DB)
+	Profiles   = database.Manage(DB, new(Profile))
+	Repos      = database.Manage(DB, new(Repo))
 	Activities = database.Manage(DB, new(Activity))
+	Comments   = database.Manage(DB, new(Comment))
 )

@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
@@ -32,7 +34,31 @@ func (c AuthController) Handle(r *http.Request) application.Handler {
 	return &c
 }
 
+var WebHostNames = []string{
+	"skysca.pe",
+	"web.skysca.pe",
+	"www.skysca.pe",
+}
+
+func (c *AuthController) Optional(app *application.App, w http.ResponseWriter, r *http.Request) bool {
+	if !slices.Contains(WebHostNames, r.Host) {
+		if parts := strings.Split(r.Host, "."); len(parts) == 3 {
+			w.Write([]byte(parts[0]))
+			return false
+		}
+	}
+
+	return c.Controller.Optional(app, w, r)
+}
+
 func (c *AuthController) Required(app *application.App, w http.ResponseWriter, r *http.Request) bool {
+	if !slices.Contains(WebHostNames, r.Host) {
+		if parts := strings.Split(r.Host, "."); len(parts) == 3 {
+			w.Write([]byte(parts[0]))
+			return false
+		}
+	}
+
 	if ok := c.Controller.Required(app, w, r); !ok {
 		return ok
 	}

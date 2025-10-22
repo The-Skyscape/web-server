@@ -42,7 +42,16 @@ func (c *GitController) GitServer() *gitkit.Server {
 	})
 
 	git.AuthFunc = func(creds gitkit.Credential, req *gitkit.Request) (ok bool, err error) {
-		log.Println("New request:", req.Request.URL.Path)
+		isPull := strings.Contains(req.Request.URL.Path, "git-upload-pack") ||
+			strings.Contains(req.Request.URL.Query().Get("service"), "git-upload-pack")
+
+		if isPull {
+			return true, nil
+		}
+
+		isPush := strings.Contains(req.Request.URL.Path, "git-receive-pack") ||
+			strings.Contains(req.Request.URL.Query().Get("service"), "git-receive-pack")
+
 		if creds.Username == "" || creds.Password == "" {
 			return false, errors.New("authentication required")
 		}
@@ -61,9 +70,6 @@ func (c *GitController) GitServer() *gitkit.Server {
 			log.Printf("Repository not found: %s", req.RepoName)
 			return false, errors.New("repository not found")
 		}
-
-		isPush := strings.Contains(req.Request.URL.Path, "git-receive-pack") ||
-			strings.Contains(req.Request.URL.Query().Get("service"), "git-receive-pack")
 
 		if isPush && repo.OwnerID != user.ID {
 			return false, errors.New("only owner can push to their repos")

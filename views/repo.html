@@ -3,12 +3,14 @@
 <head>
   {{template "app-deps"}}
 
+  <meta name="go-import"
+    content="web.skysca.pe/repo/{{repos.CurrentRepo.ID}} git https://go@web.skysca.pe/repo/{{repos.CurrentRepo.ID}}">
 </head>
 
 <body>
   {{template "layout/start"}}
 
-  <div class="max-w-screen-lg flex flex-col gap-4 w-full mx-auto px-4 py-8 md:py-12 z-20">
+  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
     {{with $repo := repos.CurrentRepo}}
 
     {{template "repo-header.html" .}}
@@ -47,34 +49,15 @@
     </div>
 
     {{else}}
-    <div class="flex flex-col md:flex-row justify-between gap-4 w-full">
-      <div class="flex flex-col gap-4 w-full max-w-screen-sm">
+    <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
+      <div class="flex flex-col gap-4 w-full max-w-screen-md">
         {{template "repo-last-commit.html" .}}
 
         {{template "repo-dir.html" .}}
       </div>
 
-      <div class="flex flex-col gap-4 px-2 w-full max-w-88">
-        <label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
-          About This Project
-        </label>
-        <p class="px-2 text-base font-semibold opacity">
-          {{.Description}}
-        </p>
-
-        <label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
-          Launched Apps
-        </label>
-        <div class="p-2">
-          <div class="card bg-neutral/40 shadow-lg shadow-primary">
-            <div class="card-body">
-              <h2 class="text-base font-semibold opacity-90 mx-auto mb-4">
-                No apps yet
-              </h2>
-              <div class="btn btn-sm btn-primary">Launch an App</div>
-            </div>
-          </div>
-        </div>
+      <div class="flex flex-col gap-4 px-2 w-full md:max-w-108">
+        {{template "repo-details.html" .}}
       </div>
     </div>
     {{end}}
