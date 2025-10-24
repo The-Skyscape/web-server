@@ -21,6 +21,7 @@ func (c *FeedController) Setup(app *application.App) {
 
 	http.Handle("/", app.Serve("tbd.html", auth.Required))
 	http.Handle("/{$}", app.ProtectFunc(c.serveFeed, auth.Optional))
+	http.Handle("/explore", app.Serve("explore.html", auth.Optional))
 }
 
 func (c FeedController) Handle(r *http.Request) application.Handler {

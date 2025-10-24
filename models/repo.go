@@ -3,6 +3,7 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 	"os/exec"
@@ -15,6 +16,7 @@ import (
 	"github.com/The-Skyscape/devtools/pkg/containers"
 	"github.com/The-Skyscape/devtools/pkg/database"
 	"github.com/pkg/errors"
+	"github.com/yuin/goldmark"
 )
 
 func (*Repo) Table() string { return "repos" }
@@ -114,7 +116,7 @@ func (r *Repo) ListCommits(branch string, limit int) ([]*Commit, error) {
 }
 
 type Commit struct {
-	*Repo
+	Repo    *Repo
 	Hash    string
 	UserID  string
 	Subject string
@@ -199,10 +201,14 @@ func (r *Repo) Open(branch, path string) (*File, error) {
 }
 
 type File struct {
-	*Repo
+	Repo   *Repo
 	Branch string
 	Path   string
 	IsDir  bool
+}
+
+func (f *File) FileType() (ext string) {
+	return strings.TrimPrefix(filepath.Ext(f.Path), ".")
 }
 
 func (f *File) Name() string {
@@ -221,25 +227,27 @@ func (f *File) Read() (*Content, error) {
 	}
 
 	if strings.Contains(c.Content, "\x00") {
-		c.Content = "File "
 		c.IsBinary = true
-	} else {
-		c.Content = stdout.String()
-	}
-
-	if strings.HasSuffix(f.Path, "/") {
-		c.IsDir = true
 	}
 
 	return c, nil
 }
 
 type Content struct {
-	*File
+	File     *File
 	Content  string
 	IsBinary bool
 }
 
 func (c *Content) Lines() []string {
 	return strings.Split(c.Content, "\n")
+}
+
+func (c *Content) Markdown() template.HTML {
+	var buf bytes.Buffer
+	if err := goldmark.Convert([]byte(c.Content), &buf); err != nil {
+		return template.HTML(c.Content)
+	}
+
+	return template.HTML(buf.String())
 }

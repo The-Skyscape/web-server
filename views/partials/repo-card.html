@@ -1,0 +1,29 @@
+<a href="{{host}}/repo/{{.ID}}" class="card w-full max-w-sm md:max-w-72 bg-base-100 shadow-lg">
+  <div class="card-body">
+    <div class="flex items-center">
+      {{with .Owner}}
+      <div class="avatar">
+        <div class="w-6 p-1 rounded-full bg-white/10 border border-white/20 mr-1">
+          <img src="{{.Avatar}}" alt="{{.Name}}">
+        </div>
+      </div>
+
+      <span class="text-base font-semibold opacity-80">
+        @{{.Handle}} /&nbsp;
+      </span>
+      {{end}}
+
+      <h2 class="text-base font-semibold">
+        {{.Name}}
+      </h2>
+    </div>
+
+    <hr class="my-2 opacity-15">
+
+    <p class="text-sm font-bold opacity-60 tracking-wider line-clamp-2">
+      {{with .Description}}{{.}}{{else}}
+      <span class="italic opacity-80">No description</span>
+      {{end}}
+    </p>
+  </div>
+</a>

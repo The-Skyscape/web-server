@@ -3,7 +3,6 @@ package controllers
 import (
 	"cmp"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -57,6 +56,33 @@ func (c *ProfileController) CurrentProfile() *models.Profile {
 	return p
 }
 
+func (p *ProfileController) AllProfiles() []*models.Profile {
+	query := p.URL.Query().Get("query")
+	users, _ := models.Profiles.Search(`
+	  INNER JOIN users on users.ID = profiles.UserID
+		WHERE 
+			users.Name           LIKE $1        OR
+			users.Handle         LIKE LOWER($1) OR
+			profiles.Description LIKE $1
+		ORDER BY profiles.CreatedAt
+	`, "%"+query+"%")
+	return users
+}
+
+func (p *ProfileController) RecentProfiles() []*models.Profile {
+	query := p.URL.Query().Get("query")
+	profiles, _ := models.Profiles.Search(`
+	  INNER JOIN users on users.ID = profiles.UserID
+		WHERE 
+			users.Name           LIKE $1        OR
+			users.Handle         LIKE LOWER($1) OR
+			profiles.Description LIKE $1
+		ORDER BY profiles.CreatedAt DESC
+		LIMIT 4
+	`, "%"+query+"%")
+	return profiles
+}
+
 func (c *ProfileController) setup(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
@@ -87,18 +113,4 @@ func (c *ProfileController) setup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Refresh(w, r)
-}
-
-func (p *ProfileController) AllProfiles() []*models.Profile {
-	query := p.URL.Query().Get("query")
-	users, err := models.Profiles.Search(`
-	  INNER JOIN users on users.ID = profiles.UserID
-		WHERE 
-			users.Name           LIKE $1        OR
-			users.Handle         LIKE LOWER($1) OR
-			profiles.Description LIKE $1
-		ORDER BY profiles.CreatedAt
-	`, "%"+query+"%")
-	log.Println("Error:", err)
-	return users
 }

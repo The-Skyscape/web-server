@@ -3,7 +3,7 @@
     {{with .User}}
     <div class="flex items-center gap-2 px-2 pb-2 border-b border-neutral/40">
       <div class="avatar">
-        <div class="w-6 p-1 bg-white/10 rounded-full">
+        <div class="w-6 p-1 bg-white/10 rounded-full border border-white/10">
           <img src="{{.Avatar}}" alt="{{.Name}}">
         </div>
       </div>
@@ -23,9 +23,23 @@
       <li>
         <a href="{{host}}/repo/{{.ID}}">
           <div class="flex flex-col gap-1">
-            <span class="text-lg font-semibold">
-              {{.Name}}
-            </span>
+            <div class="flex items-center">
+              {{with .Owner}}
+              <div class="avatar">
+                <div class="w-5 p-1 rounded-full bg-white/10 border border-white/10 mr-1">
+                  <img src="{{.Avatar}}" alt="{{.Name}}">
+                </div>
+              </div>
+
+              <span class="text-base font-semibold opacity-80">
+                @{{.Handle}} /&nbsp;
+              </span>
+              {{end}}
+
+              <span class="text-lg font-semibold">
+                {{.Name}}
+              </span>
+            </div>
 
             <span class="text-sm font-bold opacity-60">
               {{with .Description}}{{.}}{{else}}
@@ -48,14 +62,35 @@
 
 
       {{with .Profile}}
-      <div class="flex items-center gap-2">
-        <img class="w-10 h-10 rounded-full" src="{{.Avatar}}" alt="{{.Name}}">
-        <div class="flex-1">
-          <h5 class="card-title">{{.Name}}</h5>
-          <p class="text-sm text-gray-500">{{.Handle}}</p>
-        </div>
-      </div>
-      <p class="text-sm text-gray-500">{{.Description}}</p>
+      <li>
+        <a href="{{host}}/user/{{.ID}}">
+          <div class="avatar">
+            <div class="bg-white/10 p-2 w-10 border border-white/10 rounded-full">
+              <img src="{{.Avatar}}" alt="{{.Name}}">
+            </div>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-base font-semibold">
+              {{.Name}}
+            </span>
+
+            <span class="text-xs font-semibold opacity-80">
+              {{with .Description}}{{.}}{{else}}
+              <span class="italic opacity-80">
+                No description
+              </span>
+              {{end}}
+            </span>
+          </div>
+
+          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em" width="1em"
+            xmlns="http://www.w3.org/2000/svg" class="ml-auto">
+            <path
+              d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z">
+            </path>
+          </svg>
+        </a>
+      </li>
       {{end}}
     </ul>
   </div>

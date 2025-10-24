@@ -11,9 +11,9 @@
   <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
     <div class="absolute inset-0 bg-black opacity-40"></div>
     <div class='flex flex-col gap-3 items-center px-4 py-18'>
-      <h1 class="text-3xl md:text-4xl font-bold tracking-wide opacity-80">The Skyscape Users</h1>
+      <h1 class="text-3xl md:text-4xl font-bold tracking-wide opacity-80">The Skyscape Repos</h1>
       <span class="text-lg md:text-xl font-bold opacity-60 text-center">
-        Our community is built of builders, designers, and developers you might know.
+        Discover and learn about the code that is being ran on, and is running, The Skyscape.
       </span>
     </div>
   </div>
@@ -27,16 +27,16 @@
         </g>
       </svg>
 
-      <input name="query" type="search" class="grow" placeholder="Search through our directory of users"
-        hx-trigger="input changed delay:200ms, search" hx-get="{{host}}/users" hx-target="#user-cards"
-        hx-select="#user-cards" hx-swap="outerHTML" hx-replace-url="true" value='{{req.URL.Query.Get "query"}}'>
+      <input name="query" type="search" class="grow" placeholder="Search through our directory of repos"
+        hx-trigger="input changed delay:200ms, search" hx-get="{{host}}/repos" hx-target="#repo-cards"
+        hx-select="#repo-cards" hx-swap="outerHTML" hx-replace-url="true" value='{{req.URL.Query.Get "query"}}'>
     </label>
   </div>
 
-  <div id="user-cards" class="max-w-screen-xl flex flex-wrap gap-6 w-full mx-auto relative z-20 px-7 py-12"
+  <div id="repo-cards" class="max-w-screen-xl flex flex-wrap gap-6 w-full mx-auto relative z-20 px-7 py-12"
     hx-boost="true">
-    {{range profile.AllProfiles}}
-    {{template "profile-card.html" .}}
+    {{range repos.AllRepos}}
+    {{template "repo-card.html" .}}
     {{end}}
   </div>
 

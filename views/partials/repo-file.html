@@ -1,5 +1,8 @@
 <div class="card bg-base-100 w-full max-w-screen-md shadow-lg">
-  <div class="text-lg font-semibold tracking-wide px-4 py-2">{{.Name}}</div>
+  <div class="flex items-center justify-between">
+    <div class="text-lg font-semibold tracking-wide px-4 py-2">{{.Name}}</div>
+    <div class="mr-2 px-4 badge badge-neutral/60 badge-sm">{{.FileType}}</div>
+  </div>
 
   <div class="mockup-code w-full before:hidden border-none!">
     {{range $i, $line := .Read.Lines}}

@@ -21,7 +21,10 @@ func (p *Profile) Apps() []any {
 }
 
 func (p *Profile) Repos() []*Repo {
-	repos, _ := Repos.Search("WHERE OwnerID = ? ORDER BY CreatedAt", p.UserID)
+	repos, _ := Repos.Search(`
+		WHERE OwnerID = ?
+		ORDER BY CreatedAt DESC
+	`, p.UserID)
 	return repos
 }
 

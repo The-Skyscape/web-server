@@ -23,6 +23,7 @@ func (c *ReposController) Setup(app *application.App) {
 	c.Controller.Setup(app)
 	auth := app.Use("auth").(*AuthController)
 
+	http.Handle("GET /repos", c.Serve("repos.html", auth.Optional))
 	http.Handle("GET /repo/{repo}", c.Serve("repo.html", auth.Optional))
 	http.Handle("GET /repo/{repo}/file/{path...}", c.Serve("file.html", auth.Optional))
 	http.Handle("POST /repos", c.ProtectFunc(c.createRepo, auth.Required))
@@ -41,6 +42,33 @@ func (c *ReposController) CurrentRepo() *models.Repo {
 	}
 
 	return repo
+}
+
+func (c *ReposController) AllRepos() []*models.Repo {
+	query := c.URL.Query().Get("query")
+	repos, _ := models.Repos.Search(`
+	  INNER JOIN users on users.ID = repos.OwnerID
+		WHERE 
+			repos.Name           LIKE $1        OR
+			repos.Description    LIKE $1        OR
+			users.Handle         LIKE LOWER($1)
+		ORDER BY repos.CreatedAt DESC
+	`, "%"+query+"%")
+	return repos
+}
+
+func (c *ReposController) RecentRepos() []*models.Repo {
+	query := c.URL.Query().Get("query")
+	repos, _ := models.Repos.Search(`
+	  INNER JOIN users on users.ID = repos.OwnerID
+		WHERE 
+			repos.Name           LIKE $1        OR
+			repos.Description    LIKE $1        OR
+			users.Handle         LIKE LOWER($1)
+		ORDER BY repos.CreatedAt DESC
+		LIMIT 4
+	`, "%"+query+"%")
+	return repos
 }
 
 func (c *ReposController) CurrentFile() *models.File {
@@ -105,6 +133,24 @@ type PathPart struct {
 	Href, Label string
 }
 
+func (c *ReposController) ReadmeFile() *models.File {
+	repo := c.CurrentRepo()
+	if repo == nil {
+		return nil
+	}
+
+	branch := cmp.Or(c.URL.Query().Get("branch"), "main")
+	files := []string{"README.md", "README", "readme.md", "readme"}
+
+	for _, name := range files {
+		if file, err := repo.Open(branch, name); err == nil {
+			return file
+		}
+	}
+
+	return nil
+}
+
 func (c *ReposController) createRepo(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
@@ -116,7 +162,7 @@ func (c *ReposController) createRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Redirect(w, r, "/repos/"+repo.ID)
+	c.Redirect(w, r, "/repo/"+repo.ID)
 }
 
 func (c *ReposController) comment(w http.ResponseWriter, r *http.Request) {

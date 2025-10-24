@@ -1,0 +1,81 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
+    <div class="absolute inset-0 bg-black opacity-40"></div>
+    <div class='flex flex-col gap-3 items-center px-4 py-18'>
+      <h1 class="text-3xl md:text-4xl font-bold tracking-wide opacity-80">Explore The Skyscape</h1>
+      <span class="text-lg md:text-xl font-bold opacity-60 text-center">
+        Find friends, code, and apps to make you experience in The Skyscape better.
+      </span>
+    </div>
+  </div>
+
+  <div class="w-full max-w-screen-sm px-4 -mt-6">
+    <label class="input input-bordered input-lg w-full shadow-lg border-2! border-white/40">
+      <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </g>
+      </svg>
+
+      <input name="query" type="search" class="grow"
+        placeholder="Search The Skyscape's directories of users, repos, and apps"
+        hx-trigger="input changed delay:200ms, search" hx-get="{{host}}/explore" hx-target="#explore-content"
+        hx-select="#explore-content" hx-swap="outerHTML" hx-replace-url="true" value='{{req.URL.Query.Get "query"}}'>
+    </label>
+  </div>
+
+  <div class="flex flex-col gap-4 max-w-screen-xl w-full mx-auto relative z-20 px-7 py-12" id="explore-content"
+    hx-boost="true">
+    <div class="px-4 flex items-center justify-between w-full">
+      <h2 class="text-2xl font-bold opacity-80">New Users</h2>
+      <a href="{{host}}/users" class="btn btn-ghost">
+        All Users
+        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em" width="1em"
+          xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z">
+          </path>
+        </svg>
+      </a>
+    </div>
+
+    <div class="flex flex-wrap gap-6">
+      {{range profile.RecentProfiles}}
+      {{template "profile-card.html" .}}
+      {{end}}
+    </div>
+
+    <div class="px-4 flex items-center justify-between w-full mt-8">
+      <h2 class="text-2xl font-bold opacity-80">New Repos</h2>
+      <a href="{{host}}/repos" class="btn btn-ghost">
+        All Repos
+        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em" width="1em"
+          xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z">
+          </path>
+        </svg>
+      </a>
+    </div>
+
+    <div class="flex flex-wrap gap-6">
+      {{range repos.RecentRepos}}
+      {{template "repo-card.html" .}}
+      {{end}}
+    </div>
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

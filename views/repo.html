@@ -1,7 +1,7 @@
 <html data-theme="{{theme}}">
 
 <head>
-  {{template "app-deps"}}
+  {{template "includes.html"}}
 
   <meta name="go-import"
     content="web.skysca.pe/repo/{{repos.CurrentRepo.ID}} git https://go@web.skysca.pe/repo/{{repos.CurrentRepo.ID}}">
@@ -23,7 +23,7 @@
         </h1>
       </div>
 
-      <div class="card bg-base-100 shadow-lg w-max">
+      <div class="card bg-base-100 shadow-lg md:w-max">
         <div class="card-body">
           <h2 class="card-title">
             Getting Started
@@ -52,8 +52,15 @@
     <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
       <div class="flex flex-col gap-4 w-full max-w-screen-md">
         {{template "repo-last-commit.html" .}}
-
         {{template "repo-dir.html" .}}
+
+        {{with repos.ReadmeFile}}
+        <div class="card bg-base-100 w-full max-w-screen-md shadow-lg">
+          <div class="card-body">
+            <div class="markdown">{{.Read.Markdown}}</div>
+          </div>
+        </div>
+        {{end}}
       </div>
 
       <div class="flex flex-col gap-4 px-2 w-full md:max-w-108">
