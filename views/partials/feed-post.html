@@ -1,9 +1,9 @@
 <div class="card bg-base-100 shadow-lg w-full">
   <div class="card-body">
     {{with .User}}
-    <div class="flex items-center gap-2 px-2 pb-2 border-b border-neutral/40">
+    <div class="flex items-center gap-2 px-2 pb-2">
       <div class="avatar">
-        <div class="w-6 p-1 bg-white/10 rounded-full border border-white/10">
+        <div class="w-5 p-1 bg-white/10 rounded-full border border-white/10">
           <img src="{{.Avatar}}" alt="{{.Name}}">
         </div>
       </div>
@@ -63,7 +63,7 @@
 
       {{with .Profile}}
       <li>
-        <a href="{{host}}/user/{{.ID}}">
+        <a href="{{host}}/user/{{.Handle}}">
           <div class="avatar">
             <div class="bg-white/10 p-2 w-10 border border-white/10 rounded-full">
               <img src="{{.Avatar}}" alt="{{.Name}}">

@@ -16,38 +16,54 @@
     {{template "repo-header.html" .}}
 
     {{if $repo.IsEmpty "main"}}
-    <div class="px-4 space-y-2">
-      <div class="px-2">
-        <h1 class="text-xl font-semibold">
-          This Repo is Empty
-        </h1>
-      </div>
+    {{$user := auth.CurrentUser}}
 
-      <div class="card bg-base-100 shadow-lg md:w-max">
-        <div class="card-body">
-          <h2 class="card-title">
-            Getting Started
-          </h2>
-
-          <ul class="list-decimal px-6 space-y-2">
-            <li>Clone the repo using the "Clone Repo" button</li>
-            <li>Create files and folders for your project</li>
-            <li>
-              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git add .</code> to stage your changes
-            </li>
-            <li>
-              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git commit -m "Initial commit"</code> to commit your
-              changes
-            </li>
-            <li>
-              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git push -u origin main</code> to push your changes
-              to The Skyscape
-            </li>
-          </ul>
-        </div>
+    {{if and $user (eq $repo.OwnerID $user.ID)}}
+    <div class="card bg-base-100 shadow-xl w-full md:max-w-screen-sm mx-auto border border-white/10 md:my-8">
+      <div class="card-body">
+        <h2 class="card-title mx-auto text-2xl">
+          Getting Started
+        </h2>
+        <ul class="list-decimal pt-4 px-6 space-y-2">
+          <li>
+            Clone the repo using the <button class="btn btn-xs btn-primary" _="on click 
+              call navigator.clipboard.writeText('git clone https://web.skysca.pe/repo/{{$repo.ID}}') then 
+              set my textContent to 'Command Copied ✓' then 
+              remove .btn-primary from me then
+              add .btn-success to me then 
+              wait 2s then 
+              set my textContent to 'Clone Repo' then 
+              remove .btn-success from me then 
+              add .btn-primary to me then">Clone Repo</button>
+            button
+          </li>
+          <li>Create files and folders for your project</li>
+          <li>
+            Run <code class="bg-neutral/40 rounded-box px-2 py-1">git add .</code> to stage your changes
+          </li>
+          <li>
+            Run <code class="bg-neutral/40 rounded-box px-2 py-1">git commit -m "Initial commit"</code> to commit your
+            changes
+          </li>
+          <li>
+            Run <code class="bg-neutral/40 rounded-box px-2 py-1">git push -u origin main</code> to push your changes
+            to The Skyscape
+          </li>
+        </ul>
       </div>
     </div>
-
+    {{else}}
+    <div class="card bg-base-100 shadow-xl w-full md:max-w-screen-sm mx-auto border border-white/10 md:my-8">
+      <div class="card-body">
+        <h2 class="card-title mx-auto text-2xl">
+          Under Construction
+        </h2>
+        <p class="font-medium text-lg opacity-80 text-center">
+          Please check back later to see the progress of {{.Name}}.
+        </p>
+      </div>
+    </div>
+    {{end}}
     {{else}}
     <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
       <div class="flex flex-col gap-4 w-full max-w-screen-md">
