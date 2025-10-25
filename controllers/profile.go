@@ -99,6 +99,7 @@ func (c *ProfileController) setup(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		user := p.User()
+		user.Avatar = cmp.Or(r.FormValue("avatar"), user.Avatar)
 		user.Name = cmp.Or(r.FormValue("name"), user.Name)
 		if err = models.Auth.Users.Update(user); err != nil {
 			c.Render(w, r, "error-message.html", err)

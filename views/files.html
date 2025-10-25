@@ -1,0 +1,20 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-xl flex flex-col gap-8 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{range files.MyFiles}}
+    {{.ID}} - {{.FilePath}} - {{.MimeType}}
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

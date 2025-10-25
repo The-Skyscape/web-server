@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to The Skyscape</title>
+  {{template "email-styles" .}}
+</head>
+
+<body>
+  <div class="email-wrapper">
+    {{template "email-header" .}}
+
+    <div class="email-content">
+      <h2>Welcome to The Skyscape, {{user.Name}}! 🎉</h2>
+
+      <p>Your email has been verified and your account is now fully activated. We're thrilled to have you join our
+        community of developers! Please finish setting up your profile if you have not already to join the fun.</p>
+
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="https://www.theskyscape.com/profile" class="btn">View Your Public Profile</a>
+      </div>
+
+      <p>If you have any questions or need assistance, don't hesitate to reach out to our support team at <a
+          href="mailto:hello@theskyscape.com">hello@theskyscape.com</a>.</p>
+      <p>
+        Happy coding!<br>
+        <strong>The Skyscape Team</strong>
+      </p>
+    </div>
+
+    {{template "email-footer" .}}
+  </div>
+</body>
+
+</html>

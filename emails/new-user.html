@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Skyscape has Grown</title>
+  {{template "email-styles" .}}
+</head>
+
+<body>
+  <div class="email-wrapper">
+    {{template "email-header" .}}
+
+    <div class="email-content">
+      <h2>A New User Has Joined The Skyscape, {{user.Name}}!</h2>
+
+
+      <p>Help us in welcoming {{user.Name}} to The Skyscape by sharing your profile or any projects they might be
+        interested in.</p>
+      <p>You can view <a href="https://www.theskyscape.com/user/{{user.ID}}">their profile here</a></p>
+
+
+      <p>If you have any questions or need assistance, don't hesitate to reach out to our support team at <a
+          href="mailto:hello@theskyscape.com">hello@theskyscape.com</a>.</p>
+      <p> Happy coding!<br>
+        <strong>The Skyscape Team</strong>
+      </p>
+    </div>
+
+    {{template "email-footer" .}}
+  </div>
+</body>
+
+</html>

@@ -71,7 +71,7 @@ func (c *ReposController) RecentRepos() []*models.Repo {
 	return repos
 }
 
-func (c *ReposController) CurrentFile() *models.File {
+func (c *ReposController) CurrentFile() *models.Blob {
 	repo := c.CurrentRepo()
 	if repo == nil {
 		return nil
@@ -133,7 +133,7 @@ type PathPart struct {
 	Href, Label string
 }
 
-func (c *ReposController) ReadmeFile() *models.File {
+func (c *ReposController) ReadmeFile() *models.Blob {
 	repo := c.CurrentRepo()
 	if repo == nil {
 		return nil

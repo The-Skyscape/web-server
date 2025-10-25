@@ -131,16 +131,16 @@ func (c *Commit) User() *authentication.User {
 	return u
 }
 
-func (r *Repo) ListFiles(branch, path string) ([]*File, error) {
+func (r *Repo) ListFiles(branch, path string) ([]*Blob, error) {
 	stdout, _, err := r.Git("ls-tree", branch, filepath.Join(".", path)+"/")
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to list files: %s @ %s", branch, path)
 	}
 
-	var files []*File
+	var files []*Blob
 	for line := range strings.SplitSeq(strings.TrimSpace(stdout.String()), "\n") {
 		if parts := strings.Fields(line); len(parts) >= 4 {
-			files = append(files, &File{
+			files = append(files, &Blob{
 				Repo:   r,
 				Branch: branch,
 				Path:   parts[3],
@@ -186,13 +186,13 @@ func (r *Repo) IsDir(branch, path string) (bool, error) {
 	return parts[1] == "tree", nil
 }
 
-func (r *Repo) Open(branch, path string) (*File, error) {
+func (r *Repo) Open(branch, path string) (*Blob, error) {
 	isDir, err := r.IsDir(branch, path)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read location: "+path)
 	}
 
-	return &File{
+	return &Blob{
 		Repo:   r,
 		Branch: branch,
 		Path:   path,
@@ -200,22 +200,22 @@ func (r *Repo) Open(branch, path string) (*File, error) {
 	}, nil
 }
 
-type File struct {
+type Blob struct {
 	Repo   *Repo
 	Branch string
 	Path   string
 	IsDir  bool
 }
 
-func (f *File) FileType() (ext string) {
+func (f *Blob) FileType() (ext string) {
 	return strings.TrimPrefix(filepath.Ext(f.Path), ".")
 }
 
-func (f *File) Name() string {
+func (f *Blob) Name() string {
 	return filepath.Base(f.Path)
 }
 
-func (f *File) Read() (*Content, error) {
+func (f *Blob) Read() (*Content, error) {
 	stdout, _, err := f.Repo.Git("show", fmt.Sprintf("%s:%s", f.Branch, f.Path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to show file")
@@ -234,7 +234,7 @@ func (f *File) Read() (*Content, error) {
 }
 
 type Content struct {
-	File     *File
+	File     *Blob
 	Content  string
 	IsBinary bool
 }
