@@ -1,0 +1,37 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  {{with apps.CurrentApp}}
+
+  <div class="max-w-screen-lg flex flex-col md:flex-row md:justify-between gap-4 w-full mx-auto relative z-20 px-4">
+    <h1 class="text-2xl font-semibold">
+      {{.Name}}
+    </h1>
+
+    <p class="text-lg font-semibold opacity-60 tracking-wide">
+      {{.Description}}
+    </p>
+
+    <span class="text-lg text-error">{{.Error}}</span>
+
+    <button class="btn btn-primary" hx-post="{{host}}/app/{{.ID}}/launch">
+      Launch
+    </button>
+  </div>
+  {{else}}
+  <h1 class="text-2xl font-semibold">
+    App not found
+  </h1>
+  {{end}}
+
+  {{template "layout/end"}}
+</body>
+
+</html>

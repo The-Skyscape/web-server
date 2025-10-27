@@ -4,7 +4,7 @@
   {{template "includes.html"}}
 
   <meta name="go-import"
-    content="web.skysca.pe/repo/{{repos.CurrentRepo.ID}} git https://go@web.skysca.pe/repo/{{repos.CurrentRepo.ID}}">
+    content="theskyscape.com/repo/{{repos.CurrentRepo.ID}} git https://go@theskyscape.com/repo/{{repos.CurrentRepo.ID}}">
 </head>
 
 <body>
@@ -27,7 +27,7 @@
         <ul class="list-decimal pt-4 px-6 space-y-2">
           <li>
             Clone the repo using the <button class="btn btn-xs btn-primary" _="on click 
-              call navigator.clipboard.writeText('git clone https://web.skysca.pe/repo/{{$repo.ID}}') then 
+              call navigator.clipboard.writeText('git clone https://theskyscape.com/repo/{{$repo.ID}}') then 
               set my textContent to 'Copied ✓' then 
               remove .btn-primary from me then
               add .btn-success to me then 
@@ -77,6 +77,7 @@
           </div>
         </div>
         {{end}}
+
       </div>
 
       <div class="flex flex-col gap-4 px-2 w-full md:max-w-108">
@@ -85,6 +86,7 @@
     </div>
     {{end}}
 
+    {{template "launch-app-modal.html" $repo}}
     {{else}}
     <h1 class="text-2xl font-semibold">
       Repo not found
@@ -93,6 +95,7 @@
   </div>
 
   {{template "layout/end"}}
+
 </body>
 
 </html>

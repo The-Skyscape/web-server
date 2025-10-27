@@ -37,7 +37,7 @@
   font-size: 1rem;
   line-height: 1.6;
   margin-bottom: 1rem;
-  color: #444;
+  opacity: 0.9;
 }
 
 .markdown a {
@@ -74,17 +74,22 @@
 
 .markdown code {
   font-family: 'Courier New', Courier, monospace;
-  background-color: #f1f1f1;
+  background-color: #1b1b1b;
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
 }
 
+.markdown pre>code {
+  padding: 0;
+}
+
 .markdown pre {
-  background-color: #f1f1f1;
+  background-color: #1b1b1b;
   padding: 1rem;
   overflow-x: auto;
   border-radius: 3px;
   font-family: 'Courier New', Courier, monospace;
+  margin-bottom: 1.2rem;
 }
 
 .markdown img {

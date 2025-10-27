@@ -18,4 +18,5 @@ var (
 	Activities = database.Manage(DB, new(Activity))
 	Comments   = database.Manage(DB, new(Comment))
 	Files      = database.Manage(DB, new(File))
+	Images     = database.Manage(DB, new(Image))
 )

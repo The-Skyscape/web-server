@@ -81,6 +81,13 @@ func (r *Repo) Comments() ([]*Comment, error) {
 	`, r.ID)
 }
 
+func (r *Repo) Apps() ([]*App, error) {
+	return Apps.Search(`
+		WHERE RepoID = $1
+		ORDER BY CreatedAt DESC
+	`, r.ID)
+}
+
 func (r *Repo) Git(args ...string) (stdout, stderr bytes.Buffer, err error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = r.Path()
@@ -213,6 +220,18 @@ func (f *Blob) FileType() (ext string) {
 
 func (f *Blob) Name() string {
 	return filepath.Base(f.Path)
+}
+
+func (f *Blob) ListFiles(branch, _ string) ([]*Blob, error) {
+	return f.Repo.ListFiles(branch, f.Path)
+}
+
+func (f *Blob) Comments() ([]*Comment, error) {
+	return Comments.Search(`
+		WHERE SubjectID = $1
+			AND Content != ''
+		ORDER BY CreatedAt DESC
+	`, fmt.Sprintf("file:%s:%s", f.Repo.ID, f.Path))
 }
 
 func (f *Blob) Read() (*Content, error) {

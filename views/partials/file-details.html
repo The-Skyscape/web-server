@@ -4,7 +4,7 @@
   </label>
 
   {{with auth.CurrentUser}}
-  <form class="flex flex-col w-full" hx-post="{{host}}/repos/{{$.ID}}/comments" hx-target=".error">
+  <form class="flex flex-col w-full" hx-post="{{host}}/repos/{{$.Repo.ID}}/comments" hx-target=".error">
     <textarea required name="content" class="textarea w-full"
       placeholder="Leave a comment for this project..."></textarea>
     <div class="flex items-center justify-between px-4 pt-2">
@@ -41,6 +41,12 @@
       <div class="chat-bubble w-full shadow max-w-none bg-neutral/60 min-h-20">
         {{.Content}}
       </div>
+    </div>
+  </div>
+  {{else}}
+  <div class="card bg-base-100 shadow-lg opacity-60 mt-4">
+    <div class="card-body py-12 text-xl text-center font-semibold">
+      No comments yet.
     </div>
   </div>
   {{end}}
