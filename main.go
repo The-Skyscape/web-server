@@ -33,5 +33,6 @@ func main() {
 		application.WithController(controllers.Git()),
 		application.WithController(controllers.Files()),
 		application.WithController(controllers.Apps()),
+		application.WithController(controllers.Comments()),
 	)
 }

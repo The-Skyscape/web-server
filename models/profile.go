@@ -16,8 +16,13 @@ type Profile struct {
 
 func (*Profile) Table() string { return "profiles" }
 
-func (p *Profile) Apps() []any {
-	return nil
+func (p *Profile) Apps() []*App {
+	apps, _ := Apps.Search(`
+		JOIN repos ON repos.ID = apps.RepoID
+		WHERE repos.OwnerID = ?
+		ORDER BY apps.CreatedAt DESC
+	`, p.UserID)
+	return apps
 }
 
 func (p *Profile) Repos() []*Repo {

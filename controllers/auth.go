@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
-	"slices"
+	"net/http/httputil"
+	"net/url"
 	"strings"
 	"time"
 
@@ -65,6 +67,7 @@ func (c AuthController) Handle(r *http.Request) application.Handler {
 }
 
 var WebHostNames = []string{
+	"cloud.digitalocean.com", // health checks
 	"skysca.pe",
 	"web.skysca.pe", // legacy
 	"www.skysca.pe",
@@ -72,10 +75,22 @@ var WebHostNames = []string{
 	"www.theskyscape.com",
 }
 
+func (c *AuthController) forward(name string, w http.ResponseWriter, r *http.Request) {
+	resource := fmt.Sprintf("http://%s:5000", name)
+	url, err := url.Parse(resource)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(url)
+	proxy.ServeHTTP(w, r)
+}
+
 func (c *AuthController) Optional(app *application.App, w http.ResponseWriter, r *http.Request) bool {
-	if !slices.Contains(WebHostNames, r.Host) {
+	if strings.HasSuffix(r.Host, "skysca.pe") {
 		if parts := strings.Split(r.Host, "."); len(parts) == 3 {
-			w.Write([]byte(parts[0]))
+			c.forward(parts[0], w, r)
 			return false
 		}
 	}
@@ -84,9 +99,9 @@ func (c *AuthController) Optional(app *application.App, w http.ResponseWriter, r
 }
 
 func (c *AuthController) Required(app *application.App, w http.ResponseWriter, r *http.Request) bool {
-	if !slices.Contains(WebHostNames, r.Host) {
+	if strings.HasSuffix(r.Host, "skysca.pe") {
 		if parts := strings.Split(r.Host, "."); len(parts) == 3 {
-			w.Write([]byte(parts[0]))
+			c.forward(parts[0], w, r)
 			return false
 		}
 	}

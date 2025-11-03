@@ -79,23 +79,31 @@ func (app *App) Build() (*Image, error) {
 	}
 
 	if err = host.Exec("bash", "-c", fmt.Sprintf(`
-		  echo "making directory"
 			mkdir -p %[1]s
-			echo "cloning repo"
 			git clone %[2]s %[1]s
 			cd %[1]s
-			echo "checking out main"
 			git checkout main
-			echo "building image"
 			docker build -t %[3]s:5000/%[4]s:%[5]s .
-			echo "pushing image"
 			docker push %[3]s:5000/%[4]s:%[5]s
 		`, tmpDir, repo.Path(), os.Getenv("HQ_ADDR"), app.ID, img.GitHash)); err != nil {
+		img.Status = "failed"
 		img.Error = err.Error()
 		Images.Update(img)
 		err = errors.Wrap(err, stdout.String())
 		return nil, errors.Wrap(err, "failed to build image")
 	}
 
-	return img, nil
+	img.Status = "ready"
+	return img, Images.Update(img)
+}
+
+func (app *App) Images() []*Image {
+	images, err := Images.Search(`
+		WHERE AppID = ?
+	`, app.ID)
+	if err != nil {
+		return nil
+	}
+
+	return images
 }
