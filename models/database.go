@@ -19,4 +19,6 @@ var (
 	Comments   = database.Manage(DB, new(Comment))
 	Files      = database.Manage(DB, new(File))
 	Images     = database.Manage(DB, new(Image))
+
+	PasswordResetTokens = database.Manage(DB, new(ResetPasswordToken))
 )

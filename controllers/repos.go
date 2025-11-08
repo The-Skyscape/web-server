@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -28,6 +29,7 @@ func (c *ReposController) Setup(app *application.App) {
 	http.Handle("GET /repo/{repo}/file/{path...}", c.Serve("file.html", auth.Optional))
 	http.Handle("POST /repos", c.ProtectFunc(c.createRepo, auth.Required))
 	http.Handle("POST /repos/{repo}/comments", c.ProtectFunc(c.comment, auth.Required))
+	http.Handle("DELETE /repo/{repo}", c.ProtectFunc(c.deleteRepo, auth.Required))
 }
 
 func (c ReposController) Handle(r *http.Request) application.Handler {
@@ -183,4 +185,31 @@ func (c *ReposController) comment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Refresh(w, r)
+}
+
+func (c *ReposController) deleteRepo(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	repo, err := models.Repos.Get(r.PathValue("repo"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	if repo.OwnerID != user.ID {
+		c.Render(w, r, "error-message.html", errors.New("you are not the owner"))
+		return
+	}
+
+	if err = models.Repos.Delete(repo); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	c.Redirect(w, r, "/profile")
 }

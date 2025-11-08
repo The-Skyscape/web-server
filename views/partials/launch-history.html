@@ -1,0 +1,40 @@
+<div class="card bg-base-100 shadow">
+  <div class="card-body">
+    {{with $user := auth.CurrentUser}}
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold">
+        Launch History
+      </h2>
+
+      {{if eq $user.ID $.Owner.ID}}
+      <button class="btn btn-sm btn-primary" hx-post="{{host}}/app/{{$.ID}}/launch">
+        Launch
+      </button>
+      {{end}}
+    </div>
+
+    <ul class="menu">
+      {{range $.Images}}
+      <li>
+        <a>
+          {{.GitHash}} - {{.Status}}
+          {{with .Error}}
+          <span class="text-error">- {{.}}</span>
+          {{end}}
+        </a>
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-bold opacity-80">
+        Sign in to view the launch history.
+      </h2>
+
+      <a href="{{host}}/signin?next={{req.URL.Path}}" class="btn btn-secondary btn-soft">
+        Sign In
+      </a>
+    </div>
+    {{end}}
+  </div>
+</div>

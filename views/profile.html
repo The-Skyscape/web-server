@@ -1,7 +1,7 @@
 <html data-theme="{{theme}}">
 
 <head>
-  {{template "app-deps"}}
+  {{template "includes.html"}}
 
 </head>
 
@@ -14,7 +14,7 @@
     {{with profile.CurrentProfile}}
     {{template "profile-info.html" .}}
 
-    <div class="w-full">
+    <div class="w-full flex flex-col gap-4">
       {{with .Apps}}
       <div class="card bg-base-100 shadow w-full">
         <div class="card-body">

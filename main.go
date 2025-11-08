@@ -23,10 +23,12 @@ func init() {
 }
 
 func main() {
+	_, auth := controllers.Auth()
 	application.Serve(views,
 		application.WithDaisyTheme("dark"),
 		application.WithHostPrefix(os.Getenv("PREFIX")),
-		application.WithController(controllers.Auth()),
+		application.WithPublicAccess(auth.Optional),
+		application.WithController("auth", auth),
 		application.WithController(controllers.Feed()),
 		application.WithController(controllers.Profile()),
 		application.WithController(controllers.Repos()),

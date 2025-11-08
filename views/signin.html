@@ -15,6 +15,7 @@
         <div class="card-body">
           <form hx-post="{{host}}/_auth/signin" hx-target="previous .error-message" hx-swap="innerHTML"
             class="flex flex-col gap-4" aria-labelledby="signin-title">
+            <input type="hidden" name="next" value='{{req.URL.Query.Get "next"}}'>
 
             <!-- Handle Input -->
             <label class="form-control w-full">
@@ -31,8 +32,8 @@
               <div class="label">
                 <span class="label-text font-medium">Password</span>
               </div>
-              <input type="password" name="password" class="input input-bordered w-full" placeholder="••••••••"
-                minlength="8" required aria-label="Password" autocomplete="current-password" />
+              <input type="password" name="password" class="input input-bordered w-full" placeholder="••••••••" required
+                aria-label="Password" autocomplete="current-password" />
             </label>
 
             <div class="form-control mt-4">
@@ -42,6 +43,9 @@
             </div>
           </form>
 
+          <a href="{{host}}/forgot-password" class="btn btn-ghost" hx-boost="true">
+            Forgot your password?
+          </a>
           <a href="{{host}}/" class="btn btn-ghost" hx-boost="true">
             Need an account?
           </a>

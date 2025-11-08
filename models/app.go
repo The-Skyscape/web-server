@@ -100,6 +100,7 @@ func (app *App) Build() (*Image, error) {
 func (app *App) Images() []*Image {
 	images, err := Images.Search(`
 		WHERE AppID = ?
+		ORDER BY CreatedAt DESC
 	`, app.ID)
 	if err != nil {
 		return nil

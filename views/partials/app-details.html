@@ -1,0 +1,33 @@
+{{$owner := .Owner}}
+{{$source := .Repo}}
+
+<label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+  Creator
+</label>
+{{with $owner}}
+<a href="{{host}}/user/{{.Handle}}" class="btn btn-ghost w-max" hx-boost="true">
+  <div class="avatar">
+    <div class="w-6 rounded-full bg-base-100 p-0.5 border border-white/10">
+      <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+    </div>
+  </div>
+
+  {{.Name}}
+</a>
+{{end}}
+
+<label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+  Source
+</label>
+{{if and $owner $source}}
+<a href="{{host}}/repo/{{$source.ID}}" class="btn btn-ghost w-max" hx-boost="true">
+  @{{$owner.Handle}} / {{$source.ID}}
+</a>
+{{end}}
+
+<label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+  About This App
+</label>
+<p class="pt-2 px-3 text-base font-semibold opacity">
+  {{.Description}}
+</p>

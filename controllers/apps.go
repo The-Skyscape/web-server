@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"www.theskyscape.com/models"
@@ -22,7 +23,8 @@ func (c *AppsController) Setup(app *application.App) {
 	c.Controller.Setup(app)
 	auth := c.Use("auth").(*AuthController)
 
-	http.Handle("/app/{app}", c.Serve("app.html", auth.Required))
+	http.Handle("GET /apps", c.Serve("apps.html", auth.Optional))
+	http.Handle("/app/{app}", c.Serve("app.html", auth.Optional))
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
 	http.Handle("POST /app/{app}/launch", c.ProtectFunc(c.launch, auth.Required))
 }
@@ -39,6 +41,39 @@ func (c *AppsController) CurrentApp() *models.App {
 	}
 
 	return app
+}
+
+func (c *AppsController) AllApps() []*models.App {
+	query := c.URL.Query().Get("query")
+	apps, _ := models.Apps.Search(`
+		INNER JOIN repos on repos.ID = apps.RepoID
+	  INNER JOIN users on users.ID = repos.OwnerID
+		WHERE 
+			apps.Name            LIKE $1        OR
+			apps.Description     LIKE $1        OR
+			repos.Name           LIKE $1        OR
+			repos.Description    LIKE $1        OR
+			users.Handle         LIKE LOWER($1)
+		ORDER BY repos.CreatedAt DESC
+	`, "%"+query+"%")
+	return apps
+}
+
+func (c *AppsController) RecentApps() []*models.App {
+	query := c.URL.Query().Get("query")
+	apps, _ := models.Apps.Search(`
+		INNER JOIN repos on repos.ID = apps.RepoID
+	  INNER JOIN users on users.ID = repos.OwnerID
+		WHERE 
+			apps.Name            LIKE $1        OR
+			apps.Description     LIKE $1        OR
+			repos.Name           LIKE $1        OR
+			repos.Description    LIKE $1        OR
+			users.Handle         LIKE LOWER($1)
+		ORDER BY repos.CreatedAt DESC
+		LIMIT 4
+	`, "%"+query+"%")
+	return apps
 }
 
 func (c *AppsController) create(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +112,7 @@ func (c *AppsController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Redirect(w, r, "/apps/"+id)
+	c.Redirect(w, r, "/app/"+id)
 }
 
 func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
@@ -112,14 +147,8 @@ func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
 			models.Apps.Update(app)
 			return
 		}
-
-		// Deploy?
-		// if err = img.Deploy(host); err != nil {
-		// 	app.Error = err.Error()
-		// 	models.Apps.Update(app)
-		// 	return
-		// }
 	}()
 
+	time.Sleep(time.Millisecond * 100)
 	c.Refresh(w, r)
 }
