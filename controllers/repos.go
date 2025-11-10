@@ -50,11 +50,12 @@ func (c *ReposController) AllRepos() []*models.Repo {
 	query := c.URL.Query().Get("query")
 	repos, _ := models.Repos.Search(`
 	  INNER JOIN users on users.ID = repos.OwnerID
-		WHERE 
+		WHERE
+			repos.Archived       = false        AND
 			repos.Name           LIKE $1        OR
 			repos.Description    LIKE $1        OR
-			users.Handle         LIKE LOWER($1)
-		ORDER BY repos.CreatedAt DESC
+			users.Handle         LIKE LOWER($1) 
+		ORDER BY repos.CreatedAt
 	`, "%"+query+"%")
 	return repos
 }
@@ -64,6 +65,7 @@ func (c *ReposController) RecentRepos() []*models.Repo {
 	repos, _ := models.Repos.Search(`
 	  INNER JOIN users on users.ID = repos.OwnerID
 		WHERE 
+			repos.Archived       = false        AND
 			repos.Name           LIKE $1        OR
 			repos.Description    LIKE $1        OR
 			users.Handle         LIKE LOWER($1)
@@ -206,7 +208,8 @@ func (c *ReposController) deleteRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = models.Repos.Delete(repo); err != nil {
+	repo.Archived = true
+	if err = models.Repos.Update(repo); err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}

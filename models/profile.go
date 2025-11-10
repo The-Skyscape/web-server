@@ -28,6 +28,7 @@ func (p *Profile) Apps() []*App {
 func (p *Profile) Repos() []*Repo {
 	repos, _ := Repos.Search(`
 		WHERE OwnerID = ?
+		 AND Archived = false
 		ORDER BY CreatedAt DESC
 	`, p.UserID)
 	return repos

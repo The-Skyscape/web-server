@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -22,6 +23,7 @@ func (c *FeedController) Setup(app *application.App) {
 	http.Handle("/", app.Serve("tbd.html", auth.Required))
 	http.Handle("/{$}", app.ProtectFunc(c.serveFeed, auth.Optional))
 	http.Handle("/explore", app.Serve("explore.html", auth.Optional))
+	http.Handle("DELETE /feed/{post}", c.ProtectFunc(c.deletePost, auth.Required))
 }
 
 func (c FeedController) Handle(r *http.Request) application.Handler {
@@ -49,4 +51,31 @@ func (c *FeedController) serveFeed(w http.ResponseWriter, r *http.Request) {
 func (c *FeedController) RecentActivities() []*models.Activity {
 	activities, _ := models.Activities.Search(`ORDER BY CreatedAt DESC`)
 	return activities
+}
+
+func (c *FeedController) deletePost(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	post, err := models.Activities.Get(r.PathValue("post"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	if !user.IsAdmin && post.UserID != user.ID {
+		c.Render(w, r, "error-message.html", errors.New("Not allowed"))
+		return
+	}
+
+	if err = models.Activities.Delete(post); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	c.Refresh(w, r)
 }

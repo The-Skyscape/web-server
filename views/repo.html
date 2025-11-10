@@ -19,14 +19,15 @@
     {{$user := auth.CurrentUser}}
 
     {{if and $user (eq $repo.OwnerID $user.ID)}}
-    <div class="card bg-base-100 shadow-xl w-full md:max-w-screen-sm mx-auto border border-white/10 md:my-8">
-      <div class="card-body">
-        <h2 class="card-title mx-auto text-2xl">
-          Getting Started
-        </h2>
-        <ul class="list-decimal pt-4 px-6 space-y-2">
-          <li>
-            Clone the repo using the <button class="btn btn-xs btn-primary" _="on click 
+    <div class="flex flex-col md:flex-row gap-4 w-full md:py-8">
+      <div class="card bg-base-100 shadow-xl w-full md:max-w-screen-sm mx-auto border border-white/10">
+        <div class="card-body">
+          <h2 class="card-title mx-auto text-2xl">
+            Getting Started
+          </h2>
+          <ul class="list-decimal pt-4 px-6 space-y-2">
+            <li>
+              Clone the repo using the <button class="btn btn-xs btn-primary" _="on click 
               call navigator.clipboard.writeText('git clone https://theskyscape.com/repo/{{$repo.ID}}') then 
               set my textContent to 'Copied ✓' then 
               remove .btn-primary from me then
@@ -35,21 +36,43 @@
               set my textContent to 'Clone Repo' then 
               remove .btn-success from me then 
               add .btn-primary to me">Clone Repo</button>
-            button
-          </li>
-          <li>Create files and folders for your project</li>
-          <li>
-            Run <code class="bg-neutral/40 rounded-box px-2 py-1">git add .</code> to stage your changes
-          </li>
-          <li>
-            Run <code class="bg-neutral/40 rounded-box px-2 py-1">git commit -m "Initial commit"</code> to commit your
-            changes
-          </li>
-          <li>
-            Run <code class="bg-neutral/40 rounded-box px-2 py-1">git push -u origin main</code> to push your changes
-            to The Skyscape
-          </li>
-        </ul>
+              button
+            </li>
+            <li>Create files and folders for your project</li>
+            <li>
+              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git add .</code> to stage your changes
+            </li>
+            <li>
+              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git commit -m "Initial commit"</code> to commit your
+              changes
+            </li>
+            <li>
+              Run <code class="bg-neutral/40 rounded-box px-2 py-1">git push -u origin main</code> to push your changes
+              to The Skyscape
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card bg-primary/20 shadow-primary shadow-xl border-2 border-primary/50 h-max md:max-w-lg w-full">
+        <div class="card-body" hx-boost="true">
+          <div class="card-title">Need Help Getting Started?</div>
+          <p class="text-base font-medium opacity-80">
+            Checkout the <a href="{{host}}/repo/skykit" class="text-info underline">Skykit</a> repo
+            for an open source framework for building apps with the same philosophy as The Skyscape.
+          </p>
+
+          <a target="_blank" href="{{host}}/repo/skykit" class="btn btn-primary opacity-80 btn-sm mt-8">
+            Open Repo
+
+            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+              stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
+        </div>
       </div>
     </div>
     {{else}}

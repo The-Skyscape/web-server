@@ -14,6 +14,25 @@
       <span class="text-sm font-semibold opacity-60 capitalize">
         {{$.Action}}
       </span>
+
+      {{$user := auth.CurrentUser}}
+      {{if and $user (eq $user.ID .ID)}}
+      <div class="dropdown dropdown-end ml-auto">
+        <div tabindex="0" role="button" class="btn btn-ghost">
+          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true"
+            height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z">
+            </path>
+          </svg>
+        </div>
+
+        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+          <li><a hx-confirm="Are you sure you want to delete this post?" hx-delete="{{host}}/feed/{{$.ID}}">Delete</a>
+          </li>
+        </ul>
+      </div>
+      {{end}}
+
     </div>
     {{end}}
 

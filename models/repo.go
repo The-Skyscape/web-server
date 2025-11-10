@@ -26,6 +26,7 @@ type Repo struct {
 	OwnerID     string
 	Name        string
 	Description string
+	Archived    bool
 }
 
 func NewRepo(ownerID, name, description string) (*Repo, error) {
@@ -34,6 +35,7 @@ func NewRepo(ownerID, name, description string) (*Repo, error) {
 		OwnerID:     ownerID,
 		Name:        name,
 		Description: description,
+		Archived:    false,
 	}
 
 	if _, err := os.Stat(r.Path()); err == nil {

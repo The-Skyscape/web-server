@@ -1,7 +1,7 @@
 {{$owner := .Owner}}
 {{$source := .Repo}}
 
-<label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+<label class="text-xs font-bold opacity-60 -mb-2 tracking-wider">
   Creator
 </label>
 {{with $owner}}
@@ -16,7 +16,7 @@
 </a>
 {{end}}
 
-<label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+<label class="text-xs font-bold opacity-60 -mb-2 tracking-wider">
   Source
 </label>
 {{if and $owner $source}}
@@ -25,9 +25,9 @@
 </a>
 {{end}}
 
-<label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+<label class="text-xs font-bold opacity-60 -mb-2 tracking-wider">
   About This App
 </label>
-<p class="pt-2 px-3 text-base font-semibold opacity">
+<p class="p-3 text-base font-semibold opacity">
   {{.Description}}
 </p>

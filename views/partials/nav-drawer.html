@@ -152,8 +152,12 @@
           Signin To Join
         </h2>
 
-        <a href="{{host}}/" class="btn btn-sm btn-primary mt-4">
+        <a href="{{host}}/" class="btn btn-sm btn-primary mt-4 mb-2">
           Create an Account
+        </a>
+
+        <a href="{{host}}/signin?next={{req.URL.Path}}" class="btn btn-sm btn-ghost">
+          Access Your Account
         </a>
       </div>
     </div>
