@@ -4,7 +4,6 @@
       {{.Name}}
     </h1>
 
-
     <div class="flex items-center gap-2">
       <a target="_blank" href="https://{{.ID}}.skysca.pe" class="btn btn-sm btn-primary">
         Open App
@@ -24,7 +23,9 @@
         <ul tabindex="-1"
           class="dropdown-content menu bg-base-100 rounded-box z-1 mt-2 w-52 p-2 shadow-sm border border-white/20">
           <li>
+            <a _="on click call edit_app_modal.showModal()">Edit</a>
             <a hx-post="{{host}}/app/{{$.ID}}/launch">Relaunch</a>
+            <a hx-delete="{{host}}/app/{{$.ID}}">Shutdown</a>
           </li>
         </ul>
       </div>
@@ -37,3 +38,5 @@
     {{.Description}}
   </p>
 </div>
+
+{{template "edit-app-modal.html" .}}

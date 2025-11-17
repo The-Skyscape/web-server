@@ -2,9 +2,7 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -26,7 +24,9 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("GET /apps", c.Serve("apps.html", auth.Optional))
 	http.Handle("/app/{app}", c.Serve("app.html", auth.Optional))
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
+	http.Handle("POST /app/{app}/edit", c.ProtectFunc(c.update, auth.Required))
 	http.Handle("POST /app/{app}/launch", c.ProtectFunc(c.launch, auth.Required))
+	http.Handle("DELETE /app/{app}", c.ProtectFunc(c.shutdown, auth.Required))
 }
 
 func (c AppsController) Handle(r *http.Request) application.Handler {
@@ -49,6 +49,7 @@ func (c *AppsController) AllApps() []*models.App {
 		INNER JOIN repos on repos.ID = apps.RepoID
 	  INNER JOIN users on users.ID = repos.OwnerID
 		WHERE 
+			apps.Status          != 'shutdown' AND
 			apps.Name            LIKE $1        OR
 			apps.Description     LIKE $1        OR
 			repos.Name           LIKE $1        OR
@@ -65,6 +66,7 @@ func (c *AppsController) RecentApps() []*models.App {
 		INNER JOIN repos on repos.ID = apps.RepoID
 	  INNER JOIN users on users.ID = repos.OwnerID
 		WHERE 
+			apps.Status          != 'shutdown' AND
 			apps.Name            LIKE $1        OR
 			apps.Description     LIKE $1        OR
 			repos.Name           LIKE $1        OR
@@ -101,18 +103,53 @@ func (c *AppsController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-	if _, err = models.Apps.Insert(&models.App{
-		Model:       application.Model{ID: id},
-		Name:        name,
-		Description: description,
-		RepoID:      repo.ID,
-	}); err != nil {
+	app, err := models.NewApp(repo, name, description)
+	if err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
 
-	c.Redirect(w, r, "/app/"+id)
+	c.Redirect(w, r, "/app/"+app.ID)
+}
+
+func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.RenderError(w, r, errors.New("unauthorized"))
+		return
+	}
+
+	app, err := models.Apps.Get(r.PathValue("app"))
+	if err != nil {
+		c.RenderError(w, r, errors.New("app not found"))
+		return
+	}
+
+	repo := app.Repo()
+	if repo == nil || repo.OwnerID != user.ID {
+		c.RenderError(w, r, errors.New("you are not the owner"))
+		return
+	}
+
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+
+	if name == "" || description == "" {
+		c.RenderError(w, r, errors.New("missing name or description"))
+		return
+	}
+
+	// Update app fields
+	app.Name = name
+	app.Description = description
+
+	if err := models.Apps.Update(app); err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	c.Refresh(w, r)
 }
 
 func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
@@ -124,14 +161,12 @@ func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app, err := models.Apps.Get(r.PathValue("app"))
-	log.Println("App:", app)
 	if err != nil {
 		c.Render(w, r, "error-message.html", errors.New("app not found"))
 		return
 	}
 
 	repo := app.Repo()
-	log.Println("Repo:", repo)
 	if repo == nil || repo.OwnerID != user.ID {
 		c.Render(w, r, "error-message.html", errors.New("app not found"))
 		return
@@ -151,4 +186,33 @@ func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
 
 	time.Sleep(time.Millisecond * 100)
 	c.Refresh(w, r)
+}
+
+func (c *AppsController) shutdown(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	app, err := models.Apps.Get(r.PathValue("app"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", errors.New("app not found"))
+		return
+	}
+
+	repo := app.Repo()
+	if repo == nil || repo.OwnerID != user.ID {
+		c.Render(w, r, "error-message.html", errors.New("permission denied"))
+		return
+	}
+
+	app.Status = "shutdown"
+	if err = models.Apps.Update(app); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	c.Redirect(w, r, "/profile")
 }

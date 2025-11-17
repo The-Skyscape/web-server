@@ -25,6 +25,40 @@ type App struct {
 
 func (*App) Table() string { return "apps" }
 
+// LookupAppByID returns an app by ID, or nil if not found
+func LookupAppByID(id string) (*App, error) {
+	return Apps.Get(id)
+}
+
+func NewApp(repo *Repo, name, description string) (*App, error) {
+	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+
+	// Check if an app with this ID already exists
+	if existing, _ := LookupAppByID(id); existing != nil {
+		return nil, errors.New("an app with this ID already exists")
+	}
+
+	app := &App{
+		Model:       application.Model{ID: id},
+		Name:        name,
+		Description: description,
+		RepoID:      repo.ID,
+	}
+
+	if _, err := Apps.Insert(app); err != nil {
+		return nil, err
+	}
+
+	Activities.Insert(&Activity{
+		UserID:      repo.OwnerID,
+		Action:      "launched",
+		SubjectType: "app",
+		SubjectID:   app.ID,
+	})
+
+	return app, nil
+}
+
 func (a *App) Repo() *Repo {
 	repo, err := Repos.Get(a.RepoID)
 	if err != nil {
