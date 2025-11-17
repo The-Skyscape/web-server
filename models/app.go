@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -31,7 +32,17 @@ func LookupAppByID(id string) (*App, error) {
 }
 
 func NewApp(repo *Repo, name, description string) (*App, error) {
+	// Generate ID from name, sanitizing to only allow safe characters
 	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+
+	// Remove any characters that aren't alphanumeric, hyphens, or underscores
+	// This prevents command injection and path traversal attacks
+	id = regexp.MustCompile(`[^a-z0-9_-]+`).ReplaceAllString(id, "")
+
+	// Ensure ID isn't empty after sanitization
+	if id == "" {
+		return nil, errors.New("app name must contain at least one alphanumeric character")
+	}
 
 	// Check if an app with this ID already exists
 	if existing, _ := LookupAppByID(id); existing != nil {
