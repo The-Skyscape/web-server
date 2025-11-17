@@ -23,6 +23,7 @@ func (c *FeedController) Setup(app *application.App) {
 	http.Handle("/", app.Serve("tbd.html", auth.Required))
 	http.Handle("/{$}", app.ProtectFunc(c.serveFeed, auth.Optional))
 	http.Handle("/explore", app.Serve("explore.html", auth.Optional))
+	http.Handle("/manifesto", app.Serve("manifesto.html", auth.Optional))
 	http.Handle("DELETE /feed/{post}", c.ProtectFunc(c.deletePost, auth.Required))
 }
 

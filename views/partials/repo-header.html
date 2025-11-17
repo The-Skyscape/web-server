@@ -18,7 +18,7 @@
   </a>
 
   <button class="btn btn-sm btn-primary ml-auto hidden md:flex" _="on click 
-        call navigator.clipboard.writeText('git clone https://web.skysca.pe/repo/{{.ID}}') then 
+        call navigator.clipboard.writeText('git clone https://theskyscape.com/repo/{{.ID}}') then 
         set my textContent to 'Copied ✓' then 
         remove .btn-primary from me then
         add .btn-success to me then 
@@ -39,7 +39,8 @@
       </svg>
     </div>
 
-    <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 mt-2 w-52 p-2 shadow-sm border border-white/20">
+    <ul tabindex="-1"
+      class="dropdown-content menu bg-base-100 rounded-box z-1 mt-2 w-52 p-2 shadow-sm border border-white/20">
       <li><a hx-confirm="Are you sure you want to delete this repo?" hx-delete="{{host}}/repo/{{.ID}}">Archive</a></li>
     </ul>
   </div>

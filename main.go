@@ -16,13 +16,13 @@ var views embed.FS
 //go:embed all:emails
 var emails embed.FS
 
-func init() {
-	if err := models.Emails.LoadTemplates(emails); err != nil {
-		log.Fatal("Failed to load email templates:", err)
-	}
-}
-
 func main() {
+	go func() {
+		if err := models.Emails.LoadTemplates(emails); err != nil {
+			log.Fatal("Failed to load email templates:", err)
+		}
+	}()
+
 	_, auth := controllers.Auth()
 	application.Serve(views,
 		application.WithDaisyTheme("dark"),

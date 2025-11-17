@@ -41,3 +41,12 @@ func (a *Activity) Repo() *Repo {
 
 	return repo
 }
+
+func (a *Activity) App() *App {
+	app, err := Apps.Get(a.SubjectID)
+	if err != nil {
+		return nil
+	}
+
+	return app
+}

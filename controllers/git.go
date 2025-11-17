@@ -58,9 +58,9 @@ func (c *GitController) GitServer() *gitkit.Server {
 
 		var user *authentication.User
 		if user, err = models.Auth.Users.First(`WHERE handle = ?`, creds.Username); err != nil {
-			return false, errors.New("invalid username or password " + creds.Username + " " + err.Error())
+			return false, errors.New("invalid username or password")
 		} else if !user.VerifyPassword(creds.Password) {
-			return false, errors.New("invalid username or password " + creds.Password)
+			return false, errors.New("invalid username or password")
 		} else {
 			log.Printf("User auth successful for %s", creds.Username)
 		}
@@ -71,7 +71,7 @@ func (c *GitController) GitServer() *gitkit.Server {
 			return false, errors.New("repository not found")
 		}
 
-		if isPush && repo.OwnerID != user.ID {
+		if isPush && (repo.OwnerID != user.ID && !user.IsAdmin) {
 			return false, errors.New("only owner can push to their repos")
 		}
 

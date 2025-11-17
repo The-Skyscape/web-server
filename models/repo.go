@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -19,8 +20,6 @@ import (
 	"github.com/yuin/goldmark"
 )
 
-func (*Repo) Table() string { return "repos" }
-
 type Repo struct {
 	application.Model
 	OwnerID     string
@@ -29,9 +28,16 @@ type Repo struct {
 	Archived    bool
 }
 
+func (*Repo) Table() string { return "repos" }
+
 func NewRepo(ownerID, name, description string) (*Repo, error) {
+	id := strings.ToLower(name)
+	id = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(id, "-")
+	id = regexp.MustCompile(`-+`).ReplaceAllString(id, "-")
+	id = strings.Trim(id, "-")
+
 	r := &Repo{
-		Model:       database.Model{ID: strings.ReplaceAll(strings.ToLower(name), " ", "-")},
+		Model:       database.Model{ID: id},
 		OwnerID:     ownerID,
 		Name:        name,
 		Description: description,

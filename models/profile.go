@@ -20,7 +20,9 @@ func (p *Profile) Apps() []*App {
 	apps, _ := Apps.Search(`
 		JOIN repos ON repos.ID = apps.RepoID
 		WHERE repos.OwnerID = ?
-		ORDER BY apps.CreatedAt DESC
+			AND apps.Status != 'shutdown'
+		ORDER BY
+			apps.CreatedAt DESC
 	`, p.UserID)
 	return apps
 }

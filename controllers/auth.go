@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -45,7 +46,12 @@ func Auth() (string, *AuthController) {
 
 						// Notify other users that The Skyscape has grown
 						users, _ := models.Auth.Users.Search("WHERE ID != ?", user.ID)
+						peopleWhoComplain := []string{}
 						for _, u := range users {
+							if slices.Contains(peopleWhoComplain, u.Handle) {
+								continue
+							}
+
 							models.Emails.Send(u.Email,
 								"The Skyscape Has Grown",
 								emailing.WithTemplate("new-user.html"),
