@@ -26,6 +26,7 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
 	http.Handle("POST /app/{app}/edit", c.ProtectFunc(c.update, auth.Required))
 	http.Handle("POST /app/{app}/launch", c.ProtectFunc(c.launch, auth.Required))
+	http.Handle("POST /apps/{app}/promote", c.ProtectFunc(c.promoteApp, auth.Required))
 	http.Handle("DELETE /app/{app}", c.ProtectFunc(c.shutdown, auth.Required))
 }
 
@@ -65,7 +66,7 @@ func (c *AppsController) RecentApps() []*models.App {
 	apps, _ := models.Apps.Search(`
 		INNER JOIN repos on repos.ID = apps.RepoID
 	  INNER JOIN users on users.ID = repos.OwnerID
-		WHERE 
+		WHERE
 			apps.Status          != 'shutdown' AND
 			apps.Name            LIKE $1        OR
 			apps.Description     LIKE $1        OR
@@ -73,7 +74,7 @@ func (c *AppsController) RecentApps() []*models.App {
 			repos.Description    LIKE $1        OR
 			users.Handle         LIKE LOWER($1)
 		ORDER BY repos.CreatedAt DESC
-		LIMIT 4
+		LIMIT 3
 	`, "%"+query+"%")
 	return apps
 }
@@ -215,4 +216,33 @@ func (c *AppsController) shutdown(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Redirect(w, r, "/profile")
+}
+
+func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	app, err := models.Apps.Get(r.PathValue("app"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	content := r.FormValue("content")
+	if _, err = models.Activities.Insert(&models.Activity{
+		UserID:      user.ID,
+		Action:      "promoted",
+		SubjectType: "app",
+		SubjectID:   app.ID,
+		Content:     content,
+	}); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	c.Redirect(w, r, "/")
 }

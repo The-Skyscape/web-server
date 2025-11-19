@@ -10,7 +10,7 @@
       </a>
 
       {{$user := auth.CurrentUser}}
-      {{if and $user (eq $user.ID .Owner.ID)}}
+      {{if $user}}
       <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-ghost">
           <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true"
@@ -23,9 +23,19 @@
         <ul tabindex="-1"
           class="dropdown-content menu bg-base-100 rounded-box z-30 mt-2 w-52 p-2 shadow-sm border border-white/20">
           <li>
+            <a _="on click
+              call navigator.clipboard.writeText('https://theskyscape.com/app/{{$.ID}}') then
+              set my textContent to 'Copied ✓' then
+              wait 2s then
+              set my textContent to 'Share'">
+              Share
+            </a>
+            <a _="on click call promote_app_modal.showModal()">Promote</a>
+            {{if eq $user.ID $.Owner.ID}}
             <a _="on click call edit_app_modal.showModal()">Edit</a>
             <a hx-post="{{host}}/app/{{$.ID}}/launch">Relaunch</a>
             <a hx-delete="{{host}}/app/{{$.ID}}">Shutdown</a>
+            {{end}}
           </li>
         </ul>
       </div>

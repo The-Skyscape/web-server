@@ -11,6 +11,7 @@ type Activity struct {
 	Action      string
 	SubjectType string
 	SubjectID   string
+	Content     string
 }
 
 func (*Activity) Table() string { return "activities" }

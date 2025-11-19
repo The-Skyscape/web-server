@@ -36,6 +36,11 @@
     </div>
     {{end}}
 
+    {{if $.Content}}
+    <p class="px-4 pb-2 text-base opacity-80">
+      {{$.Content}}
+    </p>
+    {{end}}
 
     <ul class="menu gap-2 w-full p-0 rounded-box border border-neutral/40" hx-boost="true">
       {{with .Repo}}

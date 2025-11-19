@@ -4,21 +4,25 @@
   {{template "includes.html"}}
 
   <title>Discover Apps | The Skyscape App Hosting</title>
-  <meta name="description" content="Explore apps built and deployed by The Skyscape community. See what developers are building, get inspiration, and discover innovative applications powered by our platform.">
-  <meta name="keywords" content="app hosting, deployed apps, web applications, developer apps, cloud hosting, app deployment, community apps">
+  <meta name="description"
+    content="Explore apps built and deployed by The Skyscape community. See what developers are building, get inspiration, and discover innovative applications powered by our platform.">
+  <meta name="keywords"
+    content="app hosting, deployed apps, web applications, developer apps, cloud hosting, app deployment, community apps">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.theskyscape.com/apps">
   <meta property="og:title" content="Discover Apps | The Skyscape App Hosting">
-  <meta property="og:description" content="Explore apps built and deployed by The Skyscape community. See what developers are building and discover innovative applications.">
+  <meta property="og:description"
+    content="Explore apps built and deployed by The Skyscape community. See what developers are building and discover innovative applications.">
   <meta property="og:image" content="https://www.theskyscape.com/public/background.png">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://www.theskyscape.com/apps">
   <meta property="twitter:title" content="Discover Apps | The Skyscape App Hosting">
-  <meta property="twitter:description" content="Explore apps built and deployed by The Skyscape community. See what developers are building and discover innovative applications.">
+  <meta property="twitter:description"
+    content="Explore apps built and deployed by The Skyscape community. See what developers are building and discover innovative applications.">
   <meta property="twitter:image" content="https://www.theskyscape.com/public/background.png">
 
   <!-- Canonical URL -->
@@ -53,7 +57,7 @@
     </label>
   </div>
 
-  <div id="repo-cards" class="max-w-screen-xl flex flex-wrap gap-6 w-full mx-auto relative z-20 px-7 py-12"
+  <div id="repo-cards" class="max-w-screen-xl flex flex-wrap gap-9 w-full mx-auto relative z-20 px-7 py-12"
     hx-boost="true">
     {{range apps.AllApps}}
     {{template "app-card.html" .}}
