@@ -28,9 +28,9 @@ func (c *OAuthController) Setup(app *application.App) {
 	auth := c.Use("auth").(*AuthController)
 
 	// Authorization flow
-	http.Handle("GET /oauth/authorize", c.Serve("oauth/authorize.html", auth.Required))
+	http.Handle("GET /oauth/authorize", c.Serve("authorize.html", auth.Required))
 	http.Handle("POST /oauth/authorize", c.ProtectFunc(c.authorize, auth.Required))
-	http.Handle("POST /oauth/token", http.HandlerFunc(c.token))
+	http.Handle("POST /oauth/token", c.ProtectFunc(c.token, auth.Required))
 
 	// OAuth client management for apps
 	http.Handle("GET /app/{app}/users", c.Serve("app-users.html", auth.Required))
@@ -43,106 +43,53 @@ func (c OAuthController) Handle(r *http.Request) application.Handler {
 	return &c
 }
 
-// AuthorizeParams holds the authorization request parameters
-type AuthorizeParams struct {
-	ClientID     string
-	RedirectURI  string
-	ResponseType string
-	Scope        string
-	State        string
-}
-
-// ParseAuthorizeParams parses and validates authorization request parameters
-func (c *OAuthController) ParseAuthorizeParams() (*AuthorizeParams, error) {
-	params := &AuthorizeParams{
-		ClientID:     c.URL.Query().Get("client_id"),
-		RedirectURI:  c.URL.Query().Get("redirect_uri"),
-		ResponseType: c.URL.Query().Get("response_type"),
-		Scope:        c.URL.Query().Get("scope"),
-		State:        c.URL.Query().Get("state"),
-	}
-
-	if params.ClientID == "" {
-		return nil, errors.New("client_id is required")
-	}
-
-	if params.RedirectURI == "" {
-		return nil, errors.New("redirect_uri is required")
-	}
-
-	if params.ResponseType != "code" {
-		return nil, errors.New("response_type must be 'code'")
-	}
-
-	if params.Scope == "" {
-		params.Scope = "user:read" // Default scope
-	}
-
-	return params, nil
-}
-
 // CurrentApp returns the app for the current OAuth request (client_id = app_id)
 func (c *OAuthController) CurrentApp() *models.App {
-	params, err := c.ParseAuthorizeParams()
-	if err != nil {
+	clientID := c.URL.Query().Get("client_id")
+	if clientID == "" {
 		return nil
 	}
 
-	app, err := models.Apps.Get(params.ClientID)
-	if err != nil {
-		return nil
-	}
-
+	app, _ := models.Apps.Get(clientID)
 	return app
-}
-
-// ExistingAuthorization returns the user's existing authorization for this client
-func (c *OAuthController) ExistingAuthorization() *models.OAuthAuthorization {
-	auth := c.Use("auth").(*AuthController)
-	user, _, _ := auth.Authenticate(c.Request)
-	if user == nil {
-		return nil
-	}
-
-	params, err := c.ParseAuthorizeParams()
-	if err != nil {
-		return nil
-	}
-
-	existing, err := models.OAuthAuthorizations.First(
-		"WHERE UserID = ? AND ClientID = ? AND RevokedAt IS NULL",
-		user.ID, params.ClientID,
-	)
-	if err != nil {
-		return nil
-	}
-
-	return existing
 }
 
 // RequestedScopes returns the scopes being requested
 func (c *OAuthController) RequestedScopes() []string {
-	params, _ := c.ParseAuthorizeParams()
-	if params == nil {
-		return []string{}
+	scope := c.URL.Query().Get("scope")
+	if scope == "" {
+		scope = "user:read"
 	}
-
-	return strings.Split(params.Scope, " ")
+	return strings.Split(scope, " ")
 }
 
 // ScopesMatch checks if requested scopes match existing authorization
 func (c *OAuthController) ScopesMatch() bool {
-	existing := c.ExistingAuthorization()
-	if existing == nil {
+	auth := c.Use("auth").(*AuthController)
+	user, _, _ := auth.Authenticate(c.Request)
+	if user == nil {
 		return false
 	}
 
-	params, _ := c.ParseAuthorizeParams()
-	if params == nil {
+	clientID := c.URL.Query().Get("client_id")
+	if clientID == "" {
 		return false
 	}
 
-	return existing.Scopes == params.Scope
+	existing, err := models.OAuthAuthorizations.First(
+		"WHERE UserID = ? AND ClientID = ? AND RevokedAt IS NULL",
+		user.ID, clientID,
+	)
+	if err != nil {
+		return false
+	}
+
+	scope := c.URL.Query().Get("scope")
+	if scope == "" {
+		scope = "user:read"
+	}
+
+	return existing.Scopes == scope
 }
 
 // authorize handles the authorization consent submission
@@ -155,50 +102,61 @@ func (c *OAuthController) authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse parameters
-	params, err := c.ParseAuthorizeParams()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	clientID := r.URL.Query().Get("client_id")
+	redirectURI := r.URL.Query().Get("redirect_uri")
+	responseType := r.URL.Query().Get("response_type")
+	scope := r.URL.Query().Get("scope")
+	state := r.URL.Query().Get("state")
+
+	if clientID == "" || redirectURI == "" {
+		http.Error(w, "Missing client_id or redirect_uri", http.StatusBadRequest)
 		return
 	}
 
+	if responseType != "code" {
+		http.Error(w, "response_type must be 'code'", http.StatusBadRequest)
+		return
+	}
+
+	if scope == "" {
+		scope = "user:read"
+	}
+
 	// Get and validate app (client_id = app_id)
-	app, err := models.Apps.Get(params.ClientID)
+	app, err := models.Apps.Get(clientID)
 	if err != nil {
 		http.Error(w, "Invalid client_id", http.StatusBadRequest)
 		return
 	}
 
 	// Validate redirect URI matches opinionated format
-	expectedRedirectURI := app.RedirectURI()
-	if params.RedirectURI != expectedRedirectURI {
+	if redirectURI != app.RedirectURI() {
 		http.Error(w, "Invalid redirect_uri", http.StatusBadRequest)
 		return
 	}
 
 	// Check if user denied
 	if r.FormValue("action") == "deny" {
-		redirectURL := fmt.Sprintf("%s?error=access_denied&state=%s",
-			params.RedirectURI, url.QueryEscape(params.State))
+		redirectURL := fmt.Sprintf("%s?error=access_denied&state=%s", redirectURI, url.QueryEscape(state))
 		c.Redirect(w, r, redirectURL)
 		return
 	}
 
 	// Create or update authorization
-	if _, err := models.CreateOrUpdateAuthorization(user.ID, params.ClientID, params.Scope); err != nil {
+	if _, err := models.CreateOrUpdateAuthorization(user.ID, clientID, scope); err != nil {
 		http.Error(w, "Failed to create authorization", http.StatusInternalServerError)
 		return
 	}
 
 	// Generate authorization code
-	code, err := models.CreateAuthorizationCode(params.ClientID, user.ID, params.RedirectURI, params.Scope)
+	code, err := models.CreateAuthorizationCode(clientID, user.ID, redirectURI, scope)
 	if err != nil {
 		http.Error(w, "Failed to generate authorization code", http.StatusInternalServerError)
 		return
 	}
 
 	// Redirect back to client with code
-	redirectURL := fmt.Sprintf("%s?code=%s&state=%s",
-		params.RedirectURI, url.QueryEscape(code), url.QueryEscape(params.State))
+	redirectURL := fmt.Sprintf("%s?code=%s&state=%s", redirectURI, url.QueryEscape(code), url.QueryEscape(state))
 	c.Redirect(w, r, redirectURL)
 }
 

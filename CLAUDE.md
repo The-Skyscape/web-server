@@ -317,7 +317,7 @@ CREATE TABLE oauth_authorization_codes (
 ```
 
 **Views:**
-- `views/oauth/authorize.html` - OAuth consent screen with app details and scope descriptions
+- `views/authorize.html` - OAuth consent screen with app details and scope descriptions
 - `views/app-users.html` - User directory showing authorized users per app
 - `views/partials/app-oauth-settings.html` - OAuth settings panel for app owners
 - `views/modals/oauth-*.html` - Modals for OAuth client management
