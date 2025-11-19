@@ -8,9 +8,8 @@ import (
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
-	"www.theskyscape.com/models"
-
 	"github.com/sosedoff/gitkit"
+	"www.theskyscape.com/models"
 )
 
 func Git() (string, *GitController) {
@@ -24,7 +23,7 @@ type GitController struct {
 func (c *GitController) Setup(app *application.App) {
 	c.Controller.Setup(app)
 
-	http.Handle("/repo/", http.StripPrefix("/repo/", c.GitServer()))
+	http.Handle("/repo/", http.StripPrefix("/repo/", c.gitServer()))
 }
 
 func (c GitController) Handle(r *http.Request) application.Handler {
@@ -32,9 +31,9 @@ func (c GitController) Handle(r *http.Request) application.Handler {
 	return &c
 }
 
-// InitGitServer initializes the gitkit server with authentication
+// gitServer initializes the gitkit server with authentication
 // This handles git clone, push, pull operations via HTTP
-func (c *GitController) GitServer() *gitkit.Server {
+func (c *GitController) gitServer() *gitkit.Server {
 	git := gitkit.New(gitkit.Config{
 		Dir:        "/mnt/git-repos",
 		AutoCreate: true,

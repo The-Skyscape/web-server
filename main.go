@@ -36,5 +36,6 @@ func main() {
 		application.WithController(controllers.Files()),
 		application.WithController(controllers.Apps()),
 		application.WithController(controllers.Comments()),
+		application.WithController(controllers.SEO()),
 	)
 }

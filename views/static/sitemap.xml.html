@@ -1,0 +1,54 @@
+{{define "sitemap.xml"}}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.theskyscape.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.theskyscape.com/users</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.theskyscape.com/repos</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.theskyscape.com/apps</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.theskyscape.com/manifesto</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  {{range profile.AllProfiles}}
+  {{with $user := .User}}
+  <url>
+    <loc>https://www.theskyscape.com/user/{{$user.Handle}}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  {{end}}
+  {{end}}
+
+  {{range repos.AllRepos}}
+  <url>
+    <loc>https://www.theskyscape.com/repo/{{.ID}}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  {{end}}
+
+  {{range apps.AllApps}}
+  <url>
+    <loc>https://www.theskyscape.com/app/{{.ID}}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  {{end}}
+</urlset>
+{{end}}
