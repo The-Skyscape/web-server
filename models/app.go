@@ -46,23 +46,13 @@ func NewApp(repo *Repo, name, description string) (*App, error) {
 		return nil, errors.New("an app with this ID already exists")
 	}
 
-	// Generate OAuth client secret
-	secret, err := GenerateRandomToken(32)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate OAuth secret")
-	}
-
-	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to hash OAuth secret")
-	}
-
+	// OAuth client secret will be generated on first deployment
 	app := &App{
 		Model:             application.Model{ID: id},
 		Name:              name,
 		Description:       description,
 		RepoID:            repo.ID,
-		OAuthClientSecret: string(hashedSecret),
+		OAuthClientSecret: "", // Will be set during deployment
 	}
 
 	if _, err := Apps.Insert(app); err != nil {
