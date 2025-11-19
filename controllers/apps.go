@@ -44,6 +44,16 @@ func (c *AppsController) CurrentApp() *models.App {
 	return app
 }
 
+func (c *AppsController) AuthorizedUsers() []*models.OAuthAuthorization {
+	app := c.CurrentApp()
+	if app == nil {
+		return nil
+	}
+
+	auths, _ := models.OAuthAuthorizations.Search("WHERE ClientID = ? AND RevokedAt IS NULL", app.ID)
+	return auths
+}
+
 func (c *AppsController) AllApps() []*models.App {
 	query := c.URL.Query().Get("query")
 	apps, _ := models.Apps.Search(`
@@ -246,3 +256,4 @@ func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
 
 	c.Redirect(w, r, "/")
 }
+

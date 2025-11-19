@@ -64,11 +64,14 @@ DB = remote.Database("website.db", os.Getenv("DB_URL"), os.Getenv("DB_TOKEN"))
 **Models** (`models/` directory):
 - `Profile` - User profiles with description, linked to auth users
 - `Repo` - Git repositories with owners, stored at `/mnt/git-repos/{id}`
-- `App` - Deployed applications linked to repositories
-- `Activity` - Activity feed entries (joined, created, launched, etc.)
+- `App` - Deployed applications linked to repositories (includes OAuth fields)
+- `Activity` - Activity feed entries (joined, created, launched, promoted, etc.) with optional Content field
 - `Comment` - Comments on repositories
 - `File` / `Image` - File metadata and images
 - `ResetPasswordToken` - Password recovery tokens
+- `OAuthClient` - OAuth 2.0 client credentials for apps
+- `OAuthAuthorization` - User authorizations for OAuth apps
+- `OAuthAuthorizationCode` - Short-lived authorization codes for OAuth flow
 - `Emails` - Email template management
 
 Each model embeds `application.Model` (provides ID, timestamps) and implements `Table()` method.
@@ -77,11 +80,13 @@ Each model embeds `application.Model` (provides ID, timestamps) and implements `
 - `Auth` - Authentication, signup, signin, password reset
 - `Feed` - Activity feed, homepage, explore page, manifesto
 - `Profile` - User profile management
-- `Repos` - Repository creation, browsing, commenting, deletion
+- `Repos` - Repository creation, browsing, commenting, deletion, promotion
 - `Files` - File browsing within repositories
 - `Git` - Git HTTP server for clone/push/pull operations
-- `Apps` - Application deployment from repositories
+- `Apps` - Application deployment from repositories, promotion
 - `Comments` - Comment management
+- `OAuth` - OAuth 2.0 authorization flow and client management
+- `API` - RESTful API endpoints with JWT authentication
 - `SEO` - Search engine optimization and metadata
 
 Controllers embed `application.Controller` and follow the devtools pattern:
@@ -206,6 +211,117 @@ Both support:
 - `AllRepos()` / `AllApps()` - All results
 - `RecentRepos()` / `RecentApps()` - Limited to 4 most recent
 
+### OAuth 2.0 Integration
+
+The platform implements **OAuth 2.0 Authorization Code flow** allowing deployed apps to access user data via The Skyscape API. This enables apps to integrate with user profiles, repositories, and apps data.
+
+**OAuth Models** (`models/oauth.go`):
+- `OAuthClient` - OAuth client credentials per app (bcrypt-hashed secret, redirect URI, allowed scopes)
+- `OAuthAuthorization` - User authorizations for apps (tracks scopes, revocation status)
+- `OAuthAuthorizationCode` - Short-lived authorization codes (SHA-256 hashed, 10-minute expiration)
+
+**OAuth Controller** (`controllers/oauth.go`):
+- `GET /oauth/authorize` - Authorization consent screen
+- `POST /oauth/authorize` - Approve/deny authorization
+- `POST /oauth/token` - Exchange authorization code for access token
+- `GET /app/{app}/users` - View authorized users (app owners only)
+- OAuth client management routes (enable, regenerate secret, disable, revoke users)
+
+**API Controller** (`controllers/api.go`):
+- `GET /api/user` - Returns authenticated user profile as JSON
+- JWT access token validation with revocation checking
+- Scopes: `user:read`, `user:write`, `repo:read`, `repo:write`, `app:read`, `app:write`
+
+**OAuth Flow:**
+1. App redirects user to `/oauth/authorize?client_id={app_id}&redirect_uri={uri}&response_type=code&scope={scopes}&state={state}`
+2. User sees consent screen showing app details and requested permissions
+3. User approves → authorization code generated and redirected to app
+4. App exchanges code for JWT access token at `/oauth/token` endpoint
+5. App uses JWT to call API endpoints (e.g., `GET /api/user`)
+6. API validates JWT and checks authorization hasn't been revoked
+
+**Token Security:**
+- Authorization codes: SHA-256 hashed, 10-minute expiration, single-use
+- Client secrets: bcrypt hashed, regeneratable
+- Access tokens: JWT signed with `AUTH_SECRET`, 30-day expiration
+- Revocation: Checking authorization table on every API request
+
+**App Owner Controls:**
+- Enable OAuth in app settings (generates client ID and secret)
+- Regenerate client secret if compromised
+- View authorized users with their scopes
+- Revoke individual user authorizations
+- Disable OAuth completely
+
+**Example Integration (Skykit):**
+```go
+// Redirect to authorization
+redirectURL := fmt.Sprintf(
+    "%s/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=user:read&state=%s",
+    skyscapeHost, clientID, redirectURI, state,
+)
+
+// Exchange code for token
+resp := POST("%s/oauth/token", skyscapeHost, {
+    "grant_type": "authorization_code",
+    "code": authCode,
+    "redirect_uri": redirectURI,
+    "client_id": clientID,
+    "client_secret": clientSecret,
+})
+accessToken := resp["access_token"]
+
+// Call API
+user := GET("%s/api/user", skyscapeHost, {
+    "Authorization": "Bearer " + accessToken,
+})
+```
+
+**Database Schema:**
+```sql
+-- OAuth clients (one per app when enabled)
+CREATE TABLE oauth_clients (
+    ID            TEXT PRIMARY KEY,
+    AppID         TEXT NOT NULL,
+    ClientSecret  TEXT NOT NULL,  -- bcrypt hashed
+    RedirectURI   TEXT NOT NULL,
+    AllowedScopes TEXT NOT NULL,
+    CreatedAt     TIMESTAMP,
+    UpdatedAt     TIMESTAMP
+);
+
+-- User authorizations (tracks who authorized which app)
+CREATE TABLE oauth_authorizations (
+    ID         TEXT PRIMARY KEY,
+    UserID     TEXT NOT NULL,
+    ClientID   TEXT NOT NULL,
+    Scopes     TEXT NOT NULL,
+    RevokedAt  TIMESTAMP,
+    CreatedAt  TIMESTAMP,
+    UpdatedAt  TIMESTAMP
+);
+
+-- Authorization codes (short-lived, exchanged for tokens)
+CREATE TABLE oauth_authorization_codes (
+    ID          TEXT PRIMARY KEY,
+    ClientID    TEXT NOT NULL,
+    UserID      TEXT NOT NULL,
+    Code        TEXT NOT NULL,  -- SHA-256 hashed
+    RedirectURI TEXT NOT NULL,
+    Scopes      TEXT NOT NULL,
+    ExpiresAt   TIMESTAMP NOT NULL,
+    Used        BOOLEAN DEFAULT FALSE,
+    CreatedAt   TIMESTAMP,
+    UpdatedAt   TIMESTAMP
+);
+```
+
+**Views:**
+- `views/oauth/authorize.html` - OAuth consent screen with app details and scope descriptions
+- `views/app-users.html` - User directory showing authorized users per app
+- `views/partials/app-oauth-settings.html` - OAuth settings panel for app owners
+- `views/modals/oauth-*.html` - Modals for OAuth client management
+
 ## Important File Locations
 
 - **Entry point:** `main.go` - Application initialization and controller registration
@@ -214,6 +330,11 @@ Both support:
 - **Auth logic:** `controllers/auth.go` - Custom signup/signin handlers
 - **Repository model:** `models/repo.go` - Git repo initialization and file operations
 - **App model:** `models/app.go` - Application deployment and ID sanitization
+- **Activity model:** `models/activity.go` - Activity feed with promotional content
+- **OAuth models:** `models/oauth.go` - OAuth client, authorization, and code models
+- **OAuth controller:** `controllers/oauth.go` - OAuth 2.0 authorization flow and management
+- **API controller:** `controllers/api.go` - RESTful API with JWT validation
+- **JSON helpers:** `controllers/helpers.go` - JSON response utilities
 - **Activity feed:** `controllers/feed.go` - Homepage and activity stream
 
 ## Environment Variables
@@ -234,6 +355,7 @@ The application depends on:
 - `github.com/sosedoff/gitkit` - Git HTTP server
 - `github.com/yuin/goldmark` - Markdown rendering
 - `golang.org/x/crypto` - Password hashing (bcrypt)
+- `github.com/golang-jwt/jwt/v5` - JWT token generation and validation for OAuth
 
 All dependencies managed via `go.mod` with local devtools replacement.
 

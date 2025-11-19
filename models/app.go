@@ -13,15 +13,17 @@ import (
 	"github.com/The-Skyscape/devtools/pkg/authentication"
 	"github.com/The-Skyscape/devtools/pkg/containers"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type App struct {
 	application.Model
-	RepoID      string
-	Name        string
-	Description string
-	Status      string
-	Error       string
+	RepoID            string
+	Name              string
+	Description       string
+	Status            string
+	Error             string
+	OAuthClientSecret string // bcrypt hashed
 }
 
 func (*App) Table() string { return "apps" }
@@ -44,11 +46,23 @@ func NewApp(repo *Repo, name, description string) (*App, error) {
 		return nil, errors.New("an app with this ID already exists")
 	}
 
+	// Generate OAuth client secret
+	secret, err := GenerateRandomToken(32)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate OAuth secret")
+	}
+
+	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to hash OAuth secret")
+	}
+
 	app := &App{
-		Model:       application.Model{ID: id},
-		Name:        name,
-		Description: description,
-		RepoID:      repo.ID,
+		Model:             application.Model{ID: id},
+		Name:              name,
+		Description:       description,
+		RepoID:            repo.ID,
+		OAuthClientSecret: string(hashedSecret),
 	}
 
 	if _, err := Apps.Insert(app); err != nil {
@@ -81,6 +95,19 @@ func (a *App) Owner() *authentication.User {
 	}
 
 	return repo.Owner()
+}
+
+func (a *App) RedirectURI() string {
+	return fmt.Sprintf("https://%s.skysca.pe/auth/callback", a.ID)
+}
+
+func (a *App) AllowedScopes() string {
+	return "user:read"
+}
+
+func (a *App) VerifySecret(secret string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(a.OAuthClientSecret), []byte(secret))
+	return err == nil
 }
 
 func (app *App) Build() (*Image, error) {

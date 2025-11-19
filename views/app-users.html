@@ -1,0 +1,96 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+  <title>{{apps.CurrentApp.Name}} - Authorized Users | The Skyscape</title>
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{with apps.CurrentApp}}
+    {{template "app-header.html" .}}
+
+    <div class="card bg-base-100 shadow-lg w-full">
+      <div class="card-body">
+        <h2 class="card-title text-2xl">Authorized Users</h2>
+        <p class="opacity-80">Users who have granted this app access to their Skyscape data.</p>
+
+        <div class="divider"></div>
+
+        {{with apps.AuthorizedUsers}}
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Scopes</th>
+                <th>Authorized</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .}}
+              <tr>
+                <td>
+                  <div class="flex items-center gap-3">
+                    {{with .User}}
+                    <div class="avatar">
+                      <div class="w-10 rounded-full bg-white/10 border border-white/10">
+                        <img src="{{.Avatar}}" alt="{{.Name}}">
+                      </div>
+                    </div>
+                    <div>
+                      <div class="font-bold">{{.Name}}</div>
+                      <div class="text-sm opacity-50">@{{.Handle}}</div>
+                    </div>
+                    {{end}}
+                  </div>
+                </td>
+                <td>
+                  <div class="flex flex-wrap gap-1">
+                    {{range $scope := split .Scopes " "}}
+                    <span class="badge badge-sm">{{$scope}}</span>
+                    {{end}}
+                  </div>
+                </td>
+                <td>
+                  <span class="text-sm">{{.CreatedAt.Format "Jan 2, 2006"}}</span>
+                </td>
+                <td>
+                  <button
+                    hx-delete="{{host}}/app/{{$.ID}}/users/{{.UserID}}"
+                    hx-confirm="Are you sure you want to revoke this user's access?"
+                    class="btn btn-error btn-xs">
+                    Revoke
+                  </button>
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="text-center py-12">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto opacity-30" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <h3 class="text-lg font-semibold mt-4 opacity-60">No Authorized Users</h3>
+          <p class="opacity-50">No users have authorized this app yet.</p>
+        </div>
+        {{end}}
+      </div>
+    </div>
+
+    {{else}}
+    <h1 class="text-2xl font-semibold">App not found</h1>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

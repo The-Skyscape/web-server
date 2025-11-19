@@ -1,5 +1,6 @@
 {{$owner := .Owner}}
 {{$source := .Repo}}
+{{$user := auth.CurrentUser}}
 
 <label class="text-xs font-bold opacity-60 -mb-2 tracking-wider">
   Creator
@@ -31,3 +32,8 @@
 <p class="p-3 text-base font-semibold opacity">
   {{.Description}}
 </p>
+
+{{if and $user $owner (eq $user.ID $owner.ID)}}
+<div class="divider"></div>
+{{template "app-authorized-users.html" $}}
+{{end}}

@@ -1,0 +1,104 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+  <title>Authorize Application | The Skyscape</title>
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-sm flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12">
+    {{with oauth.CurrentApp}}
+    <div class="card bg-base-100 shadow-xl border border-white/10">
+      <div class="card-body">
+        <h2 class="card-title text-2xl">Authorize Application</h2>
+
+        <div class="divider"></div>
+
+        <div class="flex items-center gap-4 py-4">
+          {{with .Owner}}
+          <div class="avatar">
+            <div class="w-16 p-2 rounded-full bg-white/10 border border-white/10">
+              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+            </div>
+          </div>
+          <div>
+            <h3 class="text-xl font-semibold">{{$.Name}}</h3>
+            <p class="text-sm opacity-60">by @{{.Handle}}</p>
+          </div>
+          {{end}}
+        </div>
+
+        {{with $.Description}}
+        <p class="text-base opacity-80 py-2">{{.}}</p>
+        {{end}}
+
+        <div class="divider"></div>
+
+        {{if oauth.ScopesMatch}}
+        <div class="alert alert-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>You have already authorized this application with the same permissions.</span>
+        </div>
+        {{end}}
+
+        <div class="py-4">
+          <h4 class="font-semibold text-lg mb-3">This application will be able to:</h4>
+          <ul class="space-y-2">
+            {{range oauth.RequestedScopes}}
+            <li class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="font-medium">
+                {{if eq . "user:read"}}Read your profile information{{end}}
+                {{if eq . "user:write"}}Update your profile information{{end}}
+                {{if eq . "repo:read"}}Read your repositories{{end}}
+                {{if eq . "repo:write"}}Create and update repositories{{end}}
+                {{if eq . "app:read"}}Read your applications{{end}}
+                {{if eq . "app:write"}}Create and manage applications{{end}}
+              </span>
+            </li>
+            {{end}}
+          </ul>
+        </div>
+
+        <div class="alert alert-warning">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>Only authorize applications you trust. You can revoke access at any time from the app's user directory.</span>
+        </div>
+
+        <form method="POST" action="{{host}}/oauth/authorize?client_id={{req.URL.Query.Get "client_id"}}&redirect_uri={{req.URL.Query.Get "redirect_uri"}}&response_type={{req.URL.Query.Get "response_type"}}&scope={{req.URL.Query.Get "scope"}}&state={{req.URL.Query.Get "state"}}"
+          class="flex flex-col md:flex-row gap-3 mt-4">
+          <button type="submit" name="action" value="authorize" class="btn btn-primary btn-block md:flex-1">
+            Authorize
+          </button>
+          <button type="submit" name="action" value="deny" class="btn btn-ghost btn-block md:flex-1">
+            Deny
+          </button>
+        </form>
+      </div>
+    </div>
+    {{else}}
+    <div class="card bg-base-100 shadow-xl border border-white/10">
+      <div class="card-body">
+        <h2 class="card-title text-2xl text-error">Invalid Request</h2>
+        <p class="opacity-80">The application you're trying to authorize could not be found.</p>
+        <a href="{{host}}/" class="btn btn-primary mt-4">Return Home</a>
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

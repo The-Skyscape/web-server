@@ -1,0 +1,63 @@
+{{$client := .OAuthClient}}
+{{if $client}}
+<div class="card bg-base-100 shadow-lg w-full">
+  <div class="card-body">
+    <h3 class="card-title">OAuth Integration</h3>
+    <p class="text-sm opacity-60">Your app can access user data via The Skyscape API</p>
+
+    <div class="divider"></div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="label">
+          <span class="label-text font-medium">Client ID</span>
+        </label>
+        <div class="flex gap-2">
+          <input type="text" value="{{.ID}}" readonly class="input input-bordered w-full font-mono text-sm">
+          <button class="btn btn-square" _="on click
+            call navigator.clipboard.writeText('{{.ID}}') then
+            set my innerHTML to '<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; class=&quot;h-6 w-6&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot;><path stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; stroke-width=&quot;2&quot; d=&quot;M5 13l4 4L19 7&quot; /></svg>' then
+            wait 2s then
+            set my innerHTML to '<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; class=&quot;h-6 w-6&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot;><path stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; stroke-width=&quot;2&quot; d=&quot;M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z&quot; /></svg>'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text font-medium">Redirect URI</span>
+        </label>
+        <input type="text" value="{{$client.RedirectURI}}" readonly class="input input-bordered w-full">
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text font-medium">Allowed Scopes</span>
+        </label>
+        <input type="text" value="{{$client.AllowedScopes}}" readonly class="input input-bordered w-full">
+      </div>
+
+      <div class="alert alert-warning">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>Keep your client secret secure. Never commit it to version control or expose it in client-side code.</span>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <a href="{{host}}/app/{{.ID}}/users" class="btn btn-primary btn-sm" hx-boost="true">
+          View Authorized Users
+        </a>
+        <button _="on click call oauth_regenerate_modal.showModal()" class="btn btn-warning btn-sm">
+          Regenerate Secret
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

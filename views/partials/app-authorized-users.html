@@ -1,0 +1,75 @@
+{{$auths := apps.AuthorizedUsers}}
+<div class="flex flex-col gap-2">
+  <label class="text-xs font-bold opacity-60 tracking-wider">
+    Authorized Users
+  </label>
+
+  {{if $auths}}
+  <div class="flex flex-col gap-2">
+    {{range $auths}}
+    {{$user := .User}}
+    {{if $user}}
+    <div class="flex items-center justify-between p-2 rounded-lg bg-base-200">
+      <a href="{{host}}/user/{{$user.Handle}}" class="flex items-center gap-2" hx-boost="true">
+        <div class="avatar">
+          <div class="w-8 rounded-full bg-base-100 p-0.5 border border-white/10">
+            <img src="{{$user.Avatar}}" alt="{{$user.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-medium">{{$user.Name}}</span>
+          <span class="text-xs opacity-60">@{{$user.Handle}}</span>
+        </div>
+      </a>
+      <button
+        hx-delete="{{host}}/app/{{$.ID}}/users/{{$user.ID}}"
+        hx-confirm="Revoke access for {{$user.Name}}?"
+        class="btn btn-ghost btn-sm text-error">
+        Revoke
+      </button>
+    </div>
+    {{end}}
+    {{end}}
+  </div>
+  {{else}}
+  <div class="card bg-base-200 border border-white/10 shadow-lg">
+    <div class="card-body gap-4">
+      <h3 class="font-bold text-lg">Getting Started with OAuth</h3>
+
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-sm">1. Add the OAuth flow to your app</span>
+          <p class="text-sm opacity-80">Redirect users to the authorization endpoint when they want to connect their Skyscape account.</p>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-sm">2. Authorization URL</span>
+          <div class="mockup-code bg-base-300 text-xs">
+            <pre><code>{{host}}/oauth/authorize?
+  client_id={{$.ID}}
+  &redirect_uri={{$.RedirectURI}}
+  &response_type=code
+  &scope=user:read
+  &state=YOUR_STATE</code></pre>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-sm">3. Exchange code for access token</span>
+          <p class="text-sm opacity-80">After the user authorizes, exchange the authorization code for an access token at <code class="bg-base-300 px-1 rounded">POST {{host}}/oauth/token</code> using Basic Auth with your client ID and secret.</p>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-sm">4. Access user data</span>
+          <p class="text-sm opacity-80">Use the access token to call <code class="bg-base-300 px-1 rounded">GET {{host}}/api/user</code> with the <code class="bg-base-300 px-1 rounded">Authorization: Bearer</code> header.</p>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-sm">5. Get your client secret</span>
+          <p class="text-sm opacity-80">Your OAuth client secret is automatically available as the <code class="bg-base-300 px-1 rounded">OAUTH_CLIENT_SECRET</code> environment variable in your app.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {{end}}
+</div>

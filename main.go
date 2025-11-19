@@ -37,5 +37,7 @@ func main() {
 		application.WithController(controllers.Apps()),
 		application.WithController(controllers.Comments()),
 		application.WithController(controllers.SEO()),
+		application.WithController(controllers.OAuth()),
+		application.WithController(controllers.API()),
 	)
 }
