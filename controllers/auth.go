@@ -189,7 +189,6 @@ func (c *AuthController) signup(w http.ResponseWriter, r *http.Request) {
 func (c *AuthController) sendPasswordToken(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	if user, err := models.Auth.Users.First("WHERE Email = ?", email); err == nil {
-		log.Println("Sending password reset token to:", user.Email)
 		if token, err := models.PasswordResetTokens.Insert(&models.ResetPasswordToken{
 			UserID: user.ID,
 		}); err == nil {
@@ -198,10 +197,10 @@ func (c *AuthController) sendPasswordToken(w http.ResponseWriter, r *http.Reques
 				emailing.WithData("user", user),
 				emailing.WithData("year", time.Now().Year()),
 				emailing.WithData("resetURL", "https://www.theskyscape.com/reset-password?token="+token.ID))
-			log.Println("Sent password reset token:", err)
+			if err != nil {
+				log.Println("Failed to send password reset email:", err)
+			}
 		}
-	} else {
-		log.Println("Target not found:", r.FormValue("email"))
 	}
 
 	w.Header().Set("Hx-Retarget", "#content")

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"path/filepath"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"github.com/pkg/errors"
 	"www.theskyscape.com/models"
 )
 
@@ -62,6 +64,13 @@ func (c *FilesController) uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	defer file.Close()
 
+	// Sanitize filename to prevent path traversal
+	filename := filepath.Base(filepath.Clean(handler.Filename))
+	if filename == "." || filename == "/" || filename == "" {
+		c.Render(w, r, "error-message.html", errors.New("invalid filename"))
+		return
+	}
+
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, file); err != nil {
 		c.Render(w, r, "error-message.html", err)
@@ -70,7 +79,7 @@ func (c *FilesController) uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	fileModel, err := models.Files.Insert(&models.File{
 		OwnerID:  user.ID,
-		FilePath: handler.Filename,
+		FilePath: filename,
 		MimeType: handler.Header.Get("Content-Type"),
 		Content:  buf.Bytes(),
 	})

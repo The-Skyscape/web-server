@@ -78,7 +78,6 @@ func (c *CommentsController) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("Deleting comment:", comment)
 	if err = models.Comments.Delete(comment); err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return

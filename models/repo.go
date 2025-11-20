@@ -140,13 +140,16 @@ func (r *Repo) ListCommits(branch string, limit int) ([]*Commit, error) {
 	}
 
 	commits := strings.Split(stdout.String(), "\n")
-	log.Println("Commits:", commits)
 
 	var commitsList []*Commit
 	for _, commit := range commits {
-		log.Println("Commit whole:", commit)
+		if commit == "" {
+			continue
+		}
 		parts := strings.SplitN(commit, " ", 3)
-		log.Println("Commit parts:", parts)
+		if len(parts) < 3 {
+			continue
+		}
 		c := &Commit{
 			Repo:    r,
 			Hash:    parts[0],
