@@ -317,6 +317,21 @@ func (c *OAuthController) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Sync database before validation to ensure we have latest state
+	if err := models.DB.Sync(); err != nil {
+		log.Println("Database sync error before validation:", err)
+	}
+
+	// Re-fetch authorization code to get latest state after sync
+	authCode, err = models.OAuthAuthorizationCodes.First(
+		"WHERE ClientID = ? AND Code = ?",
+		req.ClientID, hashedCode,
+	)
+	if err != nil || authCode == nil {
+		JSONError(w, http.StatusBadRequest, "Authorization code not found")
+		return
+	}
+
 	// Validate authorization code
 	if !authCode.IsValid() {
 		JSONError(w, http.StatusBadRequest, "Authorization code expired or already used")
