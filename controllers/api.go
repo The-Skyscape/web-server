@@ -79,7 +79,7 @@ func (c *APIController) ValidateAccessToken(r *http.Request) (*authentication.Us
 		return nil, nil, errors.New("missing user ID in token")
 	}
 
-	clientID, ok := claims["client_id"].(string)
+	appID, ok := claims["client_id"].(string)
 	if !ok {
 		return nil, nil, errors.New("missing client ID in token")
 	}
@@ -93,12 +93,12 @@ func (c *APIController) ValidateAccessToken(r *http.Request) (*authentication.Us
 
 	// Check if authorization still exists and is not revoked
 	auth, err := models.OAuthAuthorizations.First(
-		"WHERE UserID = ? AND ClientID = ? AND RevokedAt IS NULL",
-		userID, clientID,
+		"WHERE UserID = ? AND AppID = ? AND Revoked = false",
+		userID, appID,
 	)
 
 	if err != nil || auth == nil {
-		return nil, nil, errors.New("authorization has been revoked")
+		return nil, nil, errors.New("authorization not found")
 	}
 
 	// Get user

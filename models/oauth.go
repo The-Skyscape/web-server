@@ -14,10 +14,10 @@ import (
 // OAuthAuthorization represents a user's consent to allow an app to access their data
 type OAuthAuthorization struct {
 	application.Model
-	UserID    string
-	ClientID  string
-	Scopes    string // space-separated granted scopes
-	RevokedAt *time.Time
+	UserID  string
+	AppID   string
+	Scopes  string // space-separated granted scopes
+	Revoked bool
 }
 
 func (*OAuthAuthorization) Table() string { return "oauth_authorizations" }
@@ -28,21 +28,15 @@ func (a *OAuthAuthorization) User() *authentication.User {
 	return user
 }
 
-// App returns the app this authorization is for (ClientID = AppID)
+// App returns the app this authorization is for
 func (a *OAuthAuthorization) App() *App {
-	app, _ := Apps.Get(a.ClientID)
+	app, _ := Apps.Get(a.AppID)
 	return app
-}
-
-// IsRevoked returns true if this authorization has been revoked
-func (a *OAuthAuthorization) IsRevoked() bool {
-	return a.RevokedAt != nil
 }
 
 // Revoke marks this authorization as revoked
 func (a *OAuthAuthorization) Revoke() error {
-	now := time.Now()
-	a.RevokedAt = &now
+	a.Revoked = true
 	return OAuthAuthorizations.Update(a)
 }
 
@@ -130,11 +124,11 @@ func CreateAuthorizationCode(clientID, userID, redirectURI, scopes string) (stri
 // CreateOrUpdateAuthorization creates a new authorization or updates existing one
 func CreateOrUpdateAuthorization(userID, clientID, scopes string) (*OAuthAuthorization, error) {
 	// Check if authorization already exists
-	existing, err := OAuthAuthorizations.First("WHERE UserID = ? AND ClientID = ?", userID, clientID)
+	existing, err := OAuthAuthorizations.First("WHERE UserID = ? AND AppID = ?", userID, clientID)
 	if err == nil {
 		// Update existing authorization
 		existing.Scopes = scopes
-		existing.RevokedAt = nil // Un-revoke if it was revoked
+		existing.Revoked = false // Un-revoke if it was revoked
 		if err := OAuthAuthorizations.Update(existing); err != nil {
 			return nil, err
 		}
@@ -143,9 +137,9 @@ func CreateOrUpdateAuthorization(userID, clientID, scopes string) (*OAuthAuthori
 
 	// Create new authorization
 	auth := &OAuthAuthorization{
-		UserID:   userID,
-		ClientID: clientID,
-		Scopes:   scopes,
+		UserID: userID,
+		AppID:  clientID,
+		Scopes: scopes,
 	}
 
 	return OAuthAuthorizations.Insert(auth)

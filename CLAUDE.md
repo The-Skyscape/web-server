@@ -277,45 +277,6 @@ user := GET("%s/api/user", skyscapeHost, {
 })
 ```
 
-**Database Schema:**
-```sql
--- OAuth clients (one per app when enabled)
-CREATE TABLE oauth_clients (
-    ID            TEXT PRIMARY KEY,
-    AppID         TEXT NOT NULL,
-    ClientSecret  TEXT NOT NULL,  -- bcrypt hashed
-    RedirectURI   TEXT NOT NULL,
-    AllowedScopes TEXT NOT NULL,
-    CreatedAt     TIMESTAMP,
-    UpdatedAt     TIMESTAMP
-);
-
--- User authorizations (tracks who authorized which app)
-CREATE TABLE oauth_authorizations (
-    ID         TEXT PRIMARY KEY,
-    UserID     TEXT NOT NULL,
-    ClientID   TEXT NOT NULL,
-    Scopes     TEXT NOT NULL,
-    RevokedAt  TIMESTAMP,
-    CreatedAt  TIMESTAMP,
-    UpdatedAt  TIMESTAMP
-);
-
--- Authorization codes (short-lived, exchanged for tokens)
-CREATE TABLE oauth_authorization_codes (
-    ID          TEXT PRIMARY KEY,
-    ClientID    TEXT NOT NULL,
-    UserID      TEXT NOT NULL,
-    Code        TEXT NOT NULL,  -- SHA-256 hashed
-    RedirectURI TEXT NOT NULL,
-    Scopes      TEXT NOT NULL,
-    ExpiresAt   TIMESTAMP NOT NULL,
-    Used        BOOLEAN DEFAULT FALSE,
-    CreatedAt   TIMESTAMP,
-    UpdatedAt   TIMESTAMP
-);
-```
-
 **Views:**
 - `views/authorize.html` - OAuth consent screen with app details and scope descriptions
 - `views/app-users.html` - User directory showing authorized users per app

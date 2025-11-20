@@ -50,7 +50,7 @@ func (c *AppsController) AuthorizedUsers() []*models.OAuthAuthorization {
 		return nil
 	}
 
-	auths, _ := models.OAuthAuthorizations.Search("WHERE ClientID = ? AND RevokedAt IS NULL", app.ID)
+	auths, _ := models.OAuthAuthorizations.Search("WHERE AppID = ? AND Revoked = false", app.ID)
 	return auths
 }
 
@@ -256,4 +256,3 @@ func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
 
 	c.Redirect(w, r, "/")
 }
-

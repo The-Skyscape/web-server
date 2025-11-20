@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -27,10 +28,10 @@ func (c *OAuthController) Setup(app *application.App) {
 	c.Controller.Setup(app)
 	auth := c.Use("auth").(*AuthController)
 
-	// Authorization flow
-	http.Handle("GET /oauth/authorize", c.Serve("authorize.html", auth.Required))
+	// Authorization flow - use Controller.Required (auth only, no profile check)
+	http.Handle("GET /oauth/authorize", c.ProtectFunc(c.authorizeGet, auth.Required))
 	http.Handle("POST /oauth/authorize", c.ProtectFunc(c.authorize, auth.Required))
-	http.Handle("POST /oauth/token", c.ProtectFunc(c.token, auth.Required))
+	http.Handle("POST /oauth/token", c.ProtectFunc(c.token, auth.Optional))
 
 	// OAuth client management for apps
 	http.Handle("GET /app/{app}/users", c.Serve("app-users.html", auth.Required))
@@ -77,7 +78,7 @@ func (c *OAuthController) ScopesMatch() bool {
 	}
 
 	existing, err := models.OAuthAuthorizations.First(
-		"WHERE UserID = ? AND ClientID = ? AND RevokedAt IS NULL",
+		"WHERE UserID = ? AND AppID = ? AND Revoked = false",
 		user.ID, clientID,
 	)
 	if err != nil {
@@ -90,6 +91,74 @@ func (c *OAuthController) ScopesMatch() bool {
 	}
 
 	return existing.Scopes == scope
+}
+
+// authorizeGet handles the authorization consent screen (or auto-redirects if already authorized)
+func (c *OAuthController) authorizeGet(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	// Parse parameters
+	clientID := r.URL.Query().Get("client_id")
+	redirectURI := r.URL.Query().Get("redirect_uri")
+	responseType := r.URL.Query().Get("response_type")
+	scope := r.URL.Query().Get("scope")
+	state := r.URL.Query().Get("state")
+
+	if clientID == "" || redirectURI == "" {
+		http.Error(w, "Missing client_id or redirect_uri", http.StatusBadRequest)
+		return
+	}
+
+	if responseType != "code" {
+		http.Error(w, "response_type must be 'code'", http.StatusBadRequest)
+		return
+	}
+
+	if scope == "" {
+		scope = "user:read"
+	}
+
+	// Get and validate app
+	app, err := models.Apps.Get(clientID)
+	if err != nil {
+		http.Error(w, "Invalid client_id", http.StatusBadRequest)
+		return
+	}
+
+	// Validate redirect URI matches opinionated format
+	if redirectURI != app.RedirectURI() {
+		http.Error(w, "Invalid redirect_uri", http.StatusBadRequest)
+		return
+	}
+
+	// Check if user has already authorized this app with the same scopes
+	existing, err := models.OAuthAuthorizations.First(
+		"WHERE UserID = ? AND AppID = ? AND Revoked = false",
+		user.ID, clientID,
+	)
+
+	// If already authorized with same scopes, skip consent screen
+	if err == nil && existing != nil && existing.Scopes == scope {
+		// Generate authorization code
+		code, err := models.CreateAuthorizationCode(clientID, user.ID, redirectURI, scope)
+		if err != nil {
+			http.Error(w, "Failed to generate authorization code", http.StatusInternalServerError)
+			return
+		}
+
+		// Redirect back to client with code
+		redirectURL := fmt.Sprintf("%s?code=%s&state=%s", redirectURI, url.QueryEscape(code), url.QueryEscape(state))
+		c.Redirect(w, r, redirectURL)
+		return
+	}
+
+	// Show consent screen
+	c.Render(w, r, "authorize.html", nil)
 }
 
 // authorize handles the authorization consent submission
@@ -220,19 +289,33 @@ func (c *OAuthController) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find authorization code
+	// Find authorization code with retry logic for replica sync
 	hashedCode := models.HashToken(req.Code)
-	authCodes, err := models.OAuthAuthorizationCodes.Search(
-		"WHERE ClientID = ? AND Code = ? ORDER BY CreatedAt DESC LIMIT 1",
-		req.ClientID, hashedCode,
-	)
+	var authCode *models.OAuthAuthorizationCode
 
-	if err != nil || len(authCodes) == 0 {
-		JSONError(w, http.StatusBadRequest, "Invalid authorization code")
-		return
+	// Retry up to 3 times with forced sync to handle cross-node replica lag
+	for i := range 3 {
+		if i > 0 {
+			if err := models.DB.Sync(); err != nil {
+				log.Println("Database sync error:", err)
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		authCode, err = models.OAuthAuthorizationCodes.First(
+			"WHERE ClientID = ? AND Code = ?",
+			req.ClientID, hashedCode,
+		)
+
+		if err == nil && authCode != nil {
+			break
+		}
 	}
 
-	authCode := authCodes[0]
+	if err != nil || authCode == nil {
+		JSONError(w, http.StatusBadRequest, "No authorization codes found for this client")
+		return
+	}
 
 	// Validate authorization code
 	if !authCode.IsValid() {
@@ -300,7 +383,7 @@ func (c *OAuthController) AuthorizedUsers() []*models.OAuthAuthorization {
 
 	// Get all non-revoked authorizations (ClientID = AppID)
 	auths, _ := models.OAuthAuthorizations.Search(
-		"WHERE ClientID = ? AND RevokedAt IS NULL ORDER BY CreatedAt DESC",
+		"WHERE AppID = ? AND Revoked = false ORDER BY CreatedAt DESC",
 		app.ID,
 	)
 
@@ -378,7 +461,7 @@ func (c *OAuthController) revokeUser(w http.ResponseWriter, r *http.Request) {
 
 	// Find and revoke authorization
 	authorization, err := models.OAuthAuthorizations.First(
-		"WHERE ClientID = ? AND UserID = ?",
+		"WHERE AppID = ? AND UserID = ?",
 		app.ID, userID,
 	)
 
