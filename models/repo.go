@@ -20,6 +20,34 @@ import (
 	"github.com/yuin/goldmark"
 )
 
+// sanitizeBranch validates and sanitizes branch names to prevent path traversal
+// and unauthorized access to git refs. Returns "main" as default for invalid branches.
+func sanitizeBranch(branch string) string {
+	if branch == "" {
+		return "main"
+	}
+
+	// Only allow alphanumeric, dash, underscore, and forward slash
+	validBranchRegex := regexp.MustCompile(`^[a-zA-Z0-9/_-]+$`)
+	if !validBranchRegex.MatchString(branch) {
+		return "main"
+	}
+
+	// Disallow dangerous patterns that could access unauthorized refs
+	dangerous := []string{
+		"refs/", "HEAD~", "HEAD^", "@{",
+		"..", "//", "stash",
+	}
+
+	for _, pattern := range dangerous {
+		if strings.Contains(branch, pattern) {
+			return "main"
+		}
+	}
+
+	return branch
+}
+
 type Repo struct {
 	application.Model
 	OwnerID     string
@@ -105,6 +133,7 @@ func (r *Repo) Git(args ...string) (stdout, stderr bytes.Buffer, err error) {
 }
 
 func (r *Repo) ListCommits(branch string, limit int) ([]*Commit, error) {
+	branch = sanitizeBranch(branch)
 	stdout, stderr, err := r.Git("log", "--format=format:%h %ae %s", "--reverse", branch, fmt.Sprintf("--max-count=%d", limit))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list commits: %s", stderr.String())
@@ -147,6 +176,7 @@ func (c *Commit) User() *authentication.User {
 }
 
 func (r *Repo) ListFiles(branch, path string) ([]*Blob, error) {
+	branch = sanitizeBranch(branch)
 	stdout, _, err := r.Git("ls-tree", branch, filepath.Join(".", path)+"/")
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to list files: %s @ %s", branch, path)
@@ -178,11 +208,13 @@ func (r *Repo) ListFiles(branch, path string) ([]*Blob, error) {
 }
 
 func (r *Repo) IsEmpty(branch string) bool {
+	branch = sanitizeBranch(branch)
 	_, err := r.ListCommits(branch, 1)
 	return err != nil
 }
 
 func (r *Repo) IsDir(branch, path string) (bool, error) {
+	branch = sanitizeBranch(branch)
 	if path == "" || path == "." {
 		return true, nil
 	}
@@ -202,6 +234,7 @@ func (r *Repo) IsDir(branch, path string) (bool, error) {
 }
 
 func (r *Repo) Open(branch, path string) (*Blob, error) {
+	branch = sanitizeBranch(branch)
 	isDir, err := r.IsDir(branch, path)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read location: "+path)
@@ -243,7 +276,8 @@ func (f *Blob) Comments() ([]*Comment, error) {
 }
 
 func (f *Blob) Read() (*Content, error) {
-	stdout, _, err := f.Repo.Git("show", fmt.Sprintf("%s:%s", f.Branch, f.Path))
+	branch := sanitizeBranch(f.Branch)
+	stdout, _, err := f.Repo.Git("show", fmt.Sprintf("%s:%s", branch, f.Path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to show file")
 	}

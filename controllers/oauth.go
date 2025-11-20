@@ -431,8 +431,6 @@ func (c *OAuthController) regenerateSecret(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Return success with secret
-	w.Header().Set("HX-Trigger", `{"showSecret": {"secret": "`+secret+`"}}`)
 	c.Refresh(w, r)
 }
 
