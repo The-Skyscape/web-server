@@ -59,13 +59,15 @@ func (c *AppsController) AllApps() []*models.App {
 	apps, _ := models.Apps.Search(`
 		INNER JOIN repos on repos.ID = apps.RepoID
 	  INNER JOIN users on users.ID = repos.OwnerID
-		WHERE 
-			apps.Status          != 'shutdown' AND
-			apps.Name            LIKE $1        OR
-			apps.Description     LIKE $1        OR
-			repos.Name           LIKE $1        OR
-			repos.Description    LIKE $1        OR
-			users.Handle         LIKE LOWER($1)
+		WHERE
+			apps.Status != 'shutdown'
+			AND (
+				apps.Name         LIKE $1 OR
+				apps.Description  LIKE $1 OR
+				repos.Name        LIKE $1 OR
+				repos.Description LIKE $1 OR
+				users.Handle      LIKE LOWER($1)
+			)
 		ORDER BY repos.CreatedAt DESC
 	`, "%"+query+"%")
 	return apps
@@ -77,12 +79,14 @@ func (c *AppsController) RecentApps() []*models.App {
 		INNER JOIN repos on repos.ID = apps.RepoID
 	  INNER JOIN users on users.ID = repos.OwnerID
 		WHERE
-			apps.Status          != 'shutdown' AND
-			apps.Name            LIKE $1        OR
-			apps.Description     LIKE $1        OR
-			repos.Name           LIKE $1        OR
-			repos.Description    LIKE $1        OR
-			users.Handle         LIKE LOWER($1)
+			apps.Status != 'shutdown'
+			AND (
+				apps.Name         LIKE $1 OR
+				apps.Description  LIKE $1 OR
+				repos.Name        LIKE $1 OR
+				repos.Description LIKE $1 OR
+				users.Handle      LIKE LOWER($1)
+			)
 		ORDER BY repos.CreatedAt DESC
 		LIMIT 3
 	`, "%"+query+"%")

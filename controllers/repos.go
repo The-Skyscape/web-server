@@ -52,10 +52,12 @@ func (c *ReposController) AllRepos() []*models.Repo {
 	repos, _ := models.Repos.Search(`
 	  INNER JOIN users on users.ID = repos.OwnerID
 		WHERE
-			repos.Archived       = false        AND
-			repos.Name           LIKE $1        OR
-			repos.Description    LIKE $1        OR
-			users.Handle         LIKE LOWER($1) 
+			repos.Archived = false
+			AND (
+				repos.Name        LIKE $1 OR
+				repos.Description LIKE $1 OR
+				users.Handle      LIKE LOWER($1)
+			)
 		ORDER BY repos.CreatedAt
 	`, "%"+query+"%")
 	return repos
@@ -65,11 +67,13 @@ func (c *ReposController) RecentRepos() []*models.Repo {
 	query := c.URL.Query().Get("query")
 	repos, _ := models.Repos.Search(`
 	  INNER JOIN users on users.ID = repos.OwnerID
-		WHERE 
-			repos.Archived       = false        AND
-			repos.Name           LIKE $1        OR
-			repos.Description    LIKE $1        OR
-			users.Handle         LIKE LOWER($1)
+		WHERE
+			repos.Archived = false
+			AND (
+				repos.Name        LIKE $1 OR
+				repos.Description LIKE $1 OR
+				users.Handle      LIKE LOWER($1)
+			)
 		ORDER BY repos.CreatedAt DESC
 		LIMIT 4
 	`, "%"+query+"%")
