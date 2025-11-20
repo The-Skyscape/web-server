@@ -3,7 +3,6 @@ package controllers
 import (
 	"cmp"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
