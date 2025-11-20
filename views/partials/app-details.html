@@ -33,7 +33,5 @@
   {{.Description}}
 </p>
 
-{{if and $user $owner (eq $user.ID $owner.ID)}}
 <div class="divider"></div>
 {{template "app-authorized-users.html" $}}
-{{end}}

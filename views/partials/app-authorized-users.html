@@ -1,7 +1,11 @@
 {{$auths := apps.AuthorizedUsers}}
+{{$currentUser := auth.CurrentUser}}
+{{$owner := $.Owner}}
+{{$isOwner := and $currentUser $owner (eq $currentUser.ID $owner.ID)}}
+
 <div class="flex flex-col gap-2">
   <label class="text-xs font-bold opacity-60 tracking-wider">
-    Authorized Users
+    Active Users
   </label>
 
   {{if $auths}}
@@ -21,12 +25,14 @@
           <span class="text-xs opacity-60">@{{$user.Handle}}</span>
         </div>
       </a>
+      {{if $isOwner}}
       <button
         hx-delete="{{host}}/app/{{$.ID}}/users/{{$user.ID}}"
         hx-confirm="Revoke access for {{$user.Name}}?"
         class="btn btn-ghost btn-sm text-error">
         Revoke
       </button>
+      {{end}}
     </div>
     {{end}}
     {{end}}
