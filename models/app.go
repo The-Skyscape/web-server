@@ -3,7 +3,6 @@ package models
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -130,7 +129,6 @@ func (app *App) Build() (*Image, error) {
 		GitHash: strings.TrimSpace(stdout.String()),
 	})
 
-	log.Println("Image Tag:", img.GitHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create image")
 	}

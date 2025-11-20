@@ -296,9 +296,7 @@ func (c *OAuthController) token(w http.ResponseWriter, r *http.Request) {
 	// Retry up to 3 times with forced sync to handle cross-node replica lag
 	for i := range 3 {
 		if i > 0 {
-			if err := models.DB.Sync(); err != nil {
-				log.Println("Database sync error:", err)
-			}
+			models.DB.Sync()
 			time.Sleep(500 * time.Millisecond)
 		}
 
@@ -318,9 +316,7 @@ func (c *OAuthController) token(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Sync database before validation to ensure we have latest state
-	if err := models.DB.Sync(); err != nil {
-		log.Println("Database sync error before validation:", err)
-	}
+	models.DB.Sync()
 
 	// Re-fetch authorization code to get latest state after sync
 	authCode, err = models.OAuthAuthorizationCodes.First(
