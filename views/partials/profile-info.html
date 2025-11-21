@@ -2,4 +2,50 @@
   <p class="text-lg opacity-80 font-semibold tracking-wide leading-relaxed">
     {{or .Description ""}}
   </p>
+
+  <!-- Followers Section -->
+  <div class="flex flex-col gap-3 pt-2 border-t border-white/10">
+    <div class="flex gap-4 text-sm">
+      <a href="{{host}}/user/{{.Handle}}/followers" class="hover:underline" hx-boost="true">
+        <span class="font-bold">{{.FollowersCount}}</span> Followers
+      </a>
+      <a href="{{host}}/user/{{.Handle}}/following" class="hover:underline" hx-boost="true">
+        <span class="font-bold">{{.FollowingCount}}</span> Following
+      </a>
+    </div>
+
+    {{with .RecentFollowers 4}}
+    <!-- Desktop: List view -->
+    <div class="hidden md:flex flex-col gap-2">
+      {{range .}}
+      {{with .Follower}}
+      <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-2 hover:opacity-80 transition" hx-boost="true">
+        <div class="avatar">
+          <div class="w-8 rounded-full bg-base-100 p-0.5 border border-white/10">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-medium">{{.Name}}</span>
+          <span class="text-xs opacity-60">@{{.Handle}}</span>
+        </div>
+      </a>
+      {{end}}
+      {{end}}
+    </div>
+
+    <!-- Mobile: Avatar stack -->
+    <div class="md:hidden avatar-group -space-x-4">
+      {{range .}}
+      {{with .Follower}}
+      <a href="{{host}}/user/{{.Handle}}" class="avatar" hx-boost="true">
+        <div class="w-10 rounded-full border-2 border-base-100">
+          <img src="{{.Avatar}}" alt="{{.Name}}" title="{{.Name}}" />
+        </div>
+      </a>
+      {{end}}
+      {{end}}
+    </div>
+    {{end}}
+  </div>
 </div>

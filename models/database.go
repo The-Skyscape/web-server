@@ -17,6 +17,7 @@ var (
 	Apps       = database.Manage(DB, new(App))
 	Activities = database.Manage(DB, new(Activity))
 	Comments   = database.Manage(DB, new(Comment))
+	Follows    = database.Manage(DB, new(Follow))
 	Files      = database.Manage(DB, new(File))
 	Images     = database.Manage(DB, new(Image))
 

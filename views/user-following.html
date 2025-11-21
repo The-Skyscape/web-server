@@ -1,0 +1,70 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  {{template "profile-header.html"}}
+
+  <div class="max-w-screen-lg w-full mx-auto relative z-20 px-4 py-8">
+    {{with profile.CurrentProfile}}
+    <div class="card bg-base-100 shadow-lg w-full">
+      <div class="card-body">
+        <h2 class="card-title text-2xl mb-4">Following</h2>
+
+        {{with .Following}}
+        <div class="flex flex-col gap-3">
+          {{range .}}
+          {{with .Followee}}
+          <div class="flex items-center justify-between p-3 rounded-lg hover:bg-base-200 transition">
+            <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-3 flex-1" hx-boost="true">
+              <div class="avatar">
+                <div class="w-12 rounded-full bg-base-100 p-0.5 border border-white/10">
+                  <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+                </div>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-semibold">{{.Name}}</span>
+                <span class="text-sm opacity-60">@{{.Handle}}</span>
+              </div>
+            </a>
+
+            {{with $currentUser := auth.CurrentUser}}
+            {{if ne .ID $currentUser.ID}}
+            {{with $followeeProfile := profile.GetProfile .ID}}
+            {{if $followeeProfile.IsFollowedBy $currentUser.ID}}
+            <button class="btn btn-sm btn-primary group"
+              hx-delete="{{host}}/user/{{$followeeProfile.UserID}}/follow"
+              _="on mouseenter set my textContent to 'Unfollow' then add .btn-error to me
+                 on mouseleave set my textContent to 'Following' then remove .btn-error from me">
+              Following
+            </button>
+            {{else}}
+            <button class="btn btn-sm btn-primary" hx-post="{{host}}/user/{{$followeeProfile.UserID}}/follow">
+              Follow
+            </button>
+            {{end}}
+            {{end}}
+            {{end}}
+            {{end}}
+          </div>
+          {{end}}
+          {{end}}
+        </div>
+        {{else}}
+        <div class="text-center py-12">
+          <p class="text-lg opacity-60">Not following anyone yet</p>
+        </div>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

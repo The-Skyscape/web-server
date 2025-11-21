@@ -13,16 +13,21 @@
     </div>
     <div class="flex flex-col items-center md:items-start justify-center gap-2 pb-2.5">
       <span class="text-2xl font-semibold">{{$profile.Name}}</span>
-      <span class="text-lg font-bold opacity-60">@{{$profile.Handle}}</span>
+      <div class="flex items-center gap-2">
+        <span class="text-lg font-bold opacity-60">@{{$profile.Handle}}</span>
+        {{if $profile.User.IsAdmin}}
+        <span class="badge badge-success badge-soft badge-sm">Admin</span>
+        {{end}}
+      </div>
     </div>
     <div class="flex items-center gap-2 md:ml-auto bg-transparent" data-theme="light">
-      <div class="btn shadow-xl" _="on click 
-                          call navigator.clipboard.writeText('https://web.skysca.pe/user/{{$profile.Handle}}') then 
-                            set my textContent to 'Copied ✓' then 
-                            add .btn-success to me then 
-                            wait 2s then 
-                            set my textContent to 'Share Link' then 
-                            remove .btn-success from me then 
+      <div class="btn shadow-xl" _="on click
+                          call navigator.clipboard.writeText('https://web.skysca.pe/user/{{$profile.Handle}}') then
+                            set my textContent to 'Copied ✓' then
+                            add .btn-success to me then
+                            wait 2s then
+                            set my textContent to 'Share Link' then
+                            remove .btn-success from me then
                            ">
         Share Link
       </div>
@@ -31,6 +36,19 @@
       <button class="btn btn-primary shadow-xl" _="on click call edit_profile_modal.showModal()">
         Edit My Profile
       </button>
+      {{else}}
+      {{if $profile.IsFollowedBy $user.ID}}
+      <button class="btn btn-primary shadow-xl group"
+        hx-delete="{{host}}/user/{{$profile.UserID}}/follow"
+        _="on mouseenter set my textContent to 'Unfollow' then add .btn-error to me
+           on mouseleave set my textContent to 'Following' then remove .btn-error from me">
+        Following
+      </button>
+      {{else}}
+      <button class="btn btn-primary shadow-xl" hx-post="{{host}}/user/{{$profile.UserID}}/follow">
+        Follow
+      </button>
+      {{end}}
       {{end}}
       {{end}}
     </div>

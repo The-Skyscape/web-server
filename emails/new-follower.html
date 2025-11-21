@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Follower on The Skyscape</title>
+  {{template "email-styles" .}}
+</head>
+
+<body>
+  <div class="email-wrapper">
+    {{template "email-header" .}}
+
+    <div class="email-content">
+      <h2>{{follower.Name}} is now following you!</h2>
+
+      <p>Hey {{user.Name}},</p>
+      <p>Great news! <strong>{{follower.Name}}</strong> (@{{follower.Handle}}) just started following you on The Skyscape.</p>
+
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="https://www.theskyscape.com/user/{{follower.Handle}}" class="btn">View {{follower.Name}}'s Profile</a>
+      </div>
+
+      <p>Keep building amazing things and growing your network!</p>
+      <p>
+        Happy coding!<br>
+        <strong>The Skyscape Team</strong>
+      </p>
+    </div>
+
+    {{template "email-footer" .}}
+  </div>
+</body>
+
+</html>

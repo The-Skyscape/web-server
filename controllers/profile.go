@@ -26,6 +26,8 @@ func (c *ProfileController) Setup(app *application.App) {
 	http.Handle("GET /user/{id}", app.Serve("profile.html", auth.Optional))
 	http.Handle("GET /user/{id}/repos", app.Serve("user-repos.html", auth.Optional))
 	http.Handle("GET /user/{id}/apps", app.Serve("user-apps.html", auth.Optional))
+	http.Handle("GET /user/{id}/followers", app.Serve("user-followers.html", auth.Optional))
+	http.Handle("GET /user/{id}/following", app.Serve("user-following.html", auth.Optional))
 	http.Handle("POST /setup", app.ProtectFunc(c.setup, auth.Optional))
 }
 
@@ -55,6 +57,14 @@ func (c *ProfileController) CurrentProfile() *models.Profile {
 		return nil
 	}
 
+	return p
+}
+
+func (c *ProfileController) GetProfile(userID string) *models.Profile {
+	p, err := models.Profiles.Get(userID)
+	if err != nil {
+		return nil
+	}
 	return p
 }
 

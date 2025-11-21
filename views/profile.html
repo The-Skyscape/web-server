@@ -32,15 +32,16 @@
             <li>
               <a href="{{host}}/app/{{.ID}}">
                 <div class="flex items-center justify-center w-8 h-8 rounded bg-primary/20 text-primary shrink-0 mr-2">
-                  <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                  <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"
+                    height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                   </svg>
                 </div>
-                <div class="flex flex-col gap-1">
-                  <span class="text-lg font-semibold">
+                <div class="flex flex-col">
+                  <span class="text-base font-semibold">
                     {{.Name}}
                   </span>
-                  <span class="text-sm font-bold opacity-60 tracking-wide">
+                  <span class="text-xs font-bold opacity-60 tracking-wide">
                     {{with .Description}}{{.}}{{else}}
                     <span class="italic opacity-80">No description</span>
                     {{end}}
@@ -75,19 +76,23 @@
             {{range .}}
             <li>
               <a href="{{host}}/repo/{{.ID}}">
-                <div class="flex items-center justify-center w-8 h-8 rounded bg-secondary/20 text-secondary shrink-0 mr-2">
-                  <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path>
+                <div
+                  class="flex items-center justify-center w-8 h-8 rounded bg-secondary/20 text-secondary shrink-0 mr-2">
+                  <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+                    stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z">
+                    </path>
                     <path d="M12 22V12"></path>
                     <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"></path>
                     <path d="m7.5 4.27 9 5.15"></path>
                   </svg>
                 </div>
-                <div class="flex flex-col gap-1">
-                  <span class="text-lg font-semibold">
+                <div class="flex flex-col">
+                  <span class="text-base font-semibold">
                     {{.Name}}
                   </span>
-                  <span class="text-sm font-bold opacity-60 tracking-wide">
+                  <span class="text-xs font-bold opacity-60 tracking-wide">
                     {{with .Description}}{{.}}{{else}}
                     <span class="italic opacity-80">No description</span>
                     {{end}}

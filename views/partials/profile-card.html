@@ -1,5 +1,6 @@
 <a href="{{host}}/user/{{.Handle}}"
-  class="card w-full max-w-sm md:max-w-72 bg-base-100 shadow-lg overflow-hidden md:h-88">
+  class="card w-full max-w-sm md:max-w-72 bg-base-100 shadow-lg overflow-hidden h-92 hover:shadow-xl transition"
+  hx-boost="true">
 
   <img src="{{host}}/public/background.png" class="w-full h-24 border-b-2 border-white/20 -mb-16">
 
@@ -15,12 +16,27 @@
         {{.Name}}
       </h2>
 
-      <span class="text-base font-bold opacity-60">
-        @{{.Handle}}
-      </span>
+      <div class="flex items-center gap-2">
+        <span class="text-base font-bold opacity-60">
+          @{{.Handle}}
+        </span>
+        {{if .User.IsAdmin}}
+        <span class="badge badge-success badge-soft badge-sm">Admin</span>
+        {{end}}
+        {{with $currentUser := auth.CurrentUser}}
+        {{if $.IsFollowedBy $currentUser.ID}}
+        <span class="badge badge-info badge-soft badge-sm">Following</span>
+        {{end}}
+        {{end}}
+      </div>
     </div>
 
-    <p class="text-base font-bold opacity-80">
+    <div class="flex gap-3 text-sm mb-2 opacity-60">
+      <span><span class="font-bold">{{.FollowersCount}}</span> Followers</span>
+      <span><span class="font-bold">{{.FollowingCount}}</span> Following</span>
+    </div>
+
+    <p class="text-base font-bold opacity-80 flex-1 line-clamp-3">
       {{with .Description}}{{.}}{{else}}
       <span class="italic opacity-80">No description</span>
       {{end}}

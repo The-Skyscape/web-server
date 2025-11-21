@@ -58,6 +58,56 @@ func (p *Profile) RecentRepos() []*Repo {
 	return repos
 }
 
+// Followers returns all users following this profile
+func (p *Profile) Followers() []*Follow {
+	follows, _ := Follows.Search(`
+		WHERE FolloweeID = ?
+		ORDER BY CreatedAt DESC
+	`, p.UserID)
+	return follows
+}
+
+// Following returns all users this profile follows
+func (p *Profile) Following() []*Follow {
+	follows, _ := Follows.Search(`
+		WHERE FollowerID = ?
+		ORDER BY CreatedAt DESC
+	`, p.UserID)
+	return follows
+}
+
+// RecentFollowers returns the most recent followers for avatar display
+func (p *Profile) RecentFollowers(limit int) []*Follow {
+	follows, _ := Follows.Search(`
+		WHERE FolloweeID = ?
+		ORDER BY CreatedAt DESC
+		LIMIT ?
+	`, p.UserID, limit)
+	return follows
+}
+
+// FollowersCount returns the count of followers
+func (p *Profile) FollowersCount() int {
+	return Follows.Count("WHERE FolloweeID = ?", p.UserID)
+}
+
+// FollowingCount returns the count of users this profile follows
+func (p *Profile) FollowingCount() int {
+	return Follows.Count("WHERE FollowerID = ?", p.UserID)
+}
+
+// IsFollowedBy checks if a specific user follows this profile
+func (p *Profile) IsFollowedBy(userID string) bool {
+	follow, _ := Follows.First("WHERE FollowerID = ? AND FolloweeID = ?", userID, p.UserID)
+	return follow != nil
+}
+
+// IsFollowing checks if this profile follows a specific user
+func (p *Profile) IsFollowing(userID string) bool {
+	follow, _ := Follows.First("WHERE FollowerID = ? AND FolloweeID = ?", p.UserID, userID)
+	return follow != nil
+}
+
 func (p *Profile) User() *authentication.User {
 	user, _ := Auth.Users.Get(p.UserID)
 	return user
