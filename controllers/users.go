@@ -9,7 +9,10 @@ import (
 )
 
 func Users() (string, application.Handler) {
-	return "users", &UsersController{}
+	return "users", &UsersController{
+		defaultPage:  1,
+		defaultLimit: 10,
+	}
 }
 
 type UsersController struct {
@@ -20,10 +23,8 @@ type UsersController struct {
 
 func (c *UsersController) Setup(app *application.App) {
 	c.Controller.Setup(app)
-	c.defaultPage = 1
-	c.defaultLimit = 10
-
 	auth := app.Use("auth").(*AuthController)
+
 	http.Handle("GET /users", app.Serve("users.html", auth.Optional))
 }
 

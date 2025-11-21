@@ -1,7 +1,7 @@
 <div class="card bg-base-100 shadow-lg w-full">
   <div class="card-body">
     {{with .User}}
-    <div class="flex items-center gap-2 px-2 pb-2">
+    <div class="flex items-center gap-2 px-2">
       <div class="avatar">
         <div class="w-5 p-0.5 bg-white/10 rounded-full border border-white/10">
           <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
@@ -37,11 +37,18 @@
     {{end}}
 
     {{if $.Content}}
+    {{if or .Repo .Profile .App}}
     <p class="px-4 pb-2 text-base opacity-80">
       {{$.Content}}
     </p>
+    {{else}}
+    <p class="px-4 pb-2 text-lg opacity-90">
+      {{$.Content}}
+    </p>
+    {{end}}
     {{end}}
 
+    {{if or .Repo .Profile .App}}
     <ul class="menu gap-2 w-full p-0 rounded-box border border-neutral/40" hx-boost="true">
       {{with .Repo}}
       <li>
@@ -159,5 +166,6 @@
       </li>
       {{end}}
     </ul>
+    {{end}}
   </div>
 </div>

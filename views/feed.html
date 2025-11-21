@@ -18,13 +18,54 @@
     </div>
   </div>
 
-  <div class="p-4 md:py-12 w-full max-w-screen-md flex flex-col gap-4 w-full" id="feed">
-    {{range feed.RecentActivities}}
-    {{template "feed-post.html" .}}
-    {{ end }}
+  <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto flex flex-col gap-4">
+    {{with $user := auth.CurrentUser}}
+    <div class="flex flex-col gap-2 pb-2">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <div class="avatar flex-shrink-0">
+            <div class="w-5 p-0.5 rounded-full bg-white/10 border border-white/10">
+              <img src="{{$user.Avatar}}" alt="{{$user.Name}}" class="rounded-full">
+            </div>
+          </div>
+          <span class="text-sm font-semibold opacity-60">
+            Post as <span class="opacity-100">@{{$user.Handle}}</span> to The Skyscape
+          </span>
+        </div>
+        <button type="submit" form="post-form" class="btn btn-primary btn-xs" disabled
+          _="on input from #post-content
+             if #post-content.value.trim() is not ''
+               remove [@disabled] from me
+             else
+               add [@disabled] to me
+             end">
+          Post
+        </button>
+      </div>
+      <form id="post-form" class="flex flex-col w-full gap-2" hx-post="{{host}}/feed/post" hx-target=".error">
+        <textarea id="post-content" required name="content" class="textarea textarea-bordered w-full min-h-24"
+          placeholder="What's on your mind, {{$user.Name}}?"></textarea>
+        <div class="error"></div>
+      </form>
+    </div>
+    {{end}}
+
+    <div id="feed" class="flex flex-col gap-4">
+      {{$limit := feed.Limit}}
+      {{$nextPage := feed.NextPage}}
+      {{range $index, $activity := feed.RecentActivities}}
+      {{if eq (mod (add $index 1) $limit) 0}}
+      <div hx-get="{{host}}/?page={{$nextPage}}&limit={{$limit}}"
+        hx-trigger="revealed" hx-swap="afterend" hx-select="#feed > *">
+        {{template "feed-post.html" $activity}}
+      </div>
+      {{else}}
+      {{template "feed-post.html" $activity}}
+      {{end}}
+      {{end}}
+    </div>
   </div>
 
-  <div hx-get="{{host}}/" hx-trigger="every 10s" hx-select="#feed" hx-target="#feed" hx-swap="outerHTML"></div>
   {{template "layout/end"}}
 </body>
 
