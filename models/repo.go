@@ -123,6 +123,36 @@ func (r *Repo) Apps() ([]*App, error) {
 	`, r.ID)
 }
 
+// Stars returns all stars for this repository
+func (r *Repo) Stars() []*Star {
+	stars, _ := Stars.Search(`
+		WHERE RepoID = ?
+		ORDER BY CreatedAt DESC
+	`, r.ID)
+	return stars
+}
+
+// StarsCount returns the count of stars for this repository
+func (r *Repo) StarsCount() int {
+	return Stars.Count("WHERE RepoID = ?", r.ID)
+}
+
+// RecentStargazers returns the most recent users who starred this repository
+func (r *Repo) RecentStargazers(limit int) []*Star {
+	stars, _ := Stars.Search(`
+		WHERE RepoID = ?
+		ORDER BY CreatedAt DESC
+		LIMIT ?
+	`, r.ID, limit)
+	return stars
+}
+
+// IsStarredBy checks if a specific user has starred this repository
+func (r *Repo) IsStarredBy(userID string) bool {
+	star, _ := Stars.First("WHERE UserID = ? AND RepoID = ?", userID, r.ID)
+	return star != nil
+}
+
 func (r *Repo) Git(args ...string) (stdout, stderr bytes.Buffer, err error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = r.Path()

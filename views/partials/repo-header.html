@@ -17,19 +17,33 @@
     {{.Name}}
   </a>
 
-  <button class="btn btn-sm btn-primary ml-auto hidden md:flex" _="on click 
-        call navigator.clipboard.writeText('git clone https://theskyscape.com/repo/{{.ID}}') then 
-        set my textContent to 'Copied ✓' then 
-        remove .btn-primary from me then
-        add .btn-success to me then 
-        wait 2s then 
-        set my textContent to 'Clone Repo' then 
-        remove .btn-success from me then 
-        add .btn-primary to me then">
-    Clone Repo
-  </button>
+  <div class="flex items-center gap-2 ml-auto bg-transparent" data-theme="light">
+    {{$user := auth.CurrentUser}}
+    {{if $user}}
+    {{if .IsStarredBy $user.ID}}
+    <button class="btn btn-sm shadow-xl group opacity-80" hx-delete="{{host}}/repo/{{.ID}}/star" _="on mouseenter set my textContent to 'Unstar' then add .btn-error to me
+         on mouseleave set my textContent to '⭐ Starred ({{.StarsCount}})' then remove .btn-error from me">
+      ⭐ Starred ({{.StarsCount}})
+    </button>
+    {{else}}
+    <button class="btn btn-sm shadow-xl opacity-80" hx-post="{{host}}/repo/{{.ID}}/star">
+      ⭐ Star ({{.StarsCount}})
+    </button>
+    {{end}}
+    {{end}}
 
-  {{$user := auth.CurrentUser}}
+    <button class="btn btn-sm btn-primary shadow-xl hidden md:flex" _="on click
+          call navigator.clipboard.writeText('git clone https://theskyscape.com/repo/{{.ID}}') then
+          set my textContent to 'Copied ✓' then
+          remove .btn-primary from me then
+          add .btn-success to me then
+          wait 2s then
+          set my textContent to 'Clone Repo' then
+          remove .btn-success from me then
+          add .btn-primary to me then">
+      Clone Repo
+    </button>
+  </div>
   {{if $user}}
   <div class="dropdown dropdown-end">
     <div tabindex="0" role="button" class="btn btn-ghost">

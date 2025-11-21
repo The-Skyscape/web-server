@@ -2,7 +2,6 @@ package models
 
 import (
 	"github.com/The-Skyscape/devtools/pkg/application"
-	"github.com/The-Skyscape/devtools/pkg/authentication"
 )
 
 type Follow struct {
@@ -15,22 +14,12 @@ func (*Follow) Table() string {
 	return "follows"
 }
 
-func (f *Follow) Follower() *authentication.User {
-	user, _ := Auth.Users.Get(f.FollowerID)
-	return user
-}
-
-func (f *Follow) Followee() *authentication.User {
-	user, _ := Auth.Users.Get(f.FolloweeID)
-	return user
-}
-
-func (f *Follow) FollowerProfile() *Profile {
-	profile, _ := Profiles.First("WHERE UserID = ?", f.FollowerID)
+func (f *Follow) Follower() *Profile {
+	profile, _ := Profiles.Get(f.FollowerID)
 	return profile
 }
 
-func (f *Follow) FolloweeProfile() *Profile {
-	profile, _ := Profiles.First("WHERE UserID = ?", f.FolloweeID)
+func (f *Follow) Followee() *Profile {
+	profile, _ := Profiles.Get(f.FolloweeID)
 	return profile
 }

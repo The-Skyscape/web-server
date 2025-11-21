@@ -20,6 +20,14 @@
 
     <hr class="my-2 opacity-15">
 
+    <div class="flex items-center gap-3 mb-2 text-xs opacity-60">
+      <span class="flex items-center gap-1">
+        <span>⭐</span>
+        <span class="font-bold">{{.StarsCount}}</span>
+        <span>stargazers</span>
+      </span>
+    </div>
+
     <p class="text-sm font-bold opacity-60 tracking-wider line-clamp-2">
       {{with .Description}}{{.}}{{else}}
       <span class="italic opacity-80">No description</span>

@@ -6,6 +6,39 @@
 </p>
 
 <div class="flex flex-col gap-2">
+  <div class="flex items-center justify-between">
+    <label class="text-xs font-bold opacity-60 tracking-wider">
+      Stargazers
+    </label>
+    <span class="text-sm font-semibold opacity-80">
+      <span class="text-lg">⭐</span> {{.StarsCount}}
+    </span>
+  </div>
+
+  {{with .RecentStargazers 10}}
+  <div class="flex flex-col gap-3">
+    <div class="flex flex-wrap gap-2 px-2">
+      {{range .}}
+      {{with .User}}
+      <a href="{{host}}/user/{{.Handle}}" hx-boost="true" class="tooltip" data-tip="@{{.Handle}}">
+        <div class="avatar">
+          <div class="w-8 rounded-full bg-base-200 border border-white/10">
+            <img src="{{.Avatar}}" alt="{{.Name}}">
+          </div>
+        </div>
+      </a>
+      {{end}}
+      {{end}}
+    </div>
+  </div>
+  {{else}}
+  <div class="px-3 text-sm opacity-60">
+    No stars yet
+  </div>
+  {{end}}
+</div>
+
+<div class="flex flex-col gap-2">
   <label class="text-xs font-bold opacity-60 tracking-wider">
     Active Apps
   </label>
