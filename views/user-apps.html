@@ -1,0 +1,59 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+
+  {{with profile.CurrentProfile}}
+  <title>{{.Handle}}'s Apps | The Skyscape</title>
+  <meta name="description" content="View all apps deployed by {{.Handle}} on The Skyscape. Explore their applications.">
+  <meta name="keywords" content="{{.Handle}}, deployed apps, web applications, developer apps, cloud hosting">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.theskyscape.com/user/{{.Handle}}/apps">
+  <meta property="og:title" content="{{.Handle}}'s Apps | The Skyscape">
+  <meta property="og:description" content="View all apps deployed by {{.Handle}} on The Skyscape.">
+  <meta property="og:image" content="https://www.theskyscape.com/public/background.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://www.theskyscape.com/user/{{.Handle}}/apps">
+  <meta property="twitter:title" content="{{.Handle}}'s Apps | The Skyscape">
+  <meta property="twitter:description" content="View all apps deployed by {{.Handle}} on The Skyscape.">
+  <meta property="twitter:image" content="https://www.theskyscape.com/public/background.png">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://www.theskyscape.com/user/{{.Handle}}/apps">
+  {{end}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  {{with profile.CurrentProfile}}
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
+    <div class="absolute inset-0 bg-black opacity-40"></div>
+    <div class='flex flex-col gap-3 items-center px-4 py-18'>
+      <h1 class="text-3xl md:text-4xl font-bold tracking-wide opacity-80">{{.Handle}}'s Apps</h1>
+      <span class="text-lg md:text-xl font-bold opacity-60 text-center">
+        All apps deployed by @{{.Handle}}
+      </span>
+    </div>
+  </div>
+
+  <div id="repo-cards" class="max-w-screen-xl flex flex-wrap gap-9 w-full mx-auto relative z-20 px-7 py-12"
+    hx-boost="true">
+    {{range .Apps}}
+    {{template "app-card.html" .}}
+    {{else}}
+    <div class="w-full text-center py-12">
+      <h2 class="text-2xl font-bold opacity-60">No apps yet</h2>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{template "layout/end"}}
+</body>
+
+</html>

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
@@ -72,6 +73,41 @@ func (c *GitController) gitServer() *gitkit.Server {
 
 		if isPush && (repo.OwnerID != user.ID && !user.IsAdmin) {
 			return false, errors.New("only owner can push to their repos")
+		}
+
+		// Create activity for push after successful authentication
+		if isPush {
+			go func(repoID, userID string) {
+				// Wait for push to complete
+				time.Sleep(2 * time.Second)
+
+				// Re-fetch repo to ensure we have latest data
+				repo, err := models.Repos.Get(repoID)
+				if err != nil {
+					return
+				}
+
+				// Get latest commit message from the repo
+				stdout, _, err := repo.Git("log", "-1", "--pretty=format:%s")
+				if err != nil {
+					log.Printf("Failed to get commit message: %v", err)
+					return
+				}
+
+				commitMsg := strings.TrimSpace(stdout.String())
+				if commitMsg == "" {
+					return
+				}
+
+				// Create activity
+				models.Activities.Insert(&models.Activity{
+					UserID:      userID,
+					Action:      "pushed",
+					SubjectType: "repo",
+					SubjectID:   repoID,
+					Content:     commitMsg,
+				})
+			}(repo.ID, user.ID)
 		}
 
 		return true, nil

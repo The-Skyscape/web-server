@@ -36,6 +36,28 @@ func (p *Profile) Repos() []*Repo {
 	return repos
 }
 
+func (p *Profile) RecentApps() []*App {
+	apps, _ := Apps.Search(`
+		JOIN repos ON repos.ID = apps.RepoID
+		WHERE repos.OwnerID = ?
+			AND apps.Status != 'shutdown'
+		ORDER BY
+			apps.CreatedAt DESC
+		LIMIT 3
+	`, p.UserID)
+	return apps
+}
+
+func (p *Profile) RecentRepos() []*Repo {
+	repos, _ := Repos.Search(`
+		WHERE OwnerID = ?
+		 AND Archived = false
+		ORDER BY CreatedAt DESC
+		LIMIT 3
+	`, p.UserID)
+	return repos
+}
+
 func (p *Profile) User() *authentication.User {
 	user, _ := Auth.Users.Get(p.UserID)
 	return user

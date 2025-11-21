@@ -24,6 +24,8 @@ func (c *ProfileController) Setup(app *application.App) {
 	http.Handle("GET /users", app.Serve("users.html", auth.Optional))
 	http.Handle("GET /profile", app.Serve("profile.html", auth.Required))
 	http.Handle("GET /user/{id}", app.Serve("profile.html", auth.Optional))
+	http.Handle("GET /user/{id}/repos", app.Serve("user-repos.html", auth.Optional))
+	http.Handle("GET /user/{id}/apps", app.Serve("user-apps.html", auth.Optional))
 	http.Handle("POST /setup", app.ProtectFunc(c.setup, auth.Optional))
 }
 

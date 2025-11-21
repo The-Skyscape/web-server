@@ -28,7 +28,6 @@ func (c *ReposController) Setup(app *application.App) {
 	http.Handle("GET /repo/{repo}", c.Serve("repo.html", auth.Optional))
 	http.Handle("GET /repo/{repo}/file/{path...}", c.Serve("file.html", auth.Optional))
 	http.Handle("POST /repos", c.ProtectFunc(c.createRepo, auth.Required))
-	http.Handle("POST /repos/{repo}/comments", c.ProtectFunc(c.comment, auth.Required))
 	http.Handle("POST /repos/{repo}/promote", c.ProtectFunc(c.promoteRepo, auth.Required))
 	http.Handle("DELETE /repo/{repo}", c.ProtectFunc(c.deleteRepo, auth.Required))
 }
@@ -172,26 +171,6 @@ func (c *ReposController) createRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Redirect(w, r, "/repo/"+repo.ID)
-}
-
-func (c *ReposController) comment(w http.ResponseWriter, r *http.Request) {
-	auth := c.Use("auth").(*AuthController)
-	user, _, err := auth.Authenticate(r)
-	if err != nil {
-		c.Render(w, r, "error-message.html", err)
-		return
-	}
-
-	if _, err = models.Comments.Insert(&models.Comment{
-		UserID:    user.ID,
-		SubjectID: r.PathValue("repo"),
-		Content:   r.FormValue("content"),
-	}); err != nil {
-		c.Render(w, r, "error-message.html", err)
-		return
-	}
-
-	c.Refresh(w, r)
 }
 
 func (c *ReposController) deleteRepo(w http.ResponseWriter, r *http.Request) {

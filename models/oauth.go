@@ -122,7 +122,8 @@ func CreateAuthorizationCode(clientID, userID, redirectURI, scopes string) (stri
 }
 
 // CreateOrUpdateAuthorization creates a new authorization or updates existing one
-func CreateOrUpdateAuthorization(userID, clientID, scopes string) (*OAuthAuthorization, error) {
+// Returns the authorization and a boolean indicating if it was newly created (true) or updated (false)
+func CreateOrUpdateAuthorization(userID, clientID, scopes string) (*OAuthAuthorization, bool, error) {
 	// Check if authorization already exists
 	existing, err := OAuthAuthorizations.First("WHERE UserID = ? AND AppID = ?", userID, clientID)
 	if err == nil {
@@ -130,9 +131,9 @@ func CreateOrUpdateAuthorization(userID, clientID, scopes string) (*OAuthAuthori
 		existing.Scopes = scopes
 		existing.Revoked = false // Un-revoke if it was revoked
 		if err := OAuthAuthorizations.Update(existing); err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return existing, nil
+		return existing, false, nil
 	}
 
 	// Create new authorization
@@ -142,5 +143,9 @@ func CreateOrUpdateAuthorization(userID, clientID, scopes string) (*OAuthAuthori
 		Scopes: scopes,
 	}
 
-	return OAuthAuthorizations.Insert(auth)
+	created, err := OAuthAuthorizations.Insert(auth)
+	if err != nil {
+		return nil, false, err
+	}
+	return created, true, nil
 }

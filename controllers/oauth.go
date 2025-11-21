@@ -211,9 +211,20 @@ func (c *OAuthController) authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create or update authorization
-	if _, err := models.CreateOrUpdateAuthorization(user.ID, clientID, scope); err != nil {
+	authorization, isNew, err := models.CreateOrUpdateAuthorization(user.ID, clientID, scope)
+	if err != nil {
 		http.Error(w, "Failed to create authorization", http.StatusInternalServerError)
 		return
+	}
+
+	// Create activity for first-time authorization
+	if isNew {
+		models.Activities.Insert(&models.Activity{
+			UserID:      user.ID,
+			Action:      "joined",
+			SubjectType: "app",
+			SubjectID:   authorization.AppID,
+		})
 	}
 
 	// Generate authorization code

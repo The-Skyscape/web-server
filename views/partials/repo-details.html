@@ -62,7 +62,9 @@
   </label>
 
   {{with auth.CurrentUser}}
-  <form class="flex flex-col w-full" hx-post="{{host}}/repos/{{$.ID}}/comments" hx-target=".error">
+  <form class="flex flex-col w-full" hx-post="{{host}}/comment" hx-target=".error">
+    <input type="hidden" name="subject_id" value="{{$.ID}}">
+    <input type="hidden" name="subject_type" value="repo">
     <textarea required name="content" class="textarea w-full"
       placeholder="Leave a comment for this project..."></textarea>
     <div class="flex items-center justify-between px-4 pt-2">

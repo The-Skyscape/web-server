@@ -12,15 +12,21 @@
 
   <div class="max-w-screen-lg flex flex-col md:flex-row md:justify-between gap-4 w-full mx-auto relative z-20 px-4">
     {{with profile.CurrentProfile}}
+    {{$handle := .Handle}}
     {{template "profile-info.html" .}}
 
     <div class="w-full flex flex-col gap-4">
-      {{with .Apps}}
+      {{with .RecentApps}}
       <div class="card bg-base-100 shadow w-full">
         <div class="card-body">
-          <h2 class="text-xl font-bold">
-            Apps
-          </h2>
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-xl font-bold">
+              Apps
+            </h2>
+            <a href="{{host}}/user/{{$handle}}/apps" class="btn btn-ghost btn-sm" hx-boost="true">
+              View all →
+            </a>
+          </div>
           <ul class="menu gap-2 w-full p-0" hx-boost="true">
             {{range .}}
             <li>
@@ -56,10 +62,15 @@
 
       <div class="card bg-base-100 shadow-lg w-full">
         <div class="card-body">
-          <h2 class="card-title mb-4">
-            Repos
-          </h2>
-          {{with .Repos}}
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title">
+              Repos
+            </h2>
+            <a href="{{host}}/user/{{$handle}}/repos" class="btn btn-ghost btn-sm" hx-boost="true">
+              View all →
+            </a>
+          </div>
+          {{with .RecentRepos}}
           <ul class="menu gap-2 w-full p-0" hx-boost="true">
             {{range .}}
             <li>
