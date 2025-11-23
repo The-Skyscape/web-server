@@ -38,12 +38,25 @@
       </button>
       {{else}}
       {{if $profile.IsFollowedBy $user.ID}}
-      <button class="btn btn-primary shadow-xl group"
-        hx-delete="{{host}}/user/{{$profile.UserID}}/follow"
-        _="on mouseenter set my textContent to 'Unfollow' then add .btn-error to me
-           on mouseleave set my textContent to 'Following' then remove .btn-error from me">
-        Following
-      </button>
+      <a href="{{host}}/messages/{{$profile.Handle}}" class="btn btn-primary shadow-xl">
+        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+          stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Message
+      </a>
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn shadow-xl">
+          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true"
+            height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z">
+            </path>
+          </svg>
+        </div>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+          <li><a hx-delete="{{host}}/user/{{$profile.UserID}}/follow" class="text-error">Unfollow @{{$profile.Handle}}</a></li>
+        </ul>
+      </div>
       {{else}}
       <button class="btn btn-primary shadow-xl" hx-post="{{host}}/user/{{$profile.UserID}}/follow">
         Follow
