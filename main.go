@@ -39,6 +39,7 @@ func main() {
 		application.WithController(controllers.Comments()),
 		application.WithController(controllers.Follows()),
 		application.WithController(controllers.Stars()),
+		application.WithController(controllers.Messages()),
 		application.WithController(controllers.SEO()),
 		application.WithController(controllers.OAuth()),
 		application.WithController(controllers.API()),

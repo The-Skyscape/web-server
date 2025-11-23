@@ -24,6 +24,7 @@ var (
 
 	PasswordResetTokens = database.Manage(DB, new(ResetPasswordToken))
 	RateLimits          = database.Manage(DB, new(RateLimit))
+	Messages            = database.Manage(DB, new(Message))
 
 	OAuthAuthorizations     = database.Manage(DB, new(OAuthAuthorization))
 	OAuthAuthorizationCodes = database.Manage(DB, new(OAuthAuthorizationCode))

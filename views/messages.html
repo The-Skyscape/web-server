@@ -1,0 +1,73 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
+    <div class="absolute inset-0 bg-black opacity-40"></div>
+    <div class='flex flex-col gap-3 items-center px-4 py-8'>
+      <h1 class="text-3xl md:text-4xl font-bold tracking-wide opacity-80">Messages</h1>
+      <span class="text-lg md:text-xl font-bold opacity-60 text-center">
+        Your conversations with other developers
+      </span>
+    </div>
+  </div>
+
+  <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto flex flex-col gap-4">
+    {{$conversations := messages.Conversations}}
+    {{if $conversations}}
+    <div class="flex flex-col gap-2">
+      {{range $conversations}}
+      <a href="{{host}}/messages/{{.User.Handle}}"
+        class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="avatar">
+              <div class="w-12 p-0.5 bg-white/10 rounded-full border border-white/10">
+                <img src="{{.User.Avatar}}" alt="{{.User.Name}}" class="rounded-full">
+              </div>
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-base font-semibold">{{.User.Name}}</span>
+                <span class="text-sm font-semibold opacity-60">@{{.User.Handle}}</span>
+                {{if gt .UnreadCount 0}}
+                <span class="badge badge-primary badge-sm">{{.UnreadCount}}</span>
+                {{end}}
+              </div>
+
+              <p class="text-sm opacity-70 truncate">
+                {{if .LastMessage.Content}}
+                {{.LastMessage.Content}}
+                {{else}}
+                No messages yet
+                {{end}}
+              </p>
+            </div>
+
+            <div class="text-xs opacity-60">
+              {{.LastMessageAt.Format "Jan 2"}}
+            </div>
+          </div>
+        </div>
+      </a>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="card bg-base-100 shadow-lg">
+      <div class="card-body text-center">
+        <p class="opacity-60">No messages yet. Start a conversation with another developer!</p>
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

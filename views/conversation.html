@@ -1,0 +1,74 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+</head>
+
+<body hx-on="htmx:afterSettle: htmx.find('#messages-container').scrollTop = htmx.find('#messages-container').scrollHeight">
+  {{template "layout/start"}}
+
+  {{$otherUser := messages.OtherUser}}
+  {{$currentUser := auth.CurrentUser}}
+
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
+    <div class="absolute inset-0 bg-black opacity-40"></div>
+    <div class='flex flex-col gap-3 items-center px-4 py-8'>
+      <div class="flex items-center gap-3">
+        <a href="{{host}}/messages" class="btn btn-ghost btn-sm">
+          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em"
+            width="1em" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M34.52 239.03L228.87 44.69c9.37-9.37 24.57-9.37 33.94 0l22.67 22.67c9.36 9.36 9.37 24.52.04 33.9L131.49 256l154.02 154.75c9.34 9.38 9.32 24.54-.04 33.9l-22.67 22.67c-9.37 9.37-24.57 9.37-33.94 0L34.52 272.97c-9.37-9.37-9.37-24.57 0-33.94z">
+            </path>
+          </svg>
+        </a>
+        <div class="avatar">
+          <div class="w-12 p-0.5 bg-white/10 rounded-full border border-white/10">
+            <img src="{{$otherUser.Avatar}}" alt="{{$otherUser.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold tracking-wide opacity-80">{{$otherUser.Name}}</h1>
+          <span class="text-sm opacity-60">@{{$otherUser.Handle}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto flex flex-col gap-4 h-[calc(100vh-400px)]">
+    <div id="messages-container" class="flex-1 overflow-y-auto flex flex-col gap-3 pb-4"
+      hx-post="{{host}}/messages/{{$otherUser.Handle}}/mark-read" hx-trigger="load">
+      {{$messages := messages.ConversationWith}}
+      {{if $messages}}
+      {{range $messages}}
+      <div class="flex {{if eq .SenderID $currentUser.ID}}justify-end{{else}}justify-start{{end}}">
+        <div
+          class="max-w-[70%] rounded-lg p-3 {{if eq .SenderID $currentUser.ID}}bg-primary text-primary-content{{else}}bg-base-200{{end}}">
+          <p class="text-sm break-words">{{.Content}}</p>
+          <span class="text-xs opacity-60 mt-1 block">
+            {{.CreatedAt.Format "Jan 2, 3:04 PM"}}
+          </span>
+        </div>
+      </div>
+      {{end}}
+      {{else}}
+      <div class="flex items-center justify-center h-full">
+        <p class="opacity-60">No messages yet. Start the conversation!</p>
+      </div>
+      {{end}}
+    </div>
+
+    <form class="flex gap-2 border-t border-white/10 pt-4" hx-post="{{host}}/messages/{{$otherUser.Handle}}"
+      hx-target="#messages-container" hx-swap="beforeend" _="on htmx:afterRequest set #message-input.value to ''">
+      <textarea id="message-input" name="content" class="textarea textarea-bordered flex-1 min-h-12 max-h-32"
+        placeholder="Type your message..." required></textarea>
+      <button type="submit" class="btn btn-primary">
+        Send
+      </button>
+    </form>
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>
