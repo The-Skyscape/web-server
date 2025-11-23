@@ -74,11 +74,19 @@ type AuthController struct {
 }
 
 func (c *AuthController) Setup(app *application.App) {
-	c.Controller.Setup(app)
+	// Call grandparent Setup to avoid double-registering auth routes
+	c.Controller.Controller.Setup(app)
 
+	// Register auth routes with rate limiting
+	http.HandleFunc("POST /_auth/signup", c.signupWithRateLimit)
+	http.HandleFunc("POST /_auth/signin", c.signinWithRateLimit)
+	http.HandleFunc("POST /_auth/signout", c.Controller.HandleSignout)
+
+	// Register view routes
 	http.Handle("/signin", app.ProtectFunc(c.signin, nil))
 	http.Handle("/signup", app.ProtectFunc(c.signup, nil))
 
+	// Password reset routes
 	http.Handle("POST /reset-password", app.ProtectFunc(c.resetPassword, nil))
 	http.Handle("POST /forgot-password", app.ProtectFunc(c.sendPasswordToken, nil))
 
@@ -184,6 +192,91 @@ func (c *AuthController) signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Render(w, r, "signup.html", nil)
+}
+
+func (c *AuthController) signinWithRateLimit(w http.ResponseWriter, r *http.Request) {
+	// Get client IP address
+	ip := c.getClientIP(r)
+
+	// Check rate limit: 5 attempts per 15 minutes
+	allowed, _, err := models.Check(ip, "signin", 5, 15*time.Minute)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	if !allowed {
+		c.Render(w, r, "error-message.html", errors.New("Too many signin attempts. Please try again in 15 minutes."))
+		return
+	}
+
+	// Record the attempt before calling the handler
+	models.Record(ip, "signin", 15*time.Minute)
+
+	// Call the devtools signin handler
+	c.Controller.HandleSignin(w, r)
+
+	// Reset rate limit on successful signin (check if a session cookie was set)
+	for _, cookie := range w.Header()["Set-Cookie"] {
+		if strings.Contains(cookie, "theskyscape=") {
+			models.Reset(ip, "signin")
+			break
+		}
+	}
+}
+
+func (c *AuthController) signupWithRateLimit(w http.ResponseWriter, r *http.Request) {
+	// Get client IP address
+	ip := c.getClientIP(r)
+
+	// Check rate limit: 3 attempts per hour
+	allowed, _, err := models.Check(ip, "signup", 3, 1*time.Hour)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	if !allowed {
+		c.Render(w, r, "error-message.html", errors.New("Too many signup attempts. Please try again in 1 hour."))
+		return
+	}
+
+	// Record the attempt before calling the handler
+	models.Record(ip, "signup", 1*time.Hour)
+
+	// Call the devtools signup handler
+	c.Controller.HandleSignup(w, r)
+
+	// Reset rate limit on successful signup (check if a session cookie was set)
+	for _, cookie := range w.Header()["Set-Cookie"] {
+		if strings.Contains(cookie, "theskyscape=") {
+			models.Reset(ip, "signup")
+			break
+		}
+	}
+}
+
+func (c *AuthController) getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header first (for proxies/load balancers)
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		// X-Forwarded-For can contain multiple IPs, take the first one
+		if idx := strings.Index(forwarded, ","); idx > 0 {
+			return strings.TrimSpace(forwarded[:idx])
+		}
+		return strings.TrimSpace(forwarded)
+	}
+
+	// Check X-Real-IP header
+	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+		return strings.TrimSpace(realIP)
+	}
+
+	// Fall back to RemoteAddr
+	if idx := strings.LastIndex(r.RemoteAddr, ":"); idx > 0 {
+		return r.RemoteAddr[:idx]
+	}
+
+	return r.RemoteAddr
 }
 
 func (c *AuthController) sendPasswordToken(w http.ResponseWriter, r *http.Request) {
