@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"www.theskyscape.com/controllers"
@@ -15,6 +16,22 @@ var views embed.FS
 
 //go:embed all:emails
 var emails embed.FS
+
+// App timezone - can be changed globally
+var appTimezone *time.Location
+
+func init() {
+	var err error
+	appTimezone, err = time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		log.Fatal("Failed to load app timezone:", err)
+	}
+}
+
+// format converts time to app timezone and formats it
+func format(t time.Time, layout string) string {
+	return t.In(appTimezone).Format(layout)
+}
 
 func main() {
 	go func() {
@@ -28,6 +45,7 @@ func main() {
 		application.WithDaisyTheme("dark"),
 		application.WithHostPrefix(os.Getenv("PREFIX")),
 		application.WithPublicAccess(auth.Optional),
+		application.WithFunc("format", format),
 		application.WithController("auth", auth),
 		application.WithController(controllers.Feed()),
 		application.WithController(controllers.Profile()),

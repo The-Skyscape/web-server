@@ -189,32 +189,17 @@ func (p *Profile) ConversationWith(other *Profile) []*Message {
 }
 
 // MyConversations returns all profiles this user has exchanged messages with
+// Optimized with SQL JOIN to avoid Go loops
 func (p *Profile) MyConversations() []*Profile {
-	// Get all messages involving this user
-	messages, _ := Messages.Search(`
-		WHERE SenderID = ? OR RecipientID = ?
-		ORDER BY CreatedAt DESC
+	profiles, _ := Profiles.Search(`
+		JOIN messages ON (
+			(messages.SenderID = profiles.UserID AND messages.RecipientID = ?)
+			OR
+			(messages.RecipientID = profiles.UserID AND messages.SenderID = ?)
+		)
+		GROUP BY profiles.ID
+		ORDER BY MAX(messages.CreatedAt) DESC
 	`, p.UserID, p.UserID)
-
-	// Track unique conversation partners
-	seen := make(map[string]bool)
-	profiles := []*Profile{}
-
-	for _, msg := range messages {
-		var partnerID string
-		if msg.SenderID == p.UserID {
-			partnerID = msg.RecipientID
-		} else {
-			partnerID = msg.SenderID
-		}
-
-		if !seen[partnerID] {
-			seen[partnerID] = true
-			if profile, _ := Profiles.Get(partnerID); profile != nil {
-				profiles = append(profiles, profile)
-			}
-		}
-	}
 
 	return profiles
 }

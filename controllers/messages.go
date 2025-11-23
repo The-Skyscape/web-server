@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -11,11 +12,16 @@ import (
 )
 
 func Messages() (string, *MessagesController) {
-	return "messages", &MessagesController{}
+	return "messages", &MessagesController{
+		defaultPage:  1,
+		defaultLimit: 20,
+	}
 }
 
 type MessagesController struct {
 	application.Controller
+	defaultPage  int
+	defaultLimit int
 }
 
 func (c *MessagesController) Setup(app *application.App) {
@@ -23,9 +29,8 @@ func (c *MessagesController) Setup(app *application.App) {
 	auth := c.Use("auth").(*AuthController)
 
 	http.Handle("GET /messages", app.Serve("messages.html", auth.Required))
-	http.Handle("GET /messages/{user}", app.Serve("conversation.html", auth.Required))
+	http.Handle("GET /messages/{user}", c.ProtectFunc(c.viewConversation, auth.Required))
 	http.Handle("POST /messages/{user}", c.ProtectFunc(c.sendMessage, auth.Required))
-	http.Handle("POST /messages/{user}/mark-read", c.ProtectFunc(c.markAsRead, auth.Required))
 }
 
 func (c MessagesController) Handle(r *http.Request) application.Handler {
@@ -38,53 +43,17 @@ func (c *MessagesController) CurrentUser() *models.Profile {
 	return profile.CurrentProfile()
 }
 
-// Conversations returns a list of users the current user has conversations with
-// along with the most recent message and unread count
-type Conversation struct {
-	User          *models.Profile
-	LastMessage   *models.Message
-	UnreadCount   int
-	LastMessageAt time.Time
-}
-
-func (c *MessagesController) Conversations() []*Conversation {
+// Conversations returns all profiles the current user has messaged with
+func (c *MessagesController) Conversations() []*models.Profile {
 	currentProfile := c.CurrentUser()
 	if currentProfile == nil {
 		return nil
 	}
 
-	// Get all conversation partners using profile method
-	partners := currentProfile.MyConversations()
-
-	// Build conversation list with metadata
-	conversations := make([]*Conversation, 0, len(partners))
-	for _, partner := range partners {
-		lastMsg := currentProfile.LastMessage(partner)
-		if lastMsg == nil {
-			continue
-		}
-
-		conversations = append(conversations, &Conversation{
-			User:          partner,
-			LastMessage:   lastMsg,
-			UnreadCount:   currentProfile.UnreadMessagesFrom(partner),
-			LastMessageAt: currentProfile.LastMessageAt(partner),
-		})
-	}
-
-	// Sort by last message time (most recent first)
-	for i := 0; i < len(conversations); i++ {
-		for j := i + 1; j < len(conversations); j++ {
-			if conversations[j].LastMessageAt.After(conversations[i].LastMessageAt) {
-				conversations[i], conversations[j] = conversations[j], conversations[i]
-			}
-		}
-	}
-
-	return conversations
+	return currentProfile.MyConversations()
 }
 
-// ConversationWith returns all messages between current user and specified user
+// ConversationWith returns paginated messages between current user and specified user
 func (c *MessagesController) ConversationWith() []*models.Message {
 	currentProfile := c.CurrentUser()
 	otherProfile := c.OtherUser()
@@ -93,7 +62,17 @@ func (c *MessagesController) ConversationWith() []*models.Message {
 		return nil
 	}
 
-	return currentProfile.ConversationWith(otherProfile)
+	page := c.Page()
+	limit := c.Limit()
+	offset := (page - 1) * limit
+
+	messages, _ := models.Messages.Search(`
+		WHERE (SenderID = ? AND RecipientID = ?)
+		   OR (SenderID = ? AND RecipientID = ?)
+		ORDER BY CreatedAt DESC
+		LIMIT ? OFFSET ?
+	`, currentProfile.UserID, otherProfile.UserID, otherProfile.UserID, currentProfile.UserID, limit, offset)
+	return messages
 }
 
 // OtherUser returns the profile of the user being messaged
@@ -115,6 +94,19 @@ func (c *MessagesController) UnreadCount() int {
 	}
 
 	return models.Messages.Count("WHERE RecipientID = ? AND Read = ?", currentProfile.UserID, false)
+}
+
+func (c *MessagesController) viewConversation(w http.ResponseWriter, r *http.Request) {
+	currentProfile := c.CurrentUser()
+	otherProfile := c.OtherUser()
+
+	// Mark messages as read in a goroutine (side effect)
+	if currentProfile != nil && otherProfile != nil {
+		go currentProfile.MarkMessagesReadFrom(otherProfile)
+	}
+
+	// Render the conversation page
+	c.Render(w, r, "conversation.html", nil)
 }
 
 func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) {
@@ -162,6 +154,7 @@ func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request)
 		go models.Emails.Send(otherUser.Email,
 			"New Message from "+user.Handle,
 			emailing.WithTemplate("new-message.html"),
+			emailing.WithData("Title", "New Message"),
 			emailing.WithData("recipient", otherUser),
 			emailing.WithData("sender", senderProfile),
 			emailing.WithData("year", time.Now().Year()),
@@ -171,20 +164,26 @@ func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request)
 	c.Refresh(w, r)
 }
 
-func (c *MessagesController) markAsRead(w http.ResponseWriter, r *http.Request) {
-	currentProfile := c.CurrentUser()
-	otherProfile := c.OtherUser()
-
-	if currentProfile == nil || otherProfile == nil {
-		c.Render(w, r, "error-message.html", errors.New("user not found"))
-		return
+func (c *MessagesController) Page() int {
+	page := c.defaultPage
+	if pageStr := c.URL.Query().Get("page"); pageStr != "" {
+		if val, err := strconv.Atoi(pageStr); err == nil && val > 0 {
+			page = val
+		}
 	}
+	return page
+}
 
-	// Mark all unread messages from other user as read using profile method
-	if err := currentProfile.MarkMessagesReadFrom(otherProfile); err != nil {
-		c.Render(w, r, "error-message.html", err)
-		return
+func (c *MessagesController) Limit() int {
+	limit := c.defaultLimit
+	if limitStr := c.URL.Query().Get("limit"); limitStr != "" {
+		if val, err := strconv.Atoi(limitStr); err == nil && val > 0 {
+			limit = val
+		}
 	}
+	return limit
+}
 
-	w.WriteHeader(http.StatusOK)
+func (c *MessagesController) NextPage() int {
+	return c.Page() + 1
 }

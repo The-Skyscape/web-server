@@ -9,7 +9,7 @@
 
   <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
     <div class="absolute inset-0 bg-black opacity-40"></div>
-    <div class='flex flex-col gap-3 items-center px-4 py-8'>
+    <div class='flex flex-col gap-3 items-center px-4 py-18'>
       <h1 class="text-3xl md:text-4xl font-bold tracking-wide opacity-80">Messages</h1>
       <span class="text-lg md:text-xl font-bold opacity-60 text-center">
         Your conversations with other developers
@@ -17,56 +17,60 @@
     </div>
   </div>
 
-  <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto flex flex-col gap-4">
+  <div class="w-full max-w-screen-lg mx-auto -mb-40 md:mb-0">
+    <div class="px-6 py-8 flex flex-col gap-3" hx-boost="true">
+    {{$currentUser := messages.CurrentUser}}
     {{$conversations := messages.Conversations}}
     {{if $conversations}}
-    <div class="flex flex-col gap-2">
-      {{range $conversations}}
-      {{with .User}}
-      <a href="{{host}}/messages/{{.Handle}}"
-        class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
-        <div class="card-body p-4">
-          <div class="flex items-center gap-3">
-            <div class="avatar">
-              <div class="w-12 p-0.5 bg-white/10 rounded-full border border-white/10">
-                <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-              </div>
-            </div>
-
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-base font-semibold">{{.Name}}</span>
-                <span class="text-sm font-semibold opacity-60">@{{.Handle}}</span>
-                {{if gt $.UnreadCount 0}}
-                <span class="badge badge-primary badge-sm">{{$.UnreadCount}}</span>
-                {{end}}
-              </div>
-
-              <p class="text-sm opacity-70 truncate">
-                {{if $.LastMessage.Content}}
-                {{$.LastMessage.Content}}
-                {{else}}
-                No messages yet
-                {{end}}
-              </p>
-            </div>
-
-            <div class="text-xs opacity-60">
-              {{$.LastMessageAt.Format "Jan 2"}}
+    {{range $conversations}}
+    <a href="{{host}}/messages/{{.Handle}}"
+      class="card bg-base-200/60 backdrop-blur-sm hover:bg-base-200/80 transition-all duration-200 border border-white/5">
+      <div class="card-body p-5">
+        <div class="flex items-center gap-4">
+          <div class="avatar">
+            <div class="w-14 p-0.5 bg-white/10 rounded-full border border-white/20">
+              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
             </div>
           </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-base font-bold">{{.Name}}</span>
+              <span class="text-sm opacity-60">@{{.Handle}}</span>
+              {{$unreadCount := $currentUser.UnreadMessagesFrom .}}
+              {{if gt $unreadCount 0}}
+              <span class="badge badge-primary badge-sm font-semibold">{{$unreadCount}}</span>
+              {{end}}
+            </div>
+
+            {{$lastMsg := $currentUser.LastMessage .}}
+            <p class="text-sm opacity-70 truncate leading-relaxed">
+              {{if $lastMsg}}
+              {{$lastMsg.Content}}
+              {{else}}
+              No messages yet
+              {{end}}
+            </p>
+          </div>
+
+          {{$lastMsgTime := $currentUser.LastMessageAt .}}
+          {{if not $lastMsgTime.IsZero}}
+          <div class="text-xs opacity-60 self-start">
+            {{format $lastMsgTime "Jan 2"}}
+          </div>
+          {{end}}
         </div>
-      </a>
-      {{end}}
-      {{end}}
-    </div>
+      </div>
+    </a>
+    {{end}}
     {{else}}
-    <div class="card bg-base-100 shadow-lg">
-      <div class="card-body text-center">
-        <p class="opacity-60">No messages yet. Start a conversation with another developer!</p>
+    <div class="card bg-base-200/40 backdrop-blur-sm border border-white/5">
+      <div class="card-body text-center py-12">
+        <p class="text-base opacity-60">No messages yet. Start a conversation with another developer!</p>
       </div>
     </div>
     {{end}}
+    </div>
   </div>
 
   {{template "layout/end"}}

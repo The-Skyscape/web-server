@@ -4,15 +4,15 @@
   {{template "includes.html"}}
 </head>
 
-<body hx-on="htmx:afterSettle: htmx.find('#messages-container').scrollTop = htmx.find('#messages-container').scrollHeight">
+<body>
   {{template "layout/start"}}
 
   {{with $otherUser := messages.OtherUser}}
   {{$currentUser := auth.CurrentUser}}
 
-  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
-    <div class="absolute inset-0 bg-black opacity-40"></div>
-    <div class='flex flex-col gap-3 items-center px-4 py-8'>
+  <div class="flex flex-col w-full max-w-screen-lg mx-auto -mb-40 md:mb-0" style="height: calc(100vh - 6rem); max-height: calc(100vh - 6rem);">
+    <!-- Header -->
+    <div class="w-full p-4 md:p-6 border-b border-white/10 flex-shrink-0" hx-boost="true">
       <div class="flex items-center gap-3">
         <a href="{{host}}/messages" class="btn btn-ghost btn-sm">
           <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em"
@@ -22,47 +22,69 @@
             </path>
           </svg>
         </a>
-        <div class="avatar">
-          <div class="w-12 p-0.5 bg-white/10 rounded-full border border-white/10">
-            <img src="{{$otherUser.Avatar}}" alt="{{$otherUser.Name}}" class="rounded-full">
+        <a href="{{host}}/user/{{$otherUser.Handle}}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div class="avatar">
+            <div class="w-10 p-0.5 bg-white/10 rounded-full border border-white/10">
+              <img src="{{$otherUser.Avatar}}" alt="{{$otherUser.Name}}" class="rounded-full">
+            </div>
           </div>
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold tracking-wide opacity-80">{{$otherUser.Name}}</h1>
-          <span class="text-sm opacity-60">@{{$otherUser.Handle}}</span>
-        </div>
+          <div>
+            <h1 class="text-xl font-bold">{{$otherUser.Name}}</h1>
+            <span class="text-sm opacity-60">@{{$otherUser.Handle}}</span>
+          </div>
+        </a>
       </div>
     </div>
-  </div>
 
-  <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto flex flex-col gap-4 h-[calc(100vh-400px)]">
-    <div id="messages-container" class="flex-1 overflow-y-auto flex flex-col gap-3 pb-4"
-      hx-post="{{host}}/messages/{{$otherUser.Handle}}/mark-read" hx-trigger="load">
+    <!-- Messages Container -->
+    <div id="messages-container" class="w-full flex-1 overflow-y-auto flex flex-col-reverse gap-4 px-4 md:px-6 py-4">
       {{$messages := messages.ConversationWith}}
+      {{$page := messages.Page}}
+      {{$limit := messages.Limit}}
+      {{$nextPage := messages.NextPage}}
+
       {{if $messages}}
       {{range $messages}}
       <div class="flex {{if eq .SenderID $currentUser.ID}}justify-end{{else}}justify-start{{end}}">
         <div
-          class="max-w-[70%] rounded-lg p-3 {{if eq .SenderID $currentUser.ID}}bg-primary text-primary-content{{else}}bg-base-200{{end}}">
-          <p class="text-sm break-words">{{.Content}}</p>
-          <span class="text-xs opacity-60 mt-1 block">
-            {{.CreatedAt.Format "Jan 2, 3:04 PM"}}
+          class="max-w-[75%] rounded-2xl px-5 py-3 shadow-sm {{if eq .SenderID $currentUser.ID}}bg-primary/90 text-primary-content{{else}}bg-base-300/80 backdrop-blur-sm{{end}}">
+          <p class="text-base break-words leading-relaxed">{{.Content}}</p>
+          <span class="text-xs opacity-70 mt-1.5 block">
+            {{format .CreatedAt "Jan 2, 3:04 PM"}}
           </span>
         </div>
       </div>
       {{end}}
+
+      <!-- Pagination trigger for loading older messages -->
+      {{if eq (len $messages) $limit}}
+      <div hx-get="{{host}}/messages/{{$otherUser.Handle}}?page={{$nextPage}}&limit={{$limit}}"
+           hx-trigger="revealed"
+           hx-swap="afterend"
+           hx-select="#messages-container > div"
+           class="text-center py-2">
+        <span class="loading loading-spinner loading-sm opacity-40"></span>
+      </div>
+      {{end}}
       {{else}}
       <div class="flex items-center justify-center h-full">
-        <p class="opacity-60">No messages yet. Start the conversation!</p>
+        <div class="text-center">
+          <p class="text-lg opacity-60">No messages yet</p>
+          <p class="text-sm opacity-40 mt-2">Start the conversation!</p>
+        </div>
       </div>
       {{end}}
     </div>
 
-    <form class="flex gap-2 border-t border-white/10 pt-4" hx-post="{{host}}/messages/{{$otherUser.Handle}}"
-      hx-target="#messages-container" hx-swap="beforeend" _="on htmx:afterRequest set #message-input.value to ''">
-      <textarea id="message-input" name="content" class="textarea textarea-bordered flex-1 min-h-12 max-h-32"
+    <!-- Message Input -->
+    <form class="w-full flex gap-3 border-t border-white/10 p-4 md:p-6 bg-base-100 flex-shrink-0"
+      hx-post="{{host}}/messages/{{$otherUser.Handle}}"
+      hx-target="#messages-container" hx-swap="afterbegin"
+      _="on htmx:afterRequest set #message-input.value to ''">
+      <textarea id="message-input" name="content"
+        class="textarea textarea-bordered flex-1 min-h-14 max-h-32 resize-none"
         placeholder="Type your message..." required></textarea>
-      <button type="submit" class="btn btn-primary">
+      <button type="submit" class="btn btn-primary self-end">
         Send
       </button>
     </form>
