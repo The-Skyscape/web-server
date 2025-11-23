@@ -33,6 +33,11 @@ func (c MessagesController) Handle(r *http.Request) application.Handler {
 	return &c
 }
 
+func (c *MessagesController) CurrentUser() *models.Profile {
+	profile := c.Use("profile").(*ProfileController)
+	return profile.CurrentProfile()
+}
+
 // Conversations returns a list of users the current user has conversations with
 // along with the most recent message and unread count
 type Conversation struct {
@@ -43,52 +48,28 @@ type Conversation struct {
 }
 
 func (c *MessagesController) Conversations() []*Conversation {
-	auth := c.Use("auth").(*AuthController)
-	user, _, _ := auth.Authenticate(c.Request)
-	if user == nil {
+	currentProfile := c.CurrentUser()
+	if currentProfile == nil {
 		return nil
 	}
 
-	// Get all unique users the current user has messaged with
-	messages, _ := models.Messages.Search(`
-		WHERE SenderID = ? OR RecipientID = ?
-		ORDER BY CreatedAt DESC
-	`, user.ID, user.ID)
+	// Get all conversation partners using profile method
+	partners := currentProfile.MyConversations()
 
-	// Group by conversation partner
-	conversationMap := make(map[string]*Conversation)
-	for _, msg := range messages {
-		var partnerID string
-		if msg.SenderID == user.ID {
-			partnerID = msg.RecipientID
-		} else {
-			partnerID = msg.SenderID
+	// Build conversation list with metadata
+	conversations := make([]*Conversation, 0, len(partners))
+	for _, partner := range partners {
+		lastMsg := currentProfile.LastMessage(partner)
+		if lastMsg == nil {
+			continue
 		}
 
-		if _, exists := conversationMap[partnerID]; !exists {
-			profile, _ := models.Profiles.Get(partnerID)
-			if profile == nil {
-				continue
-			}
-
-			// Count unread messages from this partner
-			unreadCount := models.Messages.Count(`
-				WHERE SenderID = ? AND RecipientID = ? AND Read = ?
-			`, partnerID, user.ID, false)
-
-			conversationMap[partnerID] = &Conversation{
-				User:          profile,
-				LastMessage:   msg,
-				UnreadCount:   unreadCount,
-				LastMessageAt: msg.CreatedAt,
-			}
-		}
-	}
-
-	// Convert map to slice and sort by last message time
-	conversations := make([]*Conversation, 0, len(conversationMap))
-	for _, conv := range conversationMap {
-		conversations = append(conversations, conv)
+		conversations = append(conversations, &Conversation{
+			User:          partner,
+			LastMessage:   lastMsg,
+			UnreadCount:   currentProfile.UnreadMessagesFrom(partner),
+			LastMessageAt: currentProfile.LastMessageAt(partner),
+		})
 	}
 
 	// Sort by last message time (most recent first)
@@ -105,43 +86,35 @@ func (c *MessagesController) Conversations() []*Conversation {
 
 // ConversationWith returns all messages between current user and specified user
 func (c *MessagesController) ConversationWith() []*models.Message {
-	auth := c.Use("auth").(*AuthController)
-	user, _, _ := auth.Authenticate(c.Request)
-	if user == nil {
+	currentProfile := c.CurrentUser()
+	otherProfile := c.OtherUser()
+
+	if currentProfile == nil || otherProfile == nil {
 		return nil
 	}
 
-	otherUserHandle := c.PathValue("user")
-	otherProfile, _ := models.Profiles.First("WHERE Handle = ?", otherUserHandle)
-	if otherProfile == nil {
-		return nil
-	}
-
-	messages, _ := models.Messages.Search(`
-		WHERE (SenderID = ? AND RecipientID = ?)
-		   OR (SenderID = ? AND RecipientID = ?)
-		ORDER BY CreatedAt ASC
-	`, user.ID, otherProfile.UserID, otherProfile.UserID, user.ID)
-
-	return messages
+	return currentProfile.ConversationWith(otherProfile)
 }
 
 // OtherUser returns the profile of the user being messaged
 func (c *MessagesController) OtherUser() *models.Profile {
 	otherUserHandle := c.PathValue("user")
-	otherProfile, _ := models.Profiles.First("WHERE Handle = ?", otherUserHandle)
-	return otherProfile
+	otherUser, _ := models.Auth.Users.First("WHERE Handle = ?", otherUserHandle)
+	if otherUser == nil {
+		return nil
+	}
+	profile, _ := models.Profiles.Get(otherUser.ID)
+	return profile
 }
 
 // UnreadCount returns the total number of unread messages for the current user
 func (c *MessagesController) UnreadCount() int {
-	auth := c.Use("auth").(*AuthController)
-	user, _, _ := auth.Authenticate(c.Request)
-	if user == nil {
+	currentProfile := c.CurrentUser()
+	if currentProfile == nil {
 		return 0
 	}
 
-	return models.Messages.Count("WHERE RecipientID = ? AND Read = ?", user.ID, false)
+	return models.Messages.Count("WHERE RecipientID = ? AND Read = ?", currentProfile.UserID, false)
 }
 
 func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) {
@@ -153,8 +126,8 @@ func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request)
 	}
 
 	otherUserHandle := r.PathValue("user")
-	otherProfile, _ := models.Profiles.First("WHERE Handle = ?", otherUserHandle)
-	if otherProfile == nil {
+	otherUser, _ := models.Auth.Users.First("WHERE Handle = ?", otherUserHandle)
+	if otherUser == nil {
 		c.Render(w, r, "error-message.html", errors.New("user not found"))
 		return
 	}
@@ -168,7 +141,7 @@ func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request)
 	// Create the message
 	_, err = models.Messages.Insert(&models.Message{
 		SenderID:    user.ID,
-		RecipientID: otherProfile.UserID,
+		RecipientID: otherUser.ID,
 		Content:     content,
 	})
 	if err != nil {
@@ -181,49 +154,36 @@ func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request)
 	oneHourAgo := time.Now().Add(-1 * time.Hour)
 	recentMessages := models.Messages.Count(`
 		WHERE RecipientID = ? AND CreatedAt > ?
-	`, otherProfile.UserID, oneHourAgo)
+	`, otherUser.ID, oneHourAgo)
 
 	// If this is the only message in the last hour (count = 1, the one we just sent), send email
 	if recentMessages == 1 {
-		recipient, _ := models.Auth.Users.Get(otherProfile.UserID)
-		if recipient != nil {
-			senderProfile, _ := models.Profiles.Get(user.ID)
-			go models.Emails.Send(recipient.Email,
-				"New Message from "+user.Handle,
-				emailing.WithTemplate("new-message.html"),
-				emailing.WithData("recipient", recipient),
-				emailing.WithData("sender", senderProfile),
-				emailing.WithData("year", time.Now().Year()),
-			)
-		}
+		senderProfile, _ := models.Profiles.Get(user.ID)
+		go models.Emails.Send(otherUser.Email,
+			"New Message from "+user.Handle,
+			emailing.WithTemplate("new-message.html"),
+			emailing.WithData("recipient", otherUser),
+			emailing.WithData("sender", senderProfile),
+			emailing.WithData("year", time.Now().Year()),
+		)
 	}
 
 	c.Refresh(w, r)
 }
 
 func (c *MessagesController) markAsRead(w http.ResponseWriter, r *http.Request) {
-	auth := c.Use("auth").(*AuthController)
-	user, _, err := auth.Authenticate(r)
-	if err != nil {
-		c.Render(w, r, "error-message.html", err)
-		return
-	}
+	currentProfile := c.CurrentUser()
+	otherProfile := c.OtherUser()
 
-	otherUserHandle := r.PathValue("user")
-	otherProfile, _ := models.Profiles.First("WHERE Handle = ?", otherUserHandle)
-	if otherProfile == nil {
+	if currentProfile == nil || otherProfile == nil {
 		c.Render(w, r, "error-message.html", errors.New("user not found"))
 		return
 	}
 
-	// Mark all unread messages from this user as read
-	messages, _ := models.Messages.Search(`
-		WHERE SenderID = ? AND RecipientID = ? AND Read = ?
-	`, otherProfile.UserID, user.ID, false)
-
-	for _, msg := range messages {
-		msg.Read = true
-		models.Messages.Update(msg)
+	// Mark all unread messages from other user as read using profile method
+	if err := currentProfile.MarkMessagesReadFrom(otherProfile); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

@@ -2,6 +2,7 @@ package models
 
 import (
 	"cmp"
+	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
@@ -144,4 +145,91 @@ func CreateProfile(userID, description string) (*Profile, error) {
 	})
 
 	return p, err
+}
+
+// LastMessage returns the most recent message between this profile and another
+func (p *Profile) LastMessage(with *Profile) *Message {
+	message, err := Messages.First(`
+		WHERE (SenderID = ? AND RecipientID = ?)
+		   OR (SenderID = ? AND RecipientID = ?)
+		ORDER BY CreatedAt DESC
+	`, p.UserID, with.UserID, with.UserID, p.UserID)
+
+	if err != nil {
+		return nil
+	}
+
+	return message
+}
+
+// UnreadMessagesFrom returns count of unread messages FROM another profile TO this profile
+func (p *Profile) UnreadMessagesFrom(from *Profile) int {
+	return Messages.Count(`
+		WHERE SenderID = ? AND RecipientID = ? AND Read = false
+	`, from.UserID, p.UserID)
+}
+
+// LastMessageAt returns the timestamp of the last message between profiles
+func (p *Profile) LastMessageAt(with *Profile) time.Time {
+	message := p.LastMessage(with)
+	if message == nil {
+		return time.Time{}
+	}
+	return message.CreatedAt
+}
+
+// ConversationWith returns all messages between this profile and another
+func (p *Profile) ConversationWith(other *Profile) []*Message {
+	messages, _ := Messages.Search(`
+		WHERE (SenderID = ? AND RecipientID = ?)
+		   OR (SenderID = ? AND RecipientID = ?)
+		ORDER BY CreatedAt ASC
+	`, p.UserID, other.UserID, other.UserID, p.UserID)
+	return messages
+}
+
+// MyConversations returns all profiles this user has exchanged messages with
+func (p *Profile) MyConversations() []*Profile {
+	// Get all messages involving this user
+	messages, _ := Messages.Search(`
+		WHERE SenderID = ? OR RecipientID = ?
+		ORDER BY CreatedAt DESC
+	`, p.UserID, p.UserID)
+
+	// Track unique conversation partners
+	seen := make(map[string]bool)
+	profiles := []*Profile{}
+
+	for _, msg := range messages {
+		var partnerID string
+		if msg.SenderID == p.UserID {
+			partnerID = msg.RecipientID
+		} else {
+			partnerID = msg.SenderID
+		}
+
+		if !seen[partnerID] {
+			seen[partnerID] = true
+			if profile, _ := Profiles.Get(partnerID); profile != nil {
+				profiles = append(profiles, profile)
+			}
+		}
+	}
+
+	return profiles
+}
+
+// MarkMessagesReadFrom marks all unread messages from another profile as read
+func (p *Profile) MarkMessagesReadFrom(from *Profile) error {
+	messages, _ := Messages.Search(`
+		WHERE SenderID = ? AND RecipientID = ? AND Read = false
+	`, from.UserID, p.UserID)
+
+	for _, msg := range messages {
+		msg.Read = true
+		if err := Messages.Update(msg); err != nil {
+			return err
+		}
+	}
+	return nil
 }
