@@ -7,7 +7,7 @@
 <body hx-on="htmx:afterSettle: htmx.find('#messages-container').scrollTop = htmx.find('#messages-container').scrollHeight">
   {{template "layout/start"}}
 
-  {{$otherUser := messages.OtherUser}}
+  {{with $otherUser := messages.OtherUser}}
   {{$currentUser := auth.CurrentUser}}
 
   <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
@@ -67,6 +67,18 @@
       </button>
     </form>
   </div>
+
+  {{else}}
+  <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto">
+    <div class="card bg-base-100 shadow-lg">
+      <div class="card-body text-center">
+        <h2 class="card-title text-error">User Not Found</h2>
+        <p class="opacity-60">The user you're trying to message doesn't exist.</p>
+        <a href="{{host}}/messages" class="btn btn-primary mt-4">Back to Messages</a>
+      </div>
+    </div>
+  </div>
+  {{end}}
 
   {{template "layout/end"}}
 </body>
