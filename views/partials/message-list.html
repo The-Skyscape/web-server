@@ -1,0 +1,26 @@
+{{$user := auth.CurrentUser}}
+{{$profile := messages.CurrentProfile}}
+
+{{with $messages := .}}
+
+{{range $messages}}
+<div class="flex {{if eq .SenderID $user.ID}}justify-end{{else}}justify-start{{end}}">
+  <div
+    class="max-w-[75%] rounded-2xl px-5 py-3 shadow-sm {{if eq .SenderID $user.ID}}bg-primary/90 text-primary-content{{else}}bg-base-300/80 backdrop-blur-sm{{end}}">
+    <p class="text-base break-words leading-relaxed">{{.Content}}</p>
+    <span class="text-xs opacity-70 mt-1.5 block">
+      {{format .CreatedAt "Jan 2, 3:04 PM"}}
+    </span>
+  </div>
+</div>
+{{end}}
+
+<!-- Pagination trigger for loading older messages -->
+{{if eq (len $messages) messages.Limit}}
+<div hx-get="{{host}}/messages/{{$profile.Handle}}/list?page={{messages.NextPage}}&limit={{messages.Limit}}"
+  hx-trigger="revealed" hx-swap="afterend" class="text-center py-2">
+  <span class="loading loading-spinner loading-sm opacity-40"></span>
+</div>
+{{end}}
+
+{{end}}

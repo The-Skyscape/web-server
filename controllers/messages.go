@@ -29,8 +29,9 @@ func (c *MessagesController) Setup(app *application.App) {
 	auth := c.Use("auth").(*AuthController)
 
 	http.Handle("GET /messages", app.Serve("messages.html", auth.Required))
-	http.Handle("GET /messages/{user}", c.ProtectFunc(c.viewConversation, auth.Required))
-	http.Handle("POST /messages/{user}", c.ProtectFunc(c.sendMessage, auth.Required))
+	http.Handle("GET /messages/{id}", c.ProtectFunc(c.viewConversation, auth.Required))
+	http.Handle("GET /messages/{id}/list", app.Serve("message-list", auth.Required))
+	http.Handle("POST /messages/{id}", c.ProtectFunc(c.sendMessage, auth.Required))
 }
 
 func (c MessagesController) Handle(r *http.Request) application.Handler {
@@ -39,87 +40,79 @@ func (c MessagesController) Handle(r *http.Request) application.Handler {
 }
 
 func (c *MessagesController) CurrentUser() *models.Profile {
+	auth := c.Use("auth").(*AuthController)
+	user := auth.CurrentUser()
+	if user == nil {
+		return nil
+	}
+
+	profile, _ := models.Profiles.Get(user.ID)
+	return profile
+}
+
+func (c *MessagesController) CurrentProfile() *models.Profile {
 	profile := c.Use("profile").(*ProfileController)
 	return profile.CurrentProfile()
 }
 
-// Conversations returns all profiles the current user has messaged with
-func (c *MessagesController) Conversations() []*models.Profile {
-	currentProfile := c.CurrentUser()
-	if currentProfile == nil {
-		return nil
-	}
-
-	return currentProfile.MyConversations()
-}
-
-// ConversationWith returns paginated messages between current user and specified user
-func (c *MessagesController) ConversationWith() []*models.Message {
-	currentProfile := c.CurrentUser()
-	otherProfile := c.OtherUser()
-
-	if currentProfile == nil || otherProfile == nil {
-		return nil
-	}
-
-	page := c.Page()
-	limit := c.Limit()
-	offset := (page - 1) * limit
-
-	messages, _ := models.Messages.Search(`
-		WHERE (SenderID = ? AND RecipientID = ?)
-		   OR (SenderID = ? AND RecipientID = ?)
-		ORDER BY CreatedAt DESC
-		LIMIT ? OFFSET ?
-	`, currentProfile.UserID, otherProfile.UserID, otherProfile.UserID, currentProfile.UserID, limit, offset)
-	return messages
-}
-
-// OtherUser returns the profile of the user being messaged
-func (c *MessagesController) OtherUser() *models.Profile {
-	otherUserHandle := c.PathValue("user")
-	otherUser, _ := models.Auth.Users.First("WHERE Handle = ?", otherUserHandle)
-	if otherUser == nil {
-		return nil
-	}
-	profile, _ := models.Profiles.Get(otherUser.ID)
-	return profile
-}
-
-// UnreadCount returns the total number of unread messages for the current user
-func (c *MessagesController) UnreadCount() int {
-	currentProfile := c.CurrentUser()
-	if currentProfile == nil {
+func (c *MessagesController) Count() int {
+	profile := c.CurrentProfile()
+	if profile == nil {
 		return 0
 	}
 
-	return models.Messages.Count("WHERE RecipientID = ? AND Read = ?", currentProfile.UserID, false)
+	return profile.MessageCount(c.CurrentUser())
 }
 
-func (c *MessagesController) viewConversation(w http.ResponseWriter, r *http.Request) {
-	currentProfile := c.CurrentUser()
-	otherProfile := c.OtherUser()
-
-	// Mark messages as read in a goroutine (side effect)
-	if currentProfile != nil && otherProfile != nil {
-		go currentProfile.MarkMessagesReadFrom(otherProfile)
+func (c *MessagesController) Messages() []*models.Message {
+	profile := c.CurrentProfile()
+	if profile == nil {
+		return nil
 	}
 
-	// Render the conversation page
+	return profile.Messages(c.CurrentUser(), c.defaultPage, c.defaultLimit)
+}
+
+func (c *MessagesController) Conversations() []*models.Profile {
+	user := c.CurrentUser()
+	if user == nil {
+		return nil
+	}
+
+	return user.MyConversations()
+}
+
+func (c *MessagesController) UnreadCount() int {
+	user := c.CurrentUser()
+	if user == nil {
+		return 0
+	}
+
+	return models.Messages.Count(`
+		WHERE RecipientID = ?
+			AND Read = false
+	`, user.ID)
+}
+
+func (c MessagesController) viewConversation(w http.ResponseWriter, r *http.Request) {
+	c.Request = r
+
+	user := c.CurrentUser()
+	profile := c.CurrentProfile()
+	if user != nil && profile != nil {
+		user.MarkMessagesReadFrom(profile)
+	}
+
 	c.Render(w, r, "conversation.html", nil)
 }
 
-func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) {
-	auth := c.Use("auth").(*AuthController)
-	user, _, err := auth.Authenticate(r)
-	if err != nil {
-		c.Render(w, r, "error-message.html", err)
-		return
-	}
+func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) {
+	c.Request = r
 
-	otherUserHandle := r.PathValue("user")
-	otherUser, _ := models.Auth.Users.First("WHERE Handle = ?", otherUserHandle)
-	if otherUser == nil {
+	user := c.CurrentUser()
+
+	profile, err := models.Profiles.Get(r.FormValue("id"))
+	if err != nil {
 		c.Render(w, r, "error-message.html", errors.New("user not found"))
 		return
 	}
@@ -133,7 +126,7 @@ func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request)
 	// Create the message
 	_, err = models.Messages.Insert(&models.Message{
 		SenderID:    user.ID,
-		RecipientID: otherUser.ID,
+		RecipientID: profile.ID,
 		Content:     content,
 	})
 	if err != nil {
@@ -146,17 +139,17 @@ func (c *MessagesController) sendMessage(w http.ResponseWriter, r *http.Request)
 	oneHourAgo := time.Now().Add(-1 * time.Hour)
 	recentMessages := models.Messages.Count(`
 		WHERE RecipientID = ? AND CreatedAt > ?
-	`, otherUser.ID, oneHourAgo)
+	`, profile.ID, oneHourAgo)
 
 	// If this is the only message in the last hour (count = 1, the one we just sent), send email
 	if recentMessages == 1 {
-		senderProfile, _ := models.Profiles.Get(user.ID)
-		go models.Emails.Send(otherUser.Email,
-			"New Message from "+user.Handle,
+		userProfile, _ := models.Profiles.Get(user.ID)
+		go models.Emails.Send(profile.User().Email,
+			"New Message from "+user.Handle(),
 			emailing.WithTemplate("new-message.html"),
 			emailing.WithData("Title", "New Message"),
-			emailing.WithData("recipient", otherUser),
-			emailing.WithData("sender", senderProfile),
+			emailing.WithData("recipient", profile),
+			emailing.WithData("sender", userProfile),
 			emailing.WithData("year", time.Now().Year()),
 		)
 	}

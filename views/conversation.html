@@ -7,65 +7,43 @@
 <body>
   {{template "layout/start"}}
 
-  {{with $otherUser := messages.OtherUser}}
-  {{$currentUser := auth.CurrentUser}}
-
-  <div class="flex flex-col w-full max-w-screen-lg mx-auto -mb-40 md:mb-0" style="height: calc(100vh - 6rem); max-height: calc(100vh - 6rem);">
+  {{with $profile := profile.CurrentProfile}}
+  <div class="flex flex-col w-full mx-auto -mb-40 md:mb-0 h-[calc(100vh-6rem)] md:h-screen">
     <!-- Header -->
     <div class="w-full p-4 md:p-6 border-b border-white/10 flex-shrink-0" hx-boost="true">
-      <div class="flex items-center gap-3">
+      <div class="w-full max-w-screen-lg mx-auto flex items-center gap-3">
+        <!-- Back Chevron -->
         <a href="{{host}}/messages" class="btn btn-ghost btn-sm">
-          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em"
-            width="1em" xmlns="http://www.w3.org/2000/svg">
+          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em" width="1em"
+            xmlns="http://www.w3.org/2000/svg">
             <path
               d="M34.52 239.03L228.87 44.69c9.37-9.37 24.57-9.37 33.94 0l22.67 22.67c9.36 9.36 9.37 24.52.04 33.9L131.49 256l154.02 154.75c9.34 9.38 9.32 24.54-.04 33.9l-22.67 22.67c-9.37 9.37-24.57 9.37-33.94 0L34.52 272.97c-9.37-9.37-9.37-24.57 0-33.94z">
             </path>
           </svg>
         </a>
-        <a href="{{host}}/user/{{$otherUser.Handle}}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+
+        <!-- Profile Info -->
+        <a href="{{host}}/user/{{$profile.Handle}}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div class="avatar">
             <div class="w-10 p-0.5 bg-white/10 rounded-full border border-white/10">
-              <img src="{{$otherUser.Avatar}}" alt="{{$otherUser.Name}}" class="rounded-full">
+              <img src="{{$profile.Avatar}}" alt="{{$profile.Name}}" class="rounded-full">
             </div>
           </div>
           <div>
-            <h1 class="text-xl font-bold">{{$otherUser.Name}}</h1>
-            <span class="text-sm opacity-60">@{{$otherUser.Handle}}</span>
+            <h1 class="text-xl font-bold">{{$profile.Name}}</h1>
+            <span class="text-sm opacity-60">@{{$profile.Handle}}</span>
           </div>
         </a>
       </div>
     </div>
 
     <!-- Messages Container -->
-    <div id="messages-container" class="w-full flex-1 overflow-y-auto flex flex-col-reverse gap-4 px-4 md:px-6 py-4">
-      {{$messages := messages.ConversationWith}}
-      {{$page := messages.Page}}
-      {{$limit := messages.Limit}}
-      {{$nextPage := messages.NextPage}}
+    <div id="messages-container"
+      class="w-full max-w-screen-lg mx-auto flex-1 overflow-y-auto flex flex-col-reverse gap-4 px-4 md:px-6 py-4">
+      {{if gt messages.Count 0}}
 
-      {{if $messages}}
-      {{range $messages}}
-      <div class="flex {{if eq .SenderID $currentUser.ID}}justify-end{{else}}justify-start{{end}}">
-        <div
-          class="max-w-[75%] rounded-2xl px-5 py-3 shadow-sm {{if eq .SenderID $currentUser.ID}}bg-primary/90 text-primary-content{{else}}bg-base-300/80 backdrop-blur-sm{{end}}">
-          <p class="text-base break-words leading-relaxed">{{.Content}}</p>
-          <span class="text-xs opacity-70 mt-1.5 block">
-            {{format .CreatedAt "Jan 2, 3:04 PM"}}
-          </span>
-        </div>
-      </div>
-      {{end}}
+      {{template "message-list.html" messages.Messages}}
 
-      <!-- Pagination trigger for loading older messages -->
-      {{if eq (len $messages) $limit}}
-      <div hx-get="{{host}}/messages/{{$otherUser.Handle}}?page={{$nextPage}}&limit={{$limit}}"
-           hx-trigger="revealed"
-           hx-swap="afterend"
-           hx-select="#messages-container > div"
-           class="text-center py-2">
-        <span class="loading loading-spinner loading-sm opacity-40"></span>
-      </div>
-      {{end}}
       {{else}}
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
@@ -77,24 +55,25 @@
     </div>
 
     <!-- Message Input -->
-    <form class="w-full flex gap-3 border-t border-white/10 p-4 md:p-6 bg-base-100 flex-shrink-0"
-      hx-post="{{host}}/messages/{{$otherUser.Handle}}"
-      hx-target="#messages-container" hx-swap="afterbegin"
-      _="on htmx:afterRequest set #message-input.value to ''">
-      <textarea id="message-input" name="content"
-        class="textarea textarea-bordered flex-1 min-h-14 max-h-32 resize-none"
-        placeholder="Type your message..." required></textarea>
-      <button type="submit" class="btn btn-primary self-end">
-        Send
-      </button>
-    </form>
+    <div class="w-full border-t border-white/10 p-4 md:p-6 bg-base-100 flex-shrink-0">
+      <form class="w-full max-w-screen-lg mx-auto flex gap-3 " hx-post="{{host}}/messages/{{$profile.Handle}}"
+        hx-target="#messages-container" hx-swap="afterbegin" _="on htmx:afterRequest set #message-input.value to ''">
+        <input type="hidden" name="id" value="{{$profile.ID}}">
+        <textarea id="message-input" name="content" autofocus
+          class="textarea textarea-bordered flex-1 min-h-14 max-h-32 resize-none" placeholder="Type your message..."
+          required></textarea>
+        <button type="submit" class="btn btn-lg btn-primary self-end">
+          Send
+        </button>
+      </form>
+    </div>
   </div>
 
   {{else}}
   <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto">
     <div class="card bg-base-100 shadow-lg">
       <div class="card-body text-center">
-        <h2 class="card-title text-error">User Not Found</h2>
+        <h2 class="card-title text-error">Profile Not Found</h2>
         <p class="opacity-60">The user you're trying to message doesn't exist.</p>
         <a href="{{host}}/messages" class="btn btn-primary mt-4">Back to Messages</a>
       </div>

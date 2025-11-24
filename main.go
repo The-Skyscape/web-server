@@ -28,11 +28,6 @@ func init() {
 	}
 }
 
-// format converts time to app timezone and formats it
-func format(t time.Time, layout string) string {
-	return t.In(appTimezone).Format(layout)
-}
-
 func main() {
 	go func() {
 		if err := models.Emails.LoadTemplates(emails); err != nil {
@@ -62,4 +57,9 @@ func main() {
 		application.WithController(controllers.OAuth()),
 		application.WithController(controllers.API()),
 	)
+}
+
+// format converts time to app timezone and formats it
+func format(t time.Time, layout string) string {
+	return t.In(appTimezone).Format(layout)
 }

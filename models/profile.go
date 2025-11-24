@@ -147,8 +147,24 @@ func CreateProfile(userID, description string) (*Profile, error) {
 	return p, err
 }
 
+func (p *Profile) MessageCount(with *Profile) int {
+	if with == nil {
+		return 0
+	}
+
+	return Messages.Count(`
+		WHERE (SenderID = ? AND RecipientID = ?)
+		   OR (SenderID = ? AND RecipientID = ?)
+		ORDER BY CreatedAt DESC
+	`, p.UserID, with.UserID, with.UserID, p.UserID)
+}
+
 // LastMessage returns the most recent message between this profile and another
 func (p *Profile) LastMessage(with *Profile) *Message {
+	if with == nil {
+		return nil
+	}
+
 	message, err := Messages.First(`
 		WHERE (SenderID = ? AND RecipientID = ?)
 		   OR (SenderID = ? AND RecipientID = ?)
@@ -160,6 +176,20 @@ func (p *Profile) LastMessage(with *Profile) *Message {
 	}
 
 	return message
+}
+
+func (p *Profile) Messages(with *Profile, page, limit int) []*Message {
+	if with == nil {
+		return nil
+	}
+
+	messages, _ := Messages.Search(`
+		WHERE (SenderID = ? AND RecipientID = ?)
+		   OR (SenderID = ? AND RecipientID = ?)
+		ORDER BY CreatedAt DESC
+		LIMIT ? OFFSET ?
+	`, p.UserID, with.UserID, with.UserID, p.UserID, limit, (page-1)*limit)
+	return messages
 }
 
 // UnreadMessagesFrom returns count of unread messages FROM another profile TO this profile
@@ -176,16 +206,6 @@ func (p *Profile) LastMessageAt(with *Profile) time.Time {
 		return time.Time{}
 	}
 	return message.CreatedAt
-}
-
-// ConversationWith returns all messages between this profile and another
-func (p *Profile) ConversationWith(other *Profile) []*Message {
-	messages, _ := Messages.Search(`
-		WHERE (SenderID = ? AND RecipientID = ?)
-		   OR (SenderID = ? AND RecipientID = ?)
-		ORDER BY CreatedAt ASC
-	`, p.UserID, other.UserID, other.UserID, p.UserID)
-	return messages
 }
 
 // MyConversations returns all profiles this user has exchanged messages with
