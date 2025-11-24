@@ -199,7 +199,7 @@ func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 250)
 	c.Refresh(w, r)
 }
 

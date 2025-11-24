@@ -135,14 +135,13 @@ func (app *App) Build() (*Image, error) {
 
 	if err = host.Exec("bash", "-c", fmt.Sprintf(`
 			mkdir -p %[1]s
-			git clone %[2]s %[1]s
+			git clone -b main %[2]s %[1]s
 			cd %[1]s
-			git checkout main
 			docker build -t %[3]s:5000/%[4]s:%[5]s .
 			docker push %[3]s:5000/%[4]s:%[5]s
 		`, tmpDir, repo.Path(), os.Getenv("HQ_ADDR"), app.ID, img.GitHash)); err != nil {
 		img.Status = "failed"
-		img.Error = err.Error()
+		img.Error = stderr.String()
 		Images.Update(img)
 		err = errors.Wrap(err, stdout.String())
 		return nil, errors.Wrap(err, "failed to build image")

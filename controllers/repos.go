@@ -28,6 +28,7 @@ func (c *ReposController) Setup(app *application.App) {
 	http.Handle("GET /repo/{repo}", c.Serve("repo.html", auth.Optional))
 	http.Handle("GET /repo/{repo}/file/{path...}", c.Serve("file.html", auth.Optional))
 	http.Handle("POST /repos", c.ProtectFunc(c.createRepo, auth.Required))
+	http.Handle("PUT /repo/{repo}", c.ProtectFunc(c.updateRepo, auth.Required))
 	http.Handle("POST /repos/{repo}/promote", c.ProtectFunc(c.promoteRepo, auth.Required))
 	http.Handle("DELETE /repo/{repo}", c.ProtectFunc(c.deleteRepo, auth.Required))
 }
@@ -171,6 +172,49 @@ func (c *ReposController) createRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Redirect(w, r, "/repo/"+repo.ID)
+}
+
+func (c *ReposController) updateRepo(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	repo, err := models.Repos.Get(r.PathValue("repo"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	if repo.OwnerID != user.ID {
+		c.Render(w, r, "error-message.html", errors.New("you are not the owner"))
+		return
+	}
+
+	name := strings.TrimSpace(r.FormValue("name"))
+	description := strings.TrimSpace(r.FormValue("description"))
+
+	if name == "" {
+		c.Render(w, r, "error-message.html", errors.New("repo name is required"))
+		return
+	}
+
+	if description == "" {
+		c.Render(w, r, "error-message.html", errors.New("description is required"))
+		return
+	}
+
+	repo.Name = name
+	repo.Description = description
+
+	if err = models.Repos.Update(repo); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	c.Refresh(w, r)
 }
 
 func (c *ReposController) deleteRepo(w http.ResponseWriter, r *http.Request) {

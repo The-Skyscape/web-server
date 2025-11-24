@@ -1,4 +1,9 @@
 <a href="{{host}}/app/{{.ID}}" class="card w-full max-w-sm bg-base-100 shadow-lg">
+  <figure class="relative">
+    <img src="https://apps.skysca.pe/{{.ID}}" alt="Screenshot of {{.Name}}" class="w-full h-36 object-cover object-top">
+    <div class="absolute inset-0 bg-black opacity-40"></div>
+  </figure>
+
   <div class="card-body">
     <div class="flex items-center min-w-0">
       {{with .Owner}}
