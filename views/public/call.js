@@ -440,7 +440,7 @@
 
         showToast(message, type = 'info') {
             const toast = document.createElement('div');
-            toast.className = 'toast toast-end z-50';
+            toast.className = 'toast toast-end z-[100]';
             toast.innerHTML = `<div class="alert alert-${type}"><span>${message}</span></div>`;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
