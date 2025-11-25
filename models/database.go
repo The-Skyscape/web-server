@@ -28,7 +28,4 @@ var (
 
 	OAuthAuthorizations     = database.Manage(DB, new(OAuthAuthorization))
 	OAuthAuthorizationCodes = database.Manage(DB, new(OAuthAuthorizationCode))
-
-	Calls         = database.Manage(DB, new(Call))
-	ICECandidates = database.Manage(DB, new(ICECandidate))
 )
