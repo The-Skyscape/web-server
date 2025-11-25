@@ -1,0 +1,54 @@
+{{define "manifest.json"}}
+{
+  "name": "The Skyscape",
+  "short_name": "Skyscape",
+  "description": "A developer-focused social network combining professional networking with code hosting",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1d232a",
+  "theme_color": "#1d232a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/public/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/public/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["social", "developer tools", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Feed",
+      "short_name": "Feed",
+      "url": "/feed",
+      "icons": [{"src": "/public/logo.svg", "sizes": "any", "type": "image/svg+xml"}]
+    },
+    {
+      "name": "Explore",
+      "short_name": "Explore",
+      "url": "/explore",
+      "icons": [{"src": "/public/logo.svg", "sizes": "any", "type": "image/svg+xml"}]
+    },
+    {
+      "name": "Repositories",
+      "short_name": "Repos",
+      "url": "/repos",
+      "icons": [{"src": "/public/logo.svg", "sizes": "any", "type": "image/svg+xml"}]
+    },
+    {
+      "name": "Apps",
+      "short_name": "Apps",
+      "url": "/apps",
+      "icons": [{"src": "/public/logo.svg", "sizes": "any", "type": "image/svg+xml"}]
+    }
+  ]
+}
+{{end}}

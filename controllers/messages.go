@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -32,6 +33,7 @@ func (c *MessagesController) Setup(app *application.App) {
 	http.Handle("GET /messages/{id}", c.ProtectFunc(c.viewConversation, auth.Required))
 	http.Handle("GET /messages/{id}/list", app.Serve("message-list", auth.Required))
 	http.Handle("POST /messages/{id}", c.ProtectFunc(c.sendMessage, auth.Required))
+	http.Handle("GET /api/messages/unread", c.ProtectFunc(c.apiUnreadCount, auth.Required))
 }
 
 func (c MessagesController) Handle(r *http.Request) application.Handler {
@@ -92,6 +94,19 @@ func (c *MessagesController) UnreadCount() int {
 		WHERE RecipientID = ?
 			AND Read = false
 	`, user.ID)
+}
+
+// apiUnreadCount returns JSON with unread message count for polling
+func (c *MessagesController) apiUnreadCount(w http.ResponseWriter, r *http.Request) {
+	c.Request = r
+
+	count := c.UnreadCount()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"count":       count,
+		"lastChecked": time.Now().UTC().Format(time.RFC3339),
+	})
 }
 
 func (c MessagesController) viewConversation(w http.ResponseWriter, r *http.Request) {

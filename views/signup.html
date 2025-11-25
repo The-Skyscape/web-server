@@ -26,7 +26,21 @@
 </head>
 
 <body>
-  <div class="relative hero min-h-screen bg-black bg-[url('{{host}}/public/background.png')] bg-cover bg-center"
+  <!-- Podcast Banner -->
+  <a href="https://youtu.be/64bm6eripHE" target="_blank" rel="noopener"
+    class="block w-full bg-gradient-to-r from-primary to-secondary text-primary-content py-3 px-4 text-center hover:opacity-90 transition-opacity">
+    <div class="flex items-center justify-center gap-3 text-sm md:text-base font-medium">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+      </svg>
+      <span>Listen to our recent podcast appearance</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+    </div>
+  </a>
+
+  <div class="relative hero min-h-[calc(100vh-52px)] bg-black bg-[url('{{host}}/public/background.png')] bg-cover bg-center"
     data-theme="light">
     <div class="absolute inset-0 bg-black/40"></div>
     <div id="feed"

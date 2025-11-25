@@ -1,0 +1,182 @@
+{{define "sw.js"}}const SW_VERSION = '{{seo.Version}}';
+const CACHE_NAME = 'skyscape-' + SW_VERSION;
+const STATIC_ASSETS = [
+  '/',
+  '/feed',
+  '/explore',
+  '/repos',
+  '/apps',
+  '/public/logo.svg',
+  '/public/styles/markdown.css'
+];
+
+// Install event - cache static assets
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[SW] Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => self.skipWaiting())
+  );
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => name !== CACHE_NAME)
+            .map((name) => caches.delete(name))
+        );
+      })
+      .then(() => self.clients.claim())
+  );
+});
+
+// Fetch event - network first, fallback to cache
+self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+
+  // Skip cross-origin requests
+  if (!event.request.url.startsWith(self.location.origin)) return;
+
+  // Skip API and auth requests
+  if (event.request.url.includes('/api/') ||
+      event.request.url.includes('/oauth/') ||
+      event.request.url.includes('/signin') ||
+      event.request.url.includes('/signup')) {
+    return;
+  }
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Clone the response before caching
+        const responseClone = response.clone();
+
+        // Cache successful responses
+        if (response.status === 200) {
+          caches.open(CACHE_NAME)
+            .then((cache) => cache.put(event.request, responseClone));
+        }
+
+        return response;
+      })
+      .catch(() => {
+        // Fallback to cache on network failure
+        return caches.match(event.request)
+          .then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+
+            // Return offline page for navigation requests
+            if (event.request.mode === 'navigate') {
+              return caches.match('/');
+            }
+
+            return new Response('Offline', { status: 503 });
+          });
+      })
+  );
+});
+
+// Push notification event
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  const data = event.data.json();
+  const options = {
+    body: data.body || 'New notification from The Skyscape',
+    icon: '/public/logo.svg',
+    badge: '/public/logo.svg',
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || '/',
+      timestamp: Date.now()
+    },
+    actions: data.actions || [
+      { action: 'open', title: 'Open' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ],
+    tag: data.tag || 'skyscape-notification',
+    renotify: true
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'The Skyscape', options)
+  );
+});
+
+// Notification click event
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'dismiss') return;
+
+  const url = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Focus existing window if available
+        for (const client of clientList) {
+          if (client.url === url && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Open new window
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      })
+  );
+});
+
+// Background sync for offline actions
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-posts') {
+    event.waitUntil(syncPosts());
+  }
+});
+
+async function syncPosts() {
+  // Placeholder for syncing offline posts when back online
+  console.log('[SW] Syncing offline posts');
+}
+
+// Periodic background sync for message checking (Chrome PWA only)
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'check-messages') {
+    event.waitUntil(checkMessagesInBackground());
+  }
+});
+
+async function checkMessagesInBackground() {
+  try {
+    const resp = await fetch('/api/messages/unread', { credentials: 'same-origin' });
+    if (!resp.ok) return;
+
+    const data = await resp.json();
+    const count = data.count || 0;
+
+    if (count > 0) {
+      await self.registration.showNotification('New Messages', {
+        body: count === 1 ? 'You have 1 unread message' : `You have ${count} unread messages`,
+        icon: '/public/logo.svg',
+        badge: '/public/logo.svg',
+        tag: 'unread-messages',
+        data: { url: '/messages' },
+        renotify: false // Don't vibrate if same tag exists
+      });
+    }
+  } catch (err) {
+    console.warn('[SW] Background message check failed:', err);
+  }
+}
+{{end}}

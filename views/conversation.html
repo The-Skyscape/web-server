@@ -2,6 +2,22 @@
 
 <head>
   {{template "includes.html"}}
+  <script>
+    // Sync unread count after viewing conversation (messages marked as read)
+    // This ensures the notification baseline is updated
+    (async function() {
+      try {
+        const resp = await fetch('/api/messages/unread', { credentials: 'same-origin' });
+        if (resp.ok) {
+          const data = await resp.json();
+          window.Skyscape.setLastUnreadCount(data.count || 0);
+          console.log('[Conversation] Synced unread count:', data.count);
+        }
+      } catch (err) {
+        console.warn('[Conversation] Failed to sync count:', err);
+      }
+    })();
+  </script>
 </head>
 
 <body>
@@ -55,9 +71,10 @@
     </div>
 
     <!-- Message Input -->
-    <div class="w-full border-t border-white/10 p-4 md:p-6 bg-base-100 flex-shrink-0">
-      <form class="w-full max-w-screen-lg mx-auto flex gap-3 " hx-post="{{host}}/messages/{{$profile.Handle}}"
-        hx-target="#messages-container" hx-swap="afterbegin" _="on htmx:afterRequest set #message-input.value to ''">
+    <div class="w-full border-t border-white/10 p-4 md:p-6 bg-base-100 flex-shrink-0 md:pr-30">
+      <form class="w-full max-w-screen-lg items-center mx-auto flex gap-3"
+        hx-post="{{host}}/messages/{{$profile.Handle}}" hx-target="#messages-container" hx-swap="afterbegin"
+        _="on htmx:afterRequest set #message-input.value to ''">
         <input type="hidden" name="id" value="{{$profile.ID}}">
         <textarea id="message-input" name="content" autofocus
           class="textarea textarea-bordered flex-1 min-h-14 max-h-32 resize-none" placeholder="Type your message..."
