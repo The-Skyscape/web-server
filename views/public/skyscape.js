@@ -53,9 +53,9 @@
    * Helper to run code once per element (prevents double-init on HTMX swaps)
    */
   window.Skyscape.initOnce = function(element, key, fn) {
-    const initKey = `skyscape-init-${key}`;
-    if (element.dataset[initKey]) return;
-    element.dataset[initKey] = 'true';
+    const cache = element._skyscapeInit = element._skyscapeInit || {};
+    if (cache[key]) return;
+    cache[key] = true;
     fn(element);
   };
 
