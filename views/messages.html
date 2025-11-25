@@ -21,37 +21,32 @@
     <div class="px-6 py-8 flex flex-col gap-3" hx-boost="true">
 
     <!-- Notification Permission Prompt -->
-    <div id="notification-prompt" class="alert alert-info hidden">
+    <div id="notification-prompt" data-init="notification-prompt" class="alert alert-info hidden">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
       </svg>
       <span>Get notified when you receive new messages</span>
       <div class="flex gap-2">
-        <button onclick="enableNotifications()" class="btn btn-sm btn-primary">Enable</button>
-        <button onclick="dismissNotificationPrompt()" class="btn btn-sm btn-ghost">Not now</button>
+        <button class="btn btn-sm btn-primary"
+                onclick="Skyscape.requestNotifications().then(() => this.closest('.alert').classList.add('hidden'))">
+          Enable
+        </button>
+        <button class="btn btn-sm btn-ghost"
+                onclick="localStorage.setItem('notification-prompt-dismissed', Date.now()); this.closest('.alert').classList.add('hidden')">
+          Not now
+        </button>
       </div>
     </div>
     <script>
-      // Show notification prompt if permission not yet requested
-      (function() {
-        const prompt = document.getElementById('notification-prompt');
-        if (!prompt) return;
-
-        const dismissed = localStorage.getItem('notification-prompt-dismissed');
-        if ('Notification' in window && Notification.permission === 'default' && !dismissed) {
-          prompt.classList.remove('hidden');
-        }
-      })();
-
-      async function enableNotifications() {
-        await window.Skyscape.requestNotifications();
-        document.getElementById('notification-prompt')?.classList.add('hidden');
-      }
-
-      function dismissNotificationPrompt() {
-        document.getElementById('notification-prompt')?.classList.add('hidden');
-        localStorage.setItem('notification-prompt-dismissed', Date.now());
-      }
+      // Register page initializer for notification prompt (works with HTMX navigation)
+      Skyscape.onPage('[data-init="notification-prompt"]', (el) => {
+        Skyscape.initOnce(el, 'notif-prompt', () => {
+          const dismissed = localStorage.getItem('notification-prompt-dismissed');
+          if ('Notification' in window && Notification.permission === 'default' && !dismissed) {
+            el.classList.remove('hidden');
+          }
+        });
+      });
     </script>
 
     {{$currentUser := messages.CurrentUser}}

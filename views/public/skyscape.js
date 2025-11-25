@@ -1,6 +1,6 @@
 /**
  * Skyscape - Core JavaScript
- * Service Worker, PWA Install, and Notifications
+ * HTMX Integration, Service Worker, PWA, and Notifications
  */
 
 (function() {
@@ -10,36 +10,96 @@
   window.Skyscape = window.Skyscape || {};
 
   // ============================================
+  // HTMX Integration
+  // ============================================
+
+  // Registry for page initializers - functions that run on page load/swap
+  const pageInitializers = new Map();
+
+  /**
+   * Register a function to run when a page loads (initial or HTMX swap)
+   * @param {string} selector - CSS selector to match (e.g., '[data-page="messages"]')
+   * @param {Function} fn - Initializer function, receives the matched element
+   */
+  window.Skyscape.onPage = function(selector, fn) {
+    pageInitializers.set(selector, fn);
+  };
+
+  /**
+   * Run all matching page initializers for the given root element
+   */
+  function runPageInitializers(root = document) {
+    pageInitializers.forEach((fn, selector) => {
+      const elements = root.querySelectorAll(selector);
+      elements.forEach(el => {
+        try {
+          fn(el);
+        } catch (err) {
+          console.error(`[Skyscape] Initializer error for ${selector}:`, err);
+        }
+      });
+    });
+  }
+
+  // Run initializers on initial page load
+  document.addEventListener('DOMContentLoaded', () => runPageInitializers());
+
+  // Run initializers after HTMX swaps content
+  document.addEventListener('htmx:afterSettle', (event) => {
+    runPageInitializers(event.detail.target);
+  });
+
+  /**
+   * Helper to run code once per element (prevents double-init on HTMX swaps)
+   */
+  window.Skyscape.initOnce = function(element, key, fn) {
+    const initKey = `skyscape-init-${key}`;
+    if (element.dataset[initKey]) return;
+    element.dataset[initKey] = 'true';
+    fn(element);
+  };
+
+  /**
+   * Show a toast notification (works with HTMX pages)
+   */
+  window.Skyscape.toast = function(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-end z-[100]';
+    toast.innerHTML = `<div class="alert alert-${type}"><span>${message}</span></div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  };
+
+  // ============================================
   // Service Worker Registration
   // ============================================
 
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then((registration) => {
-          console.log('[PWA] Service Worker registered:', registration.scope);
+    // Register SW once on initial load
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then((registration) => {
+        console.log('[PWA] Service Worker registered:', registration.scope);
 
-          // Check for updates immediately and every 60 seconds
-          registration.update();
-          setInterval(() => registration.update(), 60000);
+        // Check for updates immediately and every 60 seconds
+        registration.update();
+        setInterval(() => registration.update(), 60000);
 
-          // Listen for new service worker
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            console.log('[PWA] New Service Worker installing...');
+        // Listen for new service worker
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          console.log('[PWA] New Service Worker installing...');
 
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('[PWA] New version available, reloading...');
-                window.location.reload();
-              }
-            });
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[PWA] New version available, reloading...');
+              window.location.reload();
+            }
           });
-        })
-        .catch((error) => {
-          console.error('[PWA] Service Worker registration failed:', error);
         });
-    });
+      })
+      .catch((error) => {
+        console.error('[PWA] Service Worker registration failed:', error);
+      });
 
     // Reload when new service worker takes control
     navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -67,9 +127,9 @@
   // Detect iOS
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-  // Show install banner on iOS if not installed
+  // Show install banner on iOS if not installed (delayed to not interrupt)
   if (isIOS && !window.Skyscape.isInstalled && !localStorage.getItem('pwa-dismissed')) {
-    window.addEventListener('load', () => setTimeout(showIOSInstallBanner, 2000));
+    setTimeout(showIOSInstallBanner, 3000);
   }
 
   function showInstallBanner() {
