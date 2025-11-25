@@ -49,6 +49,11 @@ func (c *CommentsController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(content) > 10000 {
+		c.Render(w, r, "error-message.html", errors.New("comment too long, max 10000 characters"))
+		return
+	}
+
 	_, err = models.Comments.Insert(&models.Comment{
 		UserID:    user.ID,
 		SubjectID: subjectID,

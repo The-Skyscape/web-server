@@ -73,7 +73,7 @@ func (c *FeedController) Limit() int {
 			limit = val
 		}
 	}
-	return limit
+	return min(limit, 100)
 }
 
 func (c *FeedController) NextPage() int {

@@ -299,37 +299,12 @@ func (c *OAuthController) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find authorization code with retry logic for replica sync
-	hashedCode := models.HashToken(req.Code)
-	var authCode *models.OAuthAuthorizationCode
-
-	// Retry up to 3 times with forced sync to handle cross-node replica lag
-	for i := range 3 {
-		if i > 0 {
-			models.DB.Sync()
-			time.Sleep(500 * time.Millisecond)
-		}
-
-		authCode, err = models.OAuthAuthorizationCodes.First(
-			"WHERE ClientID = ? AND Code = ?",
-			req.ClientID, hashedCode,
-		)
-
-		if err == nil && authCode != nil {
-			break
-		}
-	}
-
-	if err != nil || authCode == nil {
-		JSONError(w, http.StatusBadRequest, "No authorization codes found for this client")
-		return
-	}
-
-	// Sync database before validation to ensure we have latest state
+	// Sync database to ensure we have latest state from primary
 	models.DB.Sync()
 
-	// Re-fetch authorization code to get latest state after sync
-	authCode, err = models.OAuthAuthorizationCodes.First(
+	// Find authorization code
+	hashedCode := models.HashToken(req.Code)
+	authCode, err := models.OAuthAuthorizationCodes.First(
 		"WHERE ClientID = ? AND Code = ?",
 		req.ClientID, hashedCode,
 	)

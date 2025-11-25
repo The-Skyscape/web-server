@@ -72,12 +72,13 @@ func (c *UsersController) Page() int {
 }
 
 func (c *UsersController) Limit() int {
-	if limit := c.URL.Query().Get("limit"); limit != "" {
-		if val, err := strconv.Atoi(limit); err == nil && val > 0 {
-			return val
+	limit := c.defaultLimit
+	if limitStr := c.URL.Query().Get("limit"); limitStr != "" {
+		if val, err := strconv.Atoi(limitStr); err == nil && val > 0 {
+			limit = val
 		}
 	}
-	return c.defaultLimit
+	return min(limit, 100)
 }
 
 func (c *UsersController) NextPage() int {

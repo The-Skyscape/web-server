@@ -189,7 +189,7 @@ func (c *MessagesController) Limit() int {
 			limit = val
 		}
 	}
-	return limit
+	return min(limit, 100)
 }
 
 func (c *MessagesController) NextPage() int {

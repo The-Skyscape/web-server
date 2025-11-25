@@ -47,6 +47,18 @@ func (c *FilesController) MyFiles() []*models.File {
 	return files
 }
 
+const maxFileSize = 10 * 1024 * 1024 // 10MB
+
+var allowedMimeTypes = map[string]bool{
+	"image/jpeg":      true,
+	"image/png":       true,
+	"image/gif":       true,
+	"image/webp":      true,
+	"application/pdf": true,
+	"text/plain":      true,
+	"text/markdown":   true,
+}
+
 func (c *FilesController) uploadFile(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
@@ -55,7 +67,7 @@ func (c *FilesController) uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.ParseMultipartForm(32 << 20)
+	r.ParseMultipartForm(maxFileSize)
 	file, handler, err := r.FormFile("file")
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)
@@ -63,6 +75,19 @@ func (c *FilesController) uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer file.Close()
+
+	// Validate file size
+	if handler.Size > maxFileSize {
+		c.Render(w, r, "error-message.html", errors.New("file too large, max 10MB"))
+		return
+	}
+
+	// Validate MIME type
+	mimeType := handler.Header.Get("Content-Type")
+	if !allowedMimeTypes[mimeType] {
+		c.Render(w, r, "error-message.html", errors.New("file type not allowed"))
+		return
+	}
 
 	// Sanitize filename to prevent path traversal
 	filename := filepath.Base(filepath.Clean(handler.Filename))
