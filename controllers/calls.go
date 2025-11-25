@@ -62,10 +62,10 @@ func (c CallsController) Handle(r *http.Request) application.Handler {
 	return &c
 }
 
-func (c *CallsController) currentUser() *models.Profile {
+func (c *CallsController) currentUser(r *http.Request) *models.Profile {
 	auth := c.Use("auth").(*AuthController)
-	user := auth.CurrentUser()
-	if user == nil {
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
 		return nil
 	}
 	profile, _ := models.Profiles.Get(user.ID)
@@ -74,7 +74,7 @@ func (c *CallsController) currentUser() *models.Profile {
 
 // sseHandler maintains SSE connection for real-time call events
 func (c *CallsController) sseHandler(w http.ResponseWriter, r *http.Request) {
-	user := c.currentUser()
+	user := c.currentUser(r)
 	if user == nil {
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -156,7 +156,7 @@ func (c *CallsController) sendEvent(userID string, event CallEvent) {
 
 // initiateCall starts a new call to another user
 func (c *CallsController) initiateCall(w http.ResponseWriter, r *http.Request) {
-	caller := c.currentUser()
+	caller := c.currentUser(r)
 	if caller == nil {
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -218,7 +218,7 @@ func (c *CallsController) initiateCall(w http.ResponseWriter, r *http.Request) {
 
 // acceptCall accepts an incoming call
 func (c *CallsController) acceptCall(w http.ResponseWriter, r *http.Request) {
-	user := c.currentUser()
+	user := c.currentUser(r)
 	if user == nil {
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -260,7 +260,7 @@ func (c *CallsController) acceptCall(w http.ResponseWriter, r *http.Request) {
 
 // rejectCall rejects an incoming call or cancels an outgoing call
 func (c *CallsController) rejectCall(w http.ResponseWriter, r *http.Request) {
-	user := c.currentUser()
+	user := c.currentUser(r)
 	if user == nil {
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -304,7 +304,7 @@ func (c *CallsController) rejectCall(w http.ResponseWriter, r *http.Request) {
 
 // endCall ends an active call
 func (c *CallsController) endCall(w http.ResponseWriter, r *http.Request) {
-	user := c.currentUser()
+	user := c.currentUser(r)
 	if user == nil {
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -349,7 +349,7 @@ func (c *CallsController) endCall(w http.ResponseWriter, r *http.Request) {
 
 // exchangeSDP handles SDP offer/answer exchange
 func (c *CallsController) exchangeSDP(w http.ResponseWriter, r *http.Request) {
-	user := c.currentUser()
+	user := c.currentUser(r)
 	if user == nil {
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -398,7 +398,7 @@ func (c *CallsController) exchangeSDP(w http.ResponseWriter, r *http.Request) {
 
 // addICECandidate handles ICE candidate exchange
 func (c *CallsController) addICECandidate(w http.ResponseWriter, r *http.Request) {
-	user := c.currentUser()
+	user := c.currentUser(r)
 	if user == nil {
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -451,7 +451,7 @@ func (c *CallsController) addICECandidate(w http.ResponseWriter, r *http.Request
 
 // getTURNCredentials returns time-limited TURN credentials
 func (c *CallsController) getTURNCredentials(w http.ResponseWriter, r *http.Request) {
-	user := c.currentUser()
+	user := c.currentUser(r)
 	if user == nil {
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
