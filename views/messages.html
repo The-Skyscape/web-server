@@ -32,21 +32,6 @@
       </div>
     </div>
     <script>
-      // Sync unread count when viewing messages page
-      // This ensures reading messages updates the baseline for notifications
-      (async function() {
-        try {
-          const resp = await fetch('/api/messages/unread', { credentials: 'same-origin' });
-          if (resp.ok) {
-            const data = await resp.json();
-            window.Skyscape.setLastUnreadCount(data.count || 0);
-            console.log('[Messages] Synced unread count:', data.count);
-          }
-        } catch (err) {
-          console.warn('[Messages] Failed to sync count:', err);
-        }
-      })();
-
       // Show notification prompt if permission not yet requested
       (function() {
         const prompt = document.getElementById('notification-prompt');
@@ -59,10 +44,7 @@
       })();
 
       async function enableNotifications() {
-        const granted = await window.Skyscape.requestNotifications();
-        if (granted) {
-          window.Skyscape.startMessagePolling();
-        }
+        await window.Skyscape.requestNotifications();
         document.getElementById('notification-prompt')?.classList.add('hidden');
       }
 

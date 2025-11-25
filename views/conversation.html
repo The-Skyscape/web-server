@@ -2,22 +2,6 @@
 
 <head>
   {{template "includes.html"}}
-  <script>
-    // Sync unread count after viewing conversation (messages marked as read)
-    // This ensures the notification baseline is updated
-    (async function() {
-      try {
-        const resp = await fetch('/api/messages/unread', { credentials: 'same-origin' });
-        if (resp.ok) {
-          const data = await resp.json();
-          window.Skyscape.setLastUnreadCount(data.count || 0);
-          console.log('[Conversation] Synced unread count:', data.count);
-        }
-      } catch (err) {
-        console.warn('[Conversation] Failed to sync count:', err);
-      }
-    })();
-  </script>
 </head>
 
 <body>

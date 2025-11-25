@@ -9,7 +9,7 @@ const STATIC_ASSETS = [
   '/apps',
   '/public/logo.svg',
   '/public/styles/markdown.css',
-  '/public/call.js'
+  '/public/skyscape.js'
 ];
 
 // Install event - cache static assets
@@ -47,10 +47,9 @@ self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // Skip API, auth, and SSE requests
+  // Skip API, auth requests
   if (event.request.url.includes('/api/') ||
       event.request.url.includes('/oauth/') ||
-      event.request.url.includes('/calls/') ||
       event.request.url.includes('/signin') ||
       event.request.url.includes('/signup')) {
     return;
