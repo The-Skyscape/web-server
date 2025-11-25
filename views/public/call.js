@@ -20,21 +20,44 @@
             this.setupMessageListener();
         },
 
+        reconnectAttempts: 0,
+        maxReconnectDelay: 30000,
+        reconnectTimer: null,
+
         initSSE: function() {
+            // Clear any pending reconnect
+            if (this.reconnectTimer) {
+                clearTimeout(this.reconnectTimer);
+                this.reconnectTimer = null;
+            }
+
             if (this.eventSource) {
                 this.eventSource.close();
+                this.eventSource = null;
             }
 
             this.eventSource = new EventSource('/calls/events');
 
             this.eventSource.onopen = () => {
                 console.log('[Call] SSE connected');
+                this.reconnectAttempts = 0; // Reset on successful connection
             };
 
             this.eventSource.onerror = (err) => {
                 console.error('[Call] SSE error:', err);
-                // Reconnect after 5 seconds
-                setTimeout(() => this.initSSE(), 5000);
+
+                // Close the failed connection
+                if (this.eventSource) {
+                    this.eventSource.close();
+                    this.eventSource = null;
+                }
+
+                // Exponential backoff: 5s, 10s, 20s, 30s max
+                this.reconnectAttempts++;
+                const delay = Math.min(5000 * Math.pow(2, this.reconnectAttempts - 1), this.maxReconnectDelay);
+                console.log(`[Call] Reconnecting in ${delay/1000}s (attempt ${this.reconnectAttempts})`);
+
+                this.reconnectTimer = setTimeout(() => this.initSSE(), delay);
             };
 
             // Call event listeners

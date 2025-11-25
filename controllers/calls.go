@@ -1,14 +1,10 @@
 package controllers
 
 import (
-	"crypto/hmac"
-	"crypto/sha1"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -76,18 +72,25 @@ func (c *CallsController) currentUser(r *http.Request) *models.Profile {
 func (c *CallsController) sseHandler(w http.ResponseWriter, r *http.Request) {
 	user := c.currentUser(r)
 	if user == nil {
+		log.Printf("[SSE] Auth failed for %s", r.RemoteAddr)
 		JSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	// Set SSE headers
+	log.Printf("[SSE] Connection from user %s (%s)", user.Handle(), user.ID)
+
+	// Set SSE headers - must be set before WriteHeader
 	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	// Try to prevent LB from buffering
+	w.Header().Set("Transfer-Encoding", "chunked")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
+		log.Printf("[SSE] Flusher not supported for user %s", user.ID)
 		JSONError(w, http.StatusInternalServerError, "streaming not supported")
 		return
 	}
@@ -98,12 +101,14 @@ func (c *CallsController) sseHandler(w http.ResponseWriter, r *http.Request) {
 	c.mutex.Lock()
 	// Close existing channel if user reconnects
 	if oldChan, exists := c.sseClients[user.ID]; exists {
+		log.Printf("[SSE] Closing old channel for user %s", user.ID)
 		close(oldChan)
 	}
 	c.sseClients[user.ID] = eventChan
 	c.mutex.Unlock()
 
 	defer func() {
+		log.Printf("[SSE] Connection closed for user %s", user.ID)
 		c.mutex.Lock()
 		if c.sseClients[user.ID] == eventChan {
 			delete(c.sseClients, user.ID)
@@ -111,29 +116,34 @@ func (c *CallsController) sseHandler(w http.ResponseWriter, r *http.Request) {
 		c.mutex.Unlock()
 	}()
 
-	// Send initial ping
-	fmt.Fprintf(w, "event: ping\ndata: connected\n\n")
+	// Send initial ping with retry hint for client
+	fmt.Fprintf(w, "retry: 5000\nevent: ping\ndata: connected\n\n")
 	flusher.Flush()
+	log.Printf("[SSE] Sent initial ping to user %s", user.ID)
 
-	// Keep-alive ticker
-	ticker := time.NewTicker(30 * time.Second)
+	// Keep-alive ticker - very aggressive (1 second) to work around LB timeouts
+	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case event, ok := <-eventChan:
 			if !ok {
+				log.Printf("[SSE] Channel closed for user %s", user.ID)
 				return // Channel closed
 			}
 			data, _ := json.Marshal(event)
 			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event.Type, data)
 			flusher.Flush()
+			log.Printf("[SSE] Sent event %s to user %s", event.Type, user.ID)
 
 		case <-ticker.C:
-			fmt.Fprintf(w, "event: ping\ndata: keepalive\n\n")
+			// Send comment instead of event (lighter weight, still keeps connection alive)
+			fmt.Fprintf(w, ": keepalive\n\n")
 			flusher.Flush()
 
 		case <-r.Context().Done():
+			log.Printf("[SSE] Context done for user %s: %v", user.ID, r.Context().Err())
 			return
 		}
 	}
@@ -449,7 +459,8 @@ func (c *CallsController) addICECandidate(w http.ResponseWriter, r *http.Request
 	JSONSuccess(w, map[string]string{"status": "sent"})
 }
 
-// getTURNCredentials returns time-limited TURN credentials
+// getTURNCredentials returns ICE server configuration
+// TODO: Add TURN server support for users behind strict NAT/firewalls
 func (c *CallsController) getTURNCredentials(w http.ResponseWriter, r *http.Request) {
 	user := c.currentUser(r)
 	if user == nil {
@@ -457,42 +468,19 @@ func (c *CallsController) getTURNCredentials(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Generate time-limited credentials using HMAC
-	timestamp := time.Now().Add(24 * time.Hour).Unix()
-	username := fmt.Sprintf("%d:%s", timestamp, user.ID)
-
-	secret := os.Getenv("TURN_SECRET")
-	if secret == "" {
-		secret = "default-turn-secret" // For development
-	}
-
-	h := hmac.New(sha1.New, []byte(secret))
-	h.Write([]byte(username))
-	password := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
-	turnServer := os.Getenv("TURN_SERVER")
-	if turnServer == "" {
-		turnServer = "turn:turn.skysca.pe:3478"
-	}
-
-	// Build ICE server configuration
+	// For now, only use public STUN servers
+	// This works for most users but won't work behind strict NAT/firewalls
 	iceServers := []map[string]interface{}{
 		{
 			"urls": []string{
-				turnServer,
-				strings.Replace(turnServer, "turn:", "turns:", 1) + "?transport=tcp",
+				"stun:stun.l.google.com:19302",
+				"stun:stun1.l.google.com:19302",
+				"stun:stun2.l.google.com:19302",
 			},
-			"username":   username,
-			"credential": password,
-		},
-		// Also include public STUN server as fallback
-		{
-			"urls": []string{"stun:stun.l.google.com:19302"},
 		},
 	}
 
 	JSONSuccess(w, map[string]interface{}{
 		"iceServers": iceServers,
-		"ttl":        86400,
 	})
 }
