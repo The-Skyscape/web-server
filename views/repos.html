@@ -55,8 +55,15 @@
 
   <div id="repo-cards" class="max-w-screen-xl flex flex-wrap gap-6 w-full mx-auto relative z-20 px-7 py-12"
     hx-boost="true">
-    {{range repos.AllRepos}}
+    {{$repos := repos.AllRepos}}
+    {{if $repos}}
+    {{range $repos}}
     {{template "repo-card.html" .}}
+    {{end}}
+    {{else}}
+    <div class="w-full text-center py-12 opacity-60">
+      <p class="text-lg">No repos found. Try a different search term.</p>
+    </div>
     {{end}}
   </div>
 

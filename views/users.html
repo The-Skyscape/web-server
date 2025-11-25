@@ -62,7 +62,9 @@
     {{$limit := users.Limit}}
     {{$nextPage := users.NextPage}}
     {{$query := req.URL.Query.Get "query"}}
-    {{range $index, $profile := users.AllProfiles}}
+    {{$profiles := users.AllProfiles}}
+    {{if $profiles}}
+    {{range $index, $profile := $profiles}}
     {{if eq (mod (add $index 1) $limit) 0}}
     <div class="w-full max-w-sm md:max-w-72"
       hx-get="{{host}}/users?page={{$nextPage}}&limit={{$limit}}{{if $query}}&query={{$query}}{{end}}"
@@ -72,6 +74,11 @@
     {{else}}
     {{template "profile-card.html" $profile}}
     {{end}}
+    {{end}}
+    {{else}}
+    <div class="w-full text-center py-12 opacity-60">
+      <p class="text-lg">No users found. Try a different search term.</p>
+    </div>
     {{end}}
   </div>
 

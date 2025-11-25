@@ -51,16 +51,23 @@
         </g>
       </svg>
 
-      <input name="query" type="search" class="grow" placeholder="Search through our directory of repos"
-        hx-trigger="input changed delay:200ms, search" hx-get="{{host}}/repos" hx-target="#repo-cards"
-        hx-select="#repo-cards" hx-swap="outerHTML" hx-replace-url="true" value='{{req.URL.Query.Get "query"}}'>
+      <input name="query" type="search" class="grow" placeholder="Search through our directory of apps"
+        hx-trigger="input changed delay:200ms, search" hx-get="{{host}}/apps" hx-target="#app-cards"
+        hx-select="#app-cards" hx-swap="outerHTML" hx-replace-url="true" value='{{req.URL.Query.Get "query"}}'>
     </label>
   </div>
 
-  <div id="repo-cards" class="max-w-screen-xl flex flex-wrap gap-6 md:gap-x-9 w-full mx-auto relative z-20 px-7 py-12"
+  <div id="app-cards" class="max-w-screen-xl flex flex-wrap gap-6 md:gap-x-9 w-full mx-auto relative z-20 px-7 py-12"
     hx-boost="true">
-    {{range apps.AllApps}}
+    {{$apps := apps.AllApps}}
+    {{if $apps}}
+    {{range $apps}}
     {{template "app-card.html" .}}
+    {{end}}
+    {{else}}
+    <div class="w-full text-center py-12 opacity-60">
+      <p class="text-lg">No apps found. Try a different search term.</p>
+    </div>
     {{end}}
   </div>
 
