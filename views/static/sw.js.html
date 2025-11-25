@@ -7,7 +7,8 @@ const STATIC_ASSETS = [
   '/repos',
   '/apps',
   '/public/logo.svg',
-  '/public/styles/markdown.css'
+  '/public/styles/markdown.css',
+  '/public/call.js'
 ];
 
 // Install event - cache static assets
@@ -45,9 +46,10 @@ self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // Skip API and auth requests
+  // Skip API, auth, and SSE requests
   if (event.request.url.includes('/api/') ||
       event.request.url.includes('/oauth/') ||
+      event.request.url.includes('/calls/') ||
       event.request.url.includes('/signin') ||
       event.request.url.includes('/signup')) {
     return;
@@ -117,9 +119,38 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  if (event.action === 'dismiss') return;
+  const action = event.action;
+  const data = event.notification.data || {};
 
-  const url = event.notification.data?.url || '/';
+  if (action === 'dismiss') return;
+
+  // Handle call notifications - relay action to client
+  if (data.callId) {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then((clientList) => {
+          for (const client of clientList) {
+            if ('focus' in client) {
+              client.focus();
+              client.postMessage({
+                type: 'call_action',
+                action: action || 'accept',
+                callId: data.callId
+              });
+              return;
+            }
+          }
+          // If no window open, open one
+          if (clients.openWindow) {
+            return clients.openWindow(data.url || '/messages');
+          }
+        })
+    );
+    return;
+  }
+
+  // Handle regular notifications
+  const url = data.url || '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
