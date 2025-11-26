@@ -22,9 +22,11 @@ var (
 	Files      = database.Manage(DB, new(File))
 	Images     = database.Manage(DB, new(Image))
 
-	PasswordResetTokens = database.Manage(DB, new(ResetPasswordToken))
-	RateLimits          = database.Manage(DB, new(RateLimit))
-	Messages            = database.Manage(DB, new(Message))
+	PasswordResetTokens  = database.Manage(DB, new(ResetPasswordToken))
+	RateLimits           = database.Manage(DB, new(RateLimit))
+	Messages             = database.Manage(DB, new(Message))
+	PushSubscriptions    = database.Manage(DB, new(PushSubscription))
+	PushNotificationLogs = database.Manage(DB, new(PushNotificationLog))
 
 	OAuthAuthorizations     = database.Manage(DB, new(OAuthAuthorization))
 	OAuthAuthorizationCodes = database.Manage(DB, new(OAuthAuthorizationCode))

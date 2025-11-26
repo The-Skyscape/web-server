@@ -337,6 +337,64 @@ application.Serve(views,
 
 Named controller ("auth") allows other controllers to reference it via `c.Use("auth")`.
 
+## Template Methods by Controller
+
+Controllers expose public methods that can be called from Go templates. Usage: `{{controllerName.MethodName}}`.
+
+### auth (AuthController)
+- `CurrentUser() *authentication.User` - Returns authenticated user (embedded from authentication.Controller)
+
+### feed (FeedController)
+- `Page() int` - Current page number (default 1)
+- `Limit() int` - Items per page, capped at 100 (default 10)
+- `NextPage() int` - Next page number
+- `RecentActivities() []*models.Activity` - Paginated activities ordered by date
+
+### profile (ProfileController)
+- `CurrentProfile() *models.Profile` - Profile for current user or path param user
+- `GetProfile(userID string) *models.Profile` - Profile by user ID
+- `RecentProfiles() []*models.Profile` - Up to 4 recent profiles matching search
+
+### repos (ReposController)
+- `CurrentRepo() *models.Repo` - Repo from path parameter
+- `AllRepos() []*models.Repo` - Non-archived repos matching search
+- `RecentRepos() []*models.Repo` - Up to 4 recent repos matching search
+- `CurrentFile() *models.Blob` - File being viewed
+- `LatestCommit() *models.Commit` - Latest commit on branch
+- `FilePath() []PathPart` - Breadcrumb path parts
+- `ReadmeFile() *models.Blob` - README.md if exists
+
+### apps (AppsController)
+- `CurrentApp() *models.App` - App from path parameter
+- `AuthorizedUsers() []*models.OAuthAuthorization` - Users who authorized app
+- `AllApps() []*models.App` - Apps matching search (excludes shutdown)
+- `RecentApps() []*models.App` - Up to 3 recent apps
+
+### messages (MessagesController)
+- `CurrentUser() *models.Profile` - Current user's profile
+- `CurrentProfile() *models.Profile` - Conversation recipient profile
+- `Count() int` - Unread message count
+- `Messages() []*models.Message` - Paginated messages (default 20)
+- `Conversations() []*models.Profile` - Profiles user has conversations with
+- `UnreadCount() int` - Unread message count
+- `Page() int`, `Limit() int`, `NextPage() int` - Pagination
+
+### users (UsersController)
+- `AllProfiles() []*models.Profile` - Paginated profiles matching search
+- `Page() int`, `Limit() int`, `NextPage() int` - Pagination
+
+### files (FilesController)
+- `MyFiles() []*models.File` - Files owned by authenticated user
+
+### oauth (OAuthController)
+- `CurrentApp() *models.App` - App for OAuth request (from client_id)
+- `RequestedScopes() []string` - Scopes from query param
+- `ScopesMatch() bool` - If requested scopes match existing auth
+- `AuthorizedUsers() []*models.OAuthAuthorization` - Users who authorized app
+
+### seo (SEOController)
+- `Version() string` - Service worker version (Unix timestamp)
+
 ## Security Considerations
 
 **Implemented protections:**

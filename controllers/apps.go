@@ -246,6 +246,12 @@ func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	repo := app.Repo()
+	if repo == nil || repo.OwnerID != user.ID {
+		c.Render(w, r, "error-message.html", errors.New("you can only promote your own apps"))
+		return
+	}
+
 	content := r.FormValue("content")
 	if _, err = models.Activities.Insert(&models.Activity{
 		UserID:      user.ID,

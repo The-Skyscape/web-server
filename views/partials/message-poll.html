@@ -1,0 +1,25 @@
+{{$user := auth.CurrentUser}}
+{{$profile := messages.CurrentProfile}}
+
+{{with $messages := .}}
+{{range $messages}}
+<div class="flex justify-start">
+  <div class="max-w-[75%] rounded-2xl px-5 py-3 shadow-sm bg-base-300/80 backdrop-blur-sm">
+    <p class="text-base break-words leading-relaxed">{{.Content}}</p>
+    <span class="text-xs opacity-70 mt-1.5 block">
+      {{format .CreatedAt "Jan 2, 3:04 PM"}}
+    </span>
+  </div>
+</div>
+{{end}}
+
+<!-- Update the poll element with new timestamp via out-of-band swap -->
+{{if gt (len $messages) 0}}
+{{$latest := index $messages (sub (len $messages) 1)}}
+<div id="message-poll"
+  hx-get="{{host}}/messages/{{$profile.Handle}}/poll?after={{$latest.CreatedAt.Unix}}"
+  hx-trigger="every 3s" hx-target="#messages-container" hx-swap="afterbegin" hx-swap-oob="true">
+</div>
+{{end}}
+
+{{end}}

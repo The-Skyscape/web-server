@@ -15,6 +15,7 @@ import (
 	"github.com/The-Skyscape/devtools/pkg/authentication"
 	"github.com/The-Skyscape/devtools/pkg/containers"
 	"github.com/The-Skyscape/devtools/pkg/database"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/pkg/errors"
 	"github.com/yuin/goldmark"
 )
@@ -339,8 +340,9 @@ func (c *Content) Lines() []string {
 func (c *Content) Markdown() template.HTML {
 	var buf bytes.Buffer
 	if err := goldmark.Convert([]byte(c.Content), &buf); err != nil {
-		return template.HTML(c.Content)
+		return template.HTML(template.HTMLEscapeString(c.Content))
 	}
 
-	return template.HTML(buf.String())
+	p := bluemonday.UGCPolicy()
+	return template.HTML(p.Sanitize(buf.String()))
 }

@@ -32,6 +32,7 @@ func (c *MessagesController) Setup(app *application.App) {
 	http.Handle("GET /messages", app.Serve("messages.html", auth.Required))
 	http.Handle("GET /messages/{id}", c.ProtectFunc(c.viewConversation, auth.Required))
 	http.Handle("GET /messages/{id}/list", app.Serve("message-list", auth.Required))
+	http.Handle("GET /messages/{id}/poll", c.ProtectFunc(c.pollMessages, auth.Required))
 	http.Handle("POST /messages/{id}", c.ProtectFunc(c.sendMessage, auth.Required))
 	http.Handle("GET /api/messages/unread", c.ProtectFunc(c.apiUnreadCount, auth.Required))
 }
@@ -121,6 +122,40 @@ func (c MessagesController) viewConversation(w http.ResponseWriter, r *http.Requ
 	c.Render(w, r, "conversation.html", nil)
 }
 
+// pollMessages returns new messages since the given timestamp
+func (c MessagesController) pollMessages(w http.ResponseWriter, r *http.Request) {
+	c.Request = r
+
+	user := c.CurrentUser()
+	profile := c.CurrentProfile()
+	if user == nil || profile == nil {
+		return
+	}
+
+	// Parse the 'after' timestamp (Unix seconds)
+	afterStr := r.URL.Query().Get("after")
+	var after time.Time
+	if afterStr != "" {
+		if unix, err := strconv.ParseInt(afterStr, 10, 64); err == nil {
+			after = time.Unix(unix, 0)
+		}
+	}
+
+	// Get new messages from the other person (incoming only)
+	newMessages, _ := models.Messages.Search(`
+		WHERE SenderID = ? AND RecipientID = ? AND CreatedAt > ?
+		ORDER BY CreatedAt ASC
+	`, profile.ID, user.ID, after)
+
+	// Mark them as read
+	if len(newMessages) > 0 {
+		user.MarkMessagesReadFrom(profile)
+	}
+
+	// Render the new messages
+	c.Render(w, r, "message-poll.html", newMessages)
+}
+
 func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) {
 	c.Request = r
 
@@ -137,6 +172,10 @@ func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) 
 		c.Render(w, r, "error-message.html", errors.New("message cannot be empty"))
 		return
 	}
+	if len(content) > 10000 {
+		c.Render(w, r, "error-message.html", errors.New("message too long"))
+		return
+	}
 
 	// Create the message
 	_, err = models.Messages.Insert(&models.Message{
@@ -148,6 +187,14 @@ func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) 
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
+
+	// Send push notification to recipient
+	go models.SendPushNotification(
+		profile.ID,
+		"New message from @"+user.Handle(),
+		truncateMessage(content, 100),
+		"/messages/"+user.ID,
+	)
 
 	// Check if we should send email notification
 	// Only send if this is the first message received in the last hour
@@ -194,4 +241,12 @@ func (c *MessagesController) Limit() int {
 
 func (c *MessagesController) NextPage() int {
 	return c.Page() + 1
+}
+
+// truncateMessage truncates a message to maxLen characters with ellipsis
+func truncateMessage(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }

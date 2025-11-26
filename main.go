@@ -41,6 +41,7 @@ func main() {
 		application.WithHostPrefix(os.Getenv("PREFIX")),
 		application.WithPublicAccess(auth.Optional),
 		application.WithFunc("format", format),
+		application.WithFunc("now", func() time.Time { return time.Now() }),
 		application.WithController("auth", auth),
 		application.WithController(controllers.Feed()),
 		application.WithController(controllers.Profile()),
@@ -56,6 +57,7 @@ func main() {
 		application.WithController(controllers.SEO()),
 		application.WithController(controllers.OAuth()),
 		application.WithController(controllers.API()),
+		application.WithController(controllers.Push()),
 	)
 }
 

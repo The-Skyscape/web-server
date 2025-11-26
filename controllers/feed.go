@@ -105,6 +105,10 @@ func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 		c.Render(w, r, "error-message.html", errors.New("Post content cannot be empty"))
 		return
 	}
+	if len(content) > 10000 {
+		c.Render(w, r, "error-message.html", errors.New("Post content too long"))
+		return
+	}
 
 	_, err = models.Activities.Insert(&models.Activity{
 		UserID:      user.ID,

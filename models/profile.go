@@ -156,7 +156,7 @@ func (p *Profile) MessageCount(with *Profile) int {
 		WHERE (SenderID = ? AND RecipientID = ?)
 		   OR (SenderID = ? AND RecipientID = ?)
 		ORDER BY CreatedAt DESC
-	`, p.UserID, with.UserID, with.UserID, p.UserID)
+	`, p.ID, with.ID, with.ID, p.ID)
 }
 
 // LastMessage returns the most recent message between this profile and another
@@ -169,7 +169,7 @@ func (p *Profile) LastMessage(with *Profile) *Message {
 		WHERE (SenderID = ? AND RecipientID = ?)
 		   OR (SenderID = ? AND RecipientID = ?)
 		ORDER BY CreatedAt DESC
-	`, p.UserID, with.UserID, with.UserID, p.UserID)
+	`, p.ID, with.ID, with.ID, p.ID)
 
 	if err != nil {
 		return nil
@@ -188,7 +188,7 @@ func (p *Profile) Messages(with *Profile, page, limit int) []*Message {
 		   OR (SenderID = ? AND RecipientID = ?)
 		ORDER BY CreatedAt DESC
 		LIMIT ? OFFSET ?
-	`, p.UserID, with.UserID, with.UserID, p.UserID, limit, (page-1)*limit)
+	`, p.ID, with.ID, with.ID, p.ID, limit, (page-1)*limit)
 	return messages
 }
 
@@ -196,7 +196,7 @@ func (p *Profile) Messages(with *Profile, page, limit int) []*Message {
 func (p *Profile) UnreadMessagesFrom(from *Profile) int {
 	return Messages.Count(`
 		WHERE SenderID = ? AND RecipientID = ? AND Read = false
-	`, from.UserID, p.UserID)
+	`, from.ID, p.ID)
 }
 
 // LastMessageAt returns the timestamp of the last message between profiles
@@ -213,13 +213,13 @@ func (p *Profile) LastMessageAt(with *Profile) time.Time {
 func (p *Profile) MyConversations() []*Profile {
 	profiles, _ := Profiles.Search(`
 		JOIN messages ON (
-			(messages.SenderID = profiles.UserID AND messages.RecipientID = ?)
+			(messages.SenderID = profiles.ID AND messages.RecipientID = ?)
 			OR
-			(messages.RecipientID = profiles.UserID AND messages.SenderID = ?)
+			(messages.RecipientID = profiles.ID AND messages.SenderID = ?)
 		)
 		GROUP BY profiles.ID
 		ORDER BY MAX(messages.CreatedAt) DESC
-	`, p.UserID, p.UserID)
+	`, p.ID, p.ID)
 
 	return profiles
 }
@@ -228,7 +228,7 @@ func (p *Profile) MyConversations() []*Profile {
 func (p *Profile) MarkMessagesReadFrom(from *Profile) error {
 	messages, _ := Messages.Search(`
 		WHERE SenderID = ? AND RecipientID = ? AND Read = false
-	`, from.UserID, p.UserID)
+	`, from.ID, p.ID)
 
 	for _, msg := range messages {
 		msg.Read = true

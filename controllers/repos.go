@@ -259,6 +259,11 @@ func (c *ReposController) promoteRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if repo.OwnerID != user.ID {
+		c.Render(w, r, "error-message.html", errors.New("you can only promote your own repos"))
+		return
+	}
+
 	content := r.FormValue("content")
 	if _, err = models.Activities.Insert(&models.Activity{
 		UserID:      user.ID,

@@ -218,41 +218,134 @@
   };
 
   // ============================================
-  // Notifications
+  // Push Notifications
   // ============================================
 
+  /**
+   * Convert a base64 string to Uint8Array for applicationServerKey
+   */
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  /**
+   * Request notification permission and subscribe to push
+   */
   window.Skyscape.requestNotifications = async function() {
     if (!('Notification' in window)) {
-      console.warn('[Notifications] Not supported');
+      console.warn('[Push] Notifications not supported');
       return false;
     }
 
-    if (Notification.permission === 'granted') {
-      return true;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.warn('[Push] Push notifications not supported');
+      return false;
     }
 
-    if (Notification.permission !== 'denied') {
+    // Request permission
+    if (Notification.permission === 'denied') {
+      console.warn('[Push] Notifications denied');
+      return false;
+    }
+
+    if (Notification.permission !== 'granted') {
       const permission = await Notification.requestPermission();
-      return permission === 'granted';
+      if (permission !== 'granted') {
+        return false;
+      }
     }
 
-    return false;
+    // Subscribe to push
+    try {
+      await subscribeToPush();
+      return true;
+    } catch (err) {
+      console.error('[Push] Subscription failed:', err);
+      return false;
+    }
   };
 
-  window.Skyscape.subscribeToPush = async function(vapidPublicKey) {
+  /**
+   * Subscribe to push notifications
+   */
+  async function subscribeToPush() {
+    // Get VAPID public key from server
+    const keyResp = await fetch('/api/push/vapid-key', { credentials: 'same-origin' });
+    if (!keyResp.ok) {
+      throw new Error('Failed to get VAPID key');
+    }
+    const { publicKey } = await keyResp.json();
+
+    // Get service worker registration
     const registration = await navigator.serviceWorker.ready;
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: vapidPublicKey
+    // Check for existing subscription
+    let subscription = await registration.pushManager.getSubscription();
+
+    // Subscribe if not already subscribed
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
+      });
+      console.log('[Push] New subscription created');
+    }
+
+    // Send subscription to server
+    const resp = await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(subscription)
     });
 
+    if (!resp.ok) {
+      throw new Error('Failed to save subscription');
+    }
+
+    console.log('[Push] Subscription saved to server');
     return subscription;
+  }
+
+  /**
+   * Unsubscribe from push notifications
+   */
+  window.Skyscape.unsubscribeFromPush = async function() {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+
+    if (subscription) {
+      // Notify server
+      await fetch('/api/push/subscribe', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(subscription)
+      });
+
+      // Unsubscribe locally
+      await subscription.unsubscribe();
+      console.log('[Push] Unsubscribed');
+    }
   };
 
+  /**
+   * Show a local notification (for testing or fallback)
+   */
   window.Skyscape.notify = async function(title, options = {}) {
     if (Notification.permission !== 'granted') {
-      console.warn('[Notifications] Permission not granted');
+      console.warn('[Push] Permission not granted');
       return;
     }
 
@@ -261,17 +354,26 @@
       await registration.showNotification(title, {
         icon: '/public/logo.svg',
         badge: '/public/logo.svg',
-        vibrate: [200, 100, 200, 100, 200],
-        requireInteraction: true,
-        renotify: true,
-        silent: false,
-        tag: 'skyscape-' + Date.now(),
+        vibrate: [200, 100, 200],
+        tag: 'skyscape-notification',
         ...options
       });
-      console.log('[Notifications] Shown:', title);
     } catch (err) {
-      console.error('[Notifications] Failed:', err);
+      console.error('[Push] Notification failed:', err);
     }
+  };
+
+  /**
+   * Check if push is supported and user is subscribed
+   */
+  window.Skyscape.isPushSubscribed = async function() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return false;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    return subscription !== null;
   };
 
 })();

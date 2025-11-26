@@ -23,7 +23,7 @@ func Auth() (string, *AuthController) {
 			authentication.WithCookie("theskyscape"),
 			authentication.WithSigninHandler(func(c *authentication.Controller, user *authentication.User) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					if next := r.FormValue("next"); next != "" {
+					if next := r.FormValue("next"); next != "" && strings.HasPrefix(next, "/") {
 						c.Redirect(w, r, next)
 						return
 					}
