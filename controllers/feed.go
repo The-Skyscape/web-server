@@ -4,8 +4,10 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"github.com/The-Skyscape/devtools/pkg/emailing"
 	"www.theskyscape.com/models"
 )
 
@@ -121,6 +123,49 @@ func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
+
+	// Notify followers in background
+	go func() {
+		poster, _ := models.Profiles.Get(user.ID)
+		if poster == nil {
+			return
+		}
+
+		preview := content
+		if len(preview) > 200 {
+			preview = preview[:197] + "..."
+		}
+
+		for _, follow := range poster.Followers() {
+			follower := follow.Follower()
+			if follower == nil {
+				continue
+			}
+			followerUser := follower.User()
+			if followerUser == nil {
+				continue
+			}
+
+			// Send push notification
+			models.SendPushNotification(
+				follower.ID,
+				"New post from @"+poster.Handle(),
+				preview,
+				"/feed",
+			)
+
+			// Send email notification
+			models.Emails.Send(followerUser.Email,
+				"New post from "+poster.Name(),
+				emailing.WithTemplate("new-post.html"),
+				emailing.WithData("poster", poster),
+				emailing.WithData("recipient", follower),
+				emailing.WithData("user", followerUser),
+				emailing.WithData("preview", preview),
+				emailing.WithData("year", time.Now().Year()),
+			)
+		}
+	}()
 
 	c.Refresh(w, r)
 }
