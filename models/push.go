@@ -80,13 +80,15 @@ func SendPushNotification(userID string, title string, body string, url string) 
 	messageCount = Messages.Count("WHERE RecipientID = ? AND CreatedAt > ?", userID, sinceTime)
 
 	// Build notification message
-	var notificationTitle, notificationBody string
+	var notificationTitle, notificationBody, notificationURL string
 	if messageCount <= 1 {
 		notificationTitle = title
 		notificationBody = body
+		notificationURL = url
 	} else {
 		notificationTitle = "New messages"
 		notificationBody = fmt.Sprintf("You have %d new messages", messageCount)
+		notificationURL = "/messages"
 	}
 
 	log.Printf("[Push] Sending notification to user %s (%d messages since %s)",
@@ -96,7 +98,7 @@ func SendPushNotification(userID string, title string, body string, url string) 
 	payload := map[string]interface{}{
 		"title": notificationTitle,
 		"body":  notificationBody,
-		"url":   url,
+		"url":   notificationURL,
 		"tag":   "skyscape-message",
 	}
 	payloadBytes, _ := json.Marshal(payload)

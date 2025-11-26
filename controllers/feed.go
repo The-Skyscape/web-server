@@ -151,7 +151,7 @@ func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 				follower.ID,
 				"New post from @"+poster.Handle(),
 				preview,
-				"/feed",
+				"/",
 			)
 
 			// Send email notification
