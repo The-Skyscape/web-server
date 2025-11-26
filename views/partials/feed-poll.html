@@ -1,0 +1,15 @@
+{{with $activities := .}}
+{{range $activities}}
+{{template "feed-post.html" .}}
+{{end}}
+
+<!-- Update the poll element with new timestamp via out-of-band swap -->
+{{if gt (len $activities) 0}}
+{{$latest := index $activities (sub (len $activities) 1)}}
+<div id="feed-poll"
+  hx-get="{{host}}/feed/poll?after={{$latest.CreatedAt.Unix}}"
+  hx-trigger="every 5s" hx-target="#feed" hx-swap="afterbegin" hx-swap-oob="true">
+</div>
+{{end}}
+
+{{end}}

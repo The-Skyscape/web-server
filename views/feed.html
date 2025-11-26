@@ -50,6 +50,12 @@
     {{end}}
 
     <div id="feed" class="flex flex-col gap-4">
+      <!-- Real-time feed polling -->
+      <div id="feed-poll"
+        hx-get="{{host}}/feed/poll?after={{now.Unix}}"
+        hx-trigger="every 5s" hx-target="#feed" hx-swap="afterbegin">
+      </div>
+
       {{$limit := feed.Limit}}
       {{$nextPage := feed.NextPage}}
       {{$activities := feed.RecentActivities}}

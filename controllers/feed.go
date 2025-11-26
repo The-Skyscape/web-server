@@ -32,6 +32,7 @@ func (c *FeedController) Setup(app *application.App) {
 	http.Handle("/{$}", app.ProtectFunc(c.serveFeed, auth.Optional))
 	http.Handle("/explore", app.Serve("explore.html", auth.Optional))
 	http.Handle("/manifesto", app.Serve("manifesto.html", auth.Optional))
+	http.Handle("GET /feed/poll", c.ProtectFunc(c.pollFeed, auth.Optional))
 	http.Handle("POST /feed/post", c.ProtectFunc(c.createPost, auth.Required))
 	http.Handle("DELETE /feed/{post}", c.ProtectFunc(c.deletePost, auth.Required))
 }
@@ -92,6 +93,26 @@ func (c *FeedController) RecentActivities() []*models.Activity {
 		LIMIT ? OFFSET ?
 	`, limit, offset)
 	return activities
+}
+
+// pollFeed returns new activities since the given timestamp
+func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
+	// Parse the 'after' timestamp (Unix seconds)
+	afterStr := r.URL.Query().Get("after")
+	var after time.Time
+	if afterStr != "" {
+		if unix, err := strconv.ParseInt(afterStr, 10, 64); err == nil {
+			after = time.Unix(unix, 0)
+		}
+	}
+
+	// Get new activities since timestamp
+	activities, _ := models.Activities.Search(`
+		WHERE CreatedAt > ?
+		ORDER BY CreatedAt ASC
+	`, after)
+
+	c.Render(w, r, "feed-poll.html", activities)
 }
 
 func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
