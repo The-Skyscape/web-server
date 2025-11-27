@@ -191,6 +191,7 @@ func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) 
 	// Send push notification to recipient
 	go models.SendPushNotification(
 		profile.ID,
+		user.ID, // source = sender
 		"New message from @"+user.Handle(),
 		truncateMessage(content, 100),
 		"/messages/"+user.ID,

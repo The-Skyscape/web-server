@@ -170,6 +170,7 @@ func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 			// Send push notification
 			models.SendPushNotification(
 				follower.ID,
+				poster.ID, // source = poster
 				"New post from @"+poster.Handle(),
 				preview,
 				"/",

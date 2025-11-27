@@ -25,10 +25,11 @@ func (p *PushSubscription) Table() string {
 	return "push_subscriptions"
 }
 
-// PushNotificationLog tracks when notifications were last sent to users
+// PushNotificationLog tracks when notifications were last sent to users per source
 type PushNotificationLog struct {
 	application.Model
-	UserID     string
+	UserID     string // Recipient
+	SourceID   string // Sender/poster who triggered the notification
 	LastSentAt time.Time
 }
 
@@ -36,9 +37,9 @@ func (p *PushNotificationLog) Table() string {
 	return "push_notification_logs"
 }
 
-// SendPushNotification sends a push notification to a user (rate limited to 1 per hour)
-func SendPushNotification(userID string, title string, body string, url string) error {
-	log.Printf("[Push] Notification requested for user %s: %s", userID, title)
+// SendPushNotification sends a push notification to a user (rate limited to 1 per hour per source)
+func SendPushNotification(userID string, sourceID string, title string, body string, url string) error {
+	log.Printf("[Push] Notification requested for user %s from source %s: %s", userID, sourceID, title)
 
 	// Get VAPID keys from environment
 	vapidPublicKey := os.Getenv("VAPID_PUBLIC_KEY")
@@ -59,16 +60,16 @@ func SendPushNotification(userID string, title string, body string, url string) 
 		return nil // No subscriptions, nothing to send
 	}
 
-	// Check rate limiting - only send one notification per hour
+	// Check rate limiting - only send one notification per hour per source
 	oneHourAgo := time.Now().Add(-1 * time.Hour)
-	lastLog, _ := PushNotificationLogs.First("WHERE UserID = ?", userID)
+	lastLog, _ := PushNotificationLogs.First("WHERE UserID = ? AND SourceID = ?", userID, sourceID)
 
 	if lastLog != nil && lastLog.LastSentAt.After(oneHourAgo) {
-		log.Printf("[Push] Rate limited - last notification sent at %s", lastLog.LastSentAt.Format(time.RFC3339))
+		log.Printf("[Push] Rate limited for source %s - last notification sent at %s", sourceID, lastLog.LastSentAt.Format(time.RFC3339))
 		return nil
 	}
 
-	// Count unread messages since last notification
+	// Count unread messages from this source since last notification
 	var messageCount int
 	var sinceTime time.Time
 	if lastLog != nil {
@@ -77,7 +78,7 @@ func SendPushNotification(userID string, title string, body string, url string) 
 		sinceTime = oneHourAgo
 	}
 
-	messageCount = Messages.Count("WHERE RecipientID = ? AND CreatedAt > ?", userID, sinceTime)
+	messageCount = Messages.Count("WHERE RecipientID = ? AND SenderID = ? AND CreatedAt > ?", userID, sourceID, sinceTime)
 
 	// Build notification message
 	var notificationTitle, notificationBody, notificationURL string
@@ -147,6 +148,7 @@ func SendPushNotification(userID string, title string, body string, url string) 
 	} else {
 		PushNotificationLogs.Insert(&PushNotificationLog{
 			UserID:     userID,
+			SourceID:   sourceID,
 			LastSentAt: now,
 		})
 	}
