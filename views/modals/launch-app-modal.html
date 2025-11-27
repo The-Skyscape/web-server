@@ -12,22 +12,17 @@
       aria-labelledby="signin-title">
       <input type="hidden" name="repo" value="{{.ID}}">
 
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text font-medium">App Name</span>
-        </div>
-        <input required name="name" type="text" class="input input-bordered w-full" placeholder="My Awesome App">
+      <label class="floating-label">
+        <input required name="name" type="text" class="input w-full" placeholder="App Name">
+        <span>App Name</span>
       </label>
 
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text font-medium">Description</span>
-        </div>
-        <textarea required name="description" class="textarea textarea-bordered w-full" rows="4"
-          placeholder="My awesome app can..."></textarea>
+      <label class="floating-label">
+        <textarea required name="description" class="textarea w-full" rows="4" placeholder="Description"></textarea>
+        <span>Description</span>
       </label>
 
-      <div class="form-control mt-4">
+      <div class="mt-4">
         <button type="submit" class="btn btn-primary btn-block">
           Launch
         </button>

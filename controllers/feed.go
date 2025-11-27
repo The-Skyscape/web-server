@@ -60,23 +60,11 @@ func (c *FeedController) serveFeed(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *FeedController) Page() int {
-	page := c.defaultPage
-	if pageStr := c.URL.Query().Get("page"); pageStr != "" {
-		if val, err := strconv.Atoi(pageStr); err == nil && val > 0 {
-			page = val
-		}
-	}
-	return page
+	return ParsePage(c.URL.Query(), c.defaultPage)
 }
 
 func (c *FeedController) Limit() int {
-	limit := c.defaultLimit
-	if limitStr := c.URL.Query().Get("limit"); limitStr != "" {
-		if val, err := strconv.Atoi(limitStr); err == nil && val > 0 {
-			limit = val
-		}
-	}
-	return min(limit, 100)
+	return ParseLimit(c.URL.Query(), c.defaultLimit)
 }
 
 func (c *FeedController) NextPage() int {
@@ -128,7 +116,7 @@ func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 		c.Render(w, r, "error-message.html", errors.New("Post content cannot be empty"))
 		return
 	}
-	if len(content) > 10000 {
+	if len(content) > MaxContentLength {
 		c.Render(w, r, "error-message.html", errors.New("Post content too long"))
 		return
 	}

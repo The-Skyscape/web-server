@@ -18,25 +18,21 @@
             <input type="hidden" name="next" value='{{req.URL.Query.Get "next"}}'>
 
             <!-- Handle Input -->
-            <label class="form-control w-full">
-              <div class="label">
-                <span class="label-text font-medium">Username or Email</span>
-              </div>
-              <input type="text" name="handle" class="input input-bordered w-full"
-                placeholder="Enter your username or email" required autofocus aria-label="Username or email"
+            <label class="floating-label">
+              <input type="text" name="handle" class="input w-full"
+                placeholder="Username or Email" required autofocus aria-label="Username or email"
                 autocomplete="username" />
+              <span>Username or Email</span>
             </label>
 
             <!-- Password Input -->
-            <label class="form-control w-full">
-              <div class="label">
-                <span class="label-text font-medium">Password</span>
-              </div>
-              <input type="password" name="password" class="input input-bordered w-full" placeholder="••••••••" required
+            <label class="floating-label">
+              <input type="password" name="password" class="input w-full" placeholder="Password" required
                 aria-label="Password" autocomplete="current-password" />
+              <span>Password</span>
             </label>
 
-            <div class="form-control mt-4">
+            <div class="mt-4">
               <button type="submit" class="btn btn-primary btn-block">
                 Sign In
               </button>

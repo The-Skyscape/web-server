@@ -71,45 +71,37 @@
               class="flex flex-col gap-4" aria-labelledby="signup-title">
 
               <!-- Name Input -->
-              <label class="form-control w-full">
-                <div class="label">
-                  <span class="label-text font-medium">Full Name</span>
-                </div>
-                <input type="text" name="name" class="input input-bordered w-full" placeholder="John Doe" required
+              <label class="floating-label">
+                <input type="text" name="name" class="input w-full" placeholder="Full Name" required
                   autofocus aria-label="Full name" autocomplete="name" />
+                <span>Full Name</span>
               </label>
 
               <!-- Username Input -->
-              <label class="form-control w-full">
-                <div class="label">
-                  <span class="label-text font-medium">Username</span>
-                </div>
-                <input type="text" name="handle" class="input input-bordered w-full" placeholder="johndoe"
+              <label class="floating-label">
+                <input type="text" name="handle" class="input w-full" placeholder="Username"
                   pattern="[a-zA-Z0-9_-]+" title="Username can only contain letters, numbers, underscores, and hyphens"
                   required aria-label="Username" autocomplete="username" />
+                <span>Username</span>
               </label>
 
               <!-- Email Input -->
-              <label class="form-control w-full">
-                <div class="label">
-                  <span class="label-text font-medium">Email Address</span>
-                </div>
-                <input type="email" name="email" class="input input-bordered w-full" placeholder="john@example.com"
+              <label class="floating-label">
+                <input type="email" name="email" class="input w-full" placeholder="Email Address"
                   required aria-label="Email address" autocomplete="email" />
+                <span>Email Address</span>
               </label>
 
               <!-- Password Input -->
-              <label class="form-control w-full">
-                <div class="label">
-                  <span class="label-text font-medium">Password</span>
-                  <span id="password-help" class="label-text-alt text-xs">Minimum 8 characters</span>
-                </div>
-                <input type="password" name="password" class="input input-bordered w-full" placeholder="••••••••"
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">Password</legend>
+                <input type="password" name="password" class="input w-full" placeholder="Password"
                   minlength="8" required aria-label="Password" aria-describedby="password-help"
                   autocomplete="new-password" />
-              </label>
+                <p id="password-help" class="text-xs opacity-60 mt-1">Minimum 8 characters</p>
+              </fieldset>
 
-              <div class="form-control mt-4">
+              <div class="mt-4">
                 <button type="submit" class="btn btn-primary btn-block">
                   Create Account
                 </button>

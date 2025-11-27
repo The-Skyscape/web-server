@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"www.theskyscape.com/models"
@@ -35,20 +34,8 @@ func (c UsersController) Handle(r *http.Request) application.Handler {
 
 func (c *UsersController) AllProfiles() []*models.Profile {
 	query := c.URL.Query().Get("query")
-
-	page := c.defaultPage
-	if pageStr := c.URL.Query().Get("page"); pageStr != "" {
-		if val, err := strconv.Atoi(pageStr); err == nil && val > 0 {
-			page = val
-		}
-	}
-
-	limit := c.defaultLimit
-	if limitStr := c.URL.Query().Get("limit"); limitStr != "" {
-		if val, err := strconv.Atoi(limitStr); err == nil && val > 0 {
-			limit = val
-		}
-	}
+	page := ParsePage(c.URL.Query(), c.defaultPage)
+	limit := ParseLimit(c.URL.Query(), c.defaultLimit)
 
 	users, _ := models.Profiles.Search(`
 	  INNER JOIN users on users.ID = profiles.UserID
@@ -63,22 +50,11 @@ func (c *UsersController) AllProfiles() []*models.Profile {
 }
 
 func (c *UsersController) Page() int {
-	if page := c.URL.Query().Get("page"); page != "" {
-		if val, err := strconv.Atoi(page); err == nil && val > 0 {
-			return val
-		}
-	}
-	return c.defaultPage
+	return ParsePage(c.URL.Query(), c.defaultPage)
 }
 
 func (c *UsersController) Limit() int {
-	limit := c.defaultLimit
-	if limitStr := c.URL.Query().Get("limit"); limitStr != "" {
-		if val, err := strconv.Atoi(limitStr); err == nil && val > 0 {
-			limit = val
-		}
-	}
-	return min(limit, 100)
+	return ParseLimit(c.URL.Query(), c.defaultLimit)
 }
 
 func (c *UsersController) NextPage() int {

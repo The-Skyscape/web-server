@@ -7,25 +7,18 @@
     <form hx-post="{{host}}/app/{{.ID}}/oauth/enable" hx-target="previous .error-message" hx-swap="innerHTML"
       class="flex flex-col gap-4">
 
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text font-medium">Redirect URI</span>
-          <span class="label-text-alt">Where to send users after authorization</span>
-        </div>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Redirect URI</legend>
         <input required name="redirect_uri" type="url" placeholder="https://example.com/callback"
-          class="input input-bordered w-full">
-      </label>
+          class="input w-full">
+        <p class="text-xs opacity-60 mt-1">Where to send users after authorization</p>
+      </fieldset>
 
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text font-medium">Allowed Scopes</span>
-          <span class="label-text-alt">Space-separated list of scopes</span>
-        </div>
-        <input required name="allowed_scopes" type="text" value="user:read" class="input input-bordered w-full">
-        <div class="label">
-          <span class="label-text-alt">Available: user:read, user:write, repo:read, repo:write, app:read, app:write</span>
-        </div>
-      </label>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Allowed Scopes</legend>
+        <input required name="allowed_scopes" type="text" value="user:read" class="input w-full">
+        <p class="text-xs opacity-60 mt-1">Available: user:read, user:write, repo:read, repo:write, app:read, app:write</p>
+      </fieldset>
 
       <div class="alert alert-info">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
@@ -35,7 +28,7 @@
         <span>After enabling OAuth, you'll receive a client secret. <strong>Save it immediately</strong> - it won't be shown again.</span>
       </div>
 
-      <div class="form-control mt-4">
+      <div class="mt-4">
         <button type="submit" class="btn btn-primary btn-block">
           Enable OAuth
         </button>

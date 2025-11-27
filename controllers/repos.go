@@ -265,7 +265,7 @@ func (c *ReposController) promoteRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	content := r.FormValue("content")
-	if len(content) > 10000 {
+	if len(content) > MaxContentLength {
 		c.Render(w, r, "error-message.html", errors.New("promotion content too long"))
 		return
 	}

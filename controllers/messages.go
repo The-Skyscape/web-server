@@ -176,7 +176,7 @@ func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) 
 		c.Render(w, r, "error-message.html", errors.New("message cannot be empty"))
 		return
 	}
-	if len(content) > 10000 {
+	if len(content) > MaxContentLength {
 		c.Render(w, r, "error-message.html", errors.New("message too long"))
 		return
 	}
@@ -225,23 +225,11 @@ func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *MessagesController) Page() int {
-	page := c.defaultPage
-	if pageStr := c.URL.Query().Get("page"); pageStr != "" {
-		if val, err := strconv.Atoi(pageStr); err == nil && val > 0 {
-			page = val
-		}
-	}
-	return page
+	return ParsePage(c.URL.Query(), c.defaultPage)
 }
 
 func (c *MessagesController) Limit() int {
-	limit := c.defaultLimit
-	if limitStr := c.URL.Query().Get("limit"); limitStr != "" {
-		if val, err := strconv.Atoi(limitStr); err == nil && val > 0 {
-			limit = val
-		}
-	}
-	return min(limit, 100)
+	return ParseLimit(c.URL.Query(), c.defaultLimit)
 }
 
 func (c *MessagesController) NextPage() int {

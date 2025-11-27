@@ -8,12 +8,10 @@
     <div class="divider"></div>
 
     <div class="space-y-4">
-      <div>
-        <label class="label">
-          <span class="label-text font-medium">Client ID</span>
-        </label>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Client ID</legend>
         <div class="flex gap-2">
-          <input type="text" value="{{.ID}}" readonly class="input input-bordered w-full font-mono text-sm">
+          <input type="text" value="{{.ID}}" readonly class="input w-full font-mono text-sm">
           <button class="btn btn-square" _="on click
             call navigator.clipboard.writeText('{{.ID}}') then
             set my innerHTML to '<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; class=&quot;h-6 w-6&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot;><path stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; stroke-width=&quot;2&quot; d=&quot;M5 13l4 4L19 7&quot; /></svg>' then
@@ -25,21 +23,17 @@
             </svg>
           </button>
         </div>
-      </div>
+      </fieldset>
 
-      <div>
-        <label class="label">
-          <span class="label-text font-medium">Redirect URI</span>
-        </label>
-        <input type="text" value="{{$client.RedirectURI}}" readonly class="input input-bordered w-full">
-      </div>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Redirect URI</legend>
+        <input type="text" value="{{$client.RedirectURI}}" readonly class="input w-full">
+      </fieldset>
 
-      <div>
-        <label class="label">
-          <span class="label-text font-medium">Allowed Scopes</span>
-        </label>
-        <input type="text" value="{{$client.AllowedScopes}}" readonly class="input input-bordered w-full">
-      </div>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Allowed Scopes</legend>
+        <input type="text" value="{{$client.AllowedScopes}}" readonly class="input w-full">
+      </fieldset>
 
       <div class="alert alert-warning">
         <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">

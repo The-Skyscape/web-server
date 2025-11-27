@@ -7,16 +7,12 @@
     {{with repos.CurrentRepo}}
     <form hx-post="{{host}}/repos/{{.ID}}/promote" hx-target="previous .error-message" hx-swap="innerHTML" class="flex flex-col gap-4">
 
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text font-medium">Share your thoughts</span>
-        </div>
-        <textarea name="content" class="textarea textarea-bordered w-full" rows="4" placeholder="What makes this repository special?"></textarea>
+      <label class="floating-label">
+        <textarea name="content" class="textarea w-full" rows="4" placeholder="Share your thoughts"></textarea>
+        <span>Share your thoughts</span>
       </label>
 
-      <div class="label">
-        <span class="label-text font-medium">Preview</span>
-      </div>
+      <div class="text-sm font-medium opacity-70 mb-2">Preview</div>
 
       <div class="card bg-base-100 shadow-lg w-full border border-white/10">
         <div class="card-body">
@@ -80,7 +76,7 @@
         </div>
       </div>
 
-      <div class="form-control mt-4">
+      <div class="mt-4">
         <button type="submit" class="btn btn-primary btn-block">
           Promote Repository
         </button>

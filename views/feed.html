@@ -42,7 +42,7 @@
         </button>
       </div>
       <form id="post-form" class="flex flex-col w-full gap-2" hx-post="{{host}}/feed/post" hx-target=".error">
-        <textarea id="post-content" required name="content" class="textarea textarea-bordered w-full min-h-24"
+        <textarea id="post-content" required name="content" class="textarea w-full min-h-24"
           placeholder="What's on your mind, {{$user.Name}}?"></textarea>
         <div class="error"></div>
       </form>

@@ -5,22 +5,17 @@
     {{with apps.CurrentApp}}
     <form hx-post="{{host}}/app/{{.ID}}/edit" hx-target="previous .error-message" hx-swap="innerHTML" class="flex flex-col gap-4">
 
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text font-medium">Name</span>
-        </div>
-        <input required name="name" type="text" class="input input-bordered w-full" value="{{.Name}}">
+      <label class="floating-label">
+        <input required name="name" type="text" class="input w-full" placeholder="Name" value="{{.Name}}">
+        <span>Name</span>
       </label>
 
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text font-medium">Description</span>
-        </div>
-        <textarea required name="description" class="textarea textarea-bordered w-full"
-          rows="4">{{.Description}}</textarea>
+      <label class="floating-label">
+        <textarea required name="description" class="textarea w-full" rows="4" placeholder="Description">{{.Description}}</textarea>
+        <span>Description</span>
       </label>
 
-      <div class="form-control mt-4">
+      <div class="mt-4">
         <button type="submit" class="btn btn-primary btn-block">
           Save
         </button>
