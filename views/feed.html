@@ -18,7 +18,7 @@
 
   <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto flex flex-col gap-4">
     {{with $user := auth.CurrentUser}}
-    <div class="flex flex-col gap-4 pb-2">
+    <div class="flex flex-col gap-4 pb-2 -mb-2">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
           <div class="avatar flex-shrink-0">
@@ -39,9 +39,46 @@
           Post
         </button>
       </div>
-      <form id="post-form" class="flex flex-col w-full gap-2" hx-post="{{host}}/feed/post" hx-target=".error">
+      <form id="post-form" class="flex flex-col w-full gap-2" hx-post="{{host}}/feed/post" hx-target=".error" hx-encoding="multipart/form-data">
         <textarea id="post-content" required name="content" class="textarea w-full min-h-24"
           placeholder="What's on your mind, {{$user.Name}}?"></textarea>
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Repo selector -->
+          {{$repos := feed.MyRepos}}
+          {{if $repos}}
+          <select name="repo_id" class="select select-bordered select-sm w-auto">
+            <option value="">Promote a Repo</option>
+            {{range $repos}}
+            <option value="{{.ID}}">{{.Name}}</option>
+            {{end}}
+          </select>
+          {{end}}
+          <!-- App selector -->
+          {{$apps := feed.MyApps}}
+          {{if $apps}}
+          <select name="app_id" class="select select-bordered select-sm w-auto">
+            <option value="">Promote an App</option>
+            {{range $apps}}
+            <option value="{{.ID}}">{{.Name}}</option>
+            {{end}}
+          </select>
+          {{end}}
+          <!-- Image upload -->
+          <label class="btn btn-ghost btn-sm gap-1">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span class="hidden sm:inline">Image</span>
+            <input type="file" name="image" accept="image/*" class="hidden" _="on change
+              if my.files.length > 0
+                set my.parentElement.classList to 'btn btn-ghost btn-sm gap-1 btn-active'
+              else
+                set my.parentElement.classList to 'btn btn-ghost btn-sm gap-1'
+              end">
+          </label>
+        </div>
         <div class="error"></div>
       </form>
     </div>

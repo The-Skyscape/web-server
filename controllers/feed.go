@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -83,6 +85,35 @@ func (c *FeedController) RecentActivities() []*models.Activity {
 	return activities
 }
 
+// MyRepos returns all repos owned by the current user for the promote dropdown
+func (c *FeedController) MyRepos() []*models.Repo {
+	auth := c.Use("auth").(*AuthController)
+	user := auth.CurrentUser()
+	if user == nil {
+		return nil
+	}
+	repos, _ := models.Repos.Search(`
+		WHERE OwnerID = ? AND Archived = false
+		ORDER BY CreatedAt DESC
+	`, user.ID)
+	return repos
+}
+
+// MyApps returns all apps owned by the current user for the promote dropdown
+func (c *FeedController) MyApps() []*models.App {
+	auth := c.Use("auth").(*AuthController)
+	user := auth.CurrentUser()
+	if user == nil {
+		return nil
+	}
+	apps, _ := models.Apps.Search(`
+		JOIN repos ON repos.ID = apps.RepoID
+		WHERE repos.OwnerID = ? AND apps.Status != 'shutdown'
+		ORDER BY apps.CreatedAt DESC
+	`, user.ID)
+	return apps
+}
+
 // pollFeed returns new activities since the given timestamp
 func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
 	// Parse the 'after' timestamp (Unix seconds)
@@ -103,6 +134,15 @@ func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
 	c.Render(w, r, "feed-poll.html", activities)
 }
 
+const maxImageSize = 10 * 1024 * 1024 // 10MB
+
+var allowedImageTypes = map[string]bool{
+	"image/jpeg": true,
+	"image/png":  true,
+	"image/gif":  true,
+	"image/webp": true,
+}
+
 func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
@@ -110,6 +150,8 @@ func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
+
+	r.ParseMultipartForm(maxImageSize)
 
 	content := r.FormValue("content")
 	if content == "" {
@@ -121,12 +163,58 @@ func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Handle repo/app promotion
+	var subjectType, subjectID string
+	if repoID := r.FormValue("repo_id"); repoID != "" {
+		subjectType = "repo"
+		subjectID = repoID
+	} else if appID := r.FormValue("app_id"); appID != "" {
+		subjectType = "app"
+		subjectID = appID
+	}
+
+	// Handle file upload
+	var fileID string
+	if file, handler, err := r.FormFile("image"); err == nil {
+		defer file.Close()
+
+		if handler.Size > maxImageSize {
+			c.Render(w, r, "error-message.html", errors.New("Image too large, max 10MB"))
+			return
+		}
+
+		mimeType := handler.Header.Get("Content-Type")
+		if !allowedImageTypes[mimeType] {
+			c.Render(w, r, "error-message.html", errors.New("Only images are allowed"))
+			return
+		}
+
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, file); err != nil {
+			c.Render(w, r, "error-message.html", err)
+			return
+		}
+
+		fileModel, err := models.Files.Insert(&models.File{
+			OwnerID:  user.ID,
+			FilePath: handler.Filename,
+			MimeType: mimeType,
+			Content:  buf.Bytes(),
+		})
+		if err != nil {
+			c.Render(w, r, "error-message.html", err)
+			return
+		}
+		fileID = fileModel.ID
+	}
+
 	_, err = models.Activities.Insert(&models.Activity{
 		UserID:      user.ID,
 		Action:      "posted",
-		SubjectType: "",
-		SubjectID:   "",
+		SubjectType: subjectType,
+		SubjectID:   subjectID,
 		Content:     content,
+		FileID:      fileID,
 	})
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)

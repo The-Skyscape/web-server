@@ -25,9 +25,15 @@
     {{end}}
 
     {{if $.Content}}
-    <p class="text-base {{if or .Repo .Profile .App}}text-white/70{{else}}text-white/90 text-lg{{end}}">
+    <p class="text-base {{if or .Repo .Profile .App .File}}text-white/70{{else}}text-white/90 text-lg{{end}}">
       {{$.Content}}
     </p>
+    {{end}}
+
+    {{with $.File}}
+    <div class="rounded-xl overflow-hidden border border-white/10">
+      <img src="{{host}}/file/{{.ID}}" alt="Post image" class="w-full max-h-96 object-cover">
+    </div>
     {{end}}
 
     {{if or .Repo .Profile .App}}
