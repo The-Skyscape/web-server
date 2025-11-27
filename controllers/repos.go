@@ -103,7 +103,7 @@ func (c *ReposController) LatestCommit() *models.Commit {
 
 	branch := cmp.Or(c.URL.Query().Get("branch"), "main")
 	commits, err := repo.ListCommits(branch, 1)
-	if err != nil {
+	if err != nil || len(commits) == 0 {
 		return nil
 	}
 
@@ -265,6 +265,11 @@ func (c *ReposController) promoteRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	content := r.FormValue("content")
+	if len(content) > 10000 {
+		c.Render(w, r, "error-message.html", errors.New("promotion content too long"))
+		return
+	}
+
 	if _, err = models.Activities.Insert(&models.Activity{
 		UserID:      user.ID,
 		Action:      "promoted",

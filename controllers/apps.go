@@ -131,19 +131,19 @@ func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
 	if err != nil {
-		c.RenderError(w, r, errors.New("unauthorized"))
+		c.Render(w, r, "error-message.html", errors.New("unauthorized"))
 		return
 	}
 
 	app, err := models.Apps.Get(r.PathValue("app"))
 	if err != nil {
-		c.RenderError(w, r, errors.New("app not found"))
+		c.Render(w, r, "error-message.html", errors.New("app not found"))
 		return
 	}
 
 	repo := app.Repo()
 	if repo == nil || repo.OwnerID != user.ID {
-		c.RenderError(w, r, errors.New("you are not the owner"))
+		c.Render(w, r, "error-message.html", errors.New("you are not the owner"))
 		return
 	}
 
@@ -151,7 +151,7 @@ func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("description")
 
 	if name == "" || description == "" {
-		c.RenderError(w, r, errors.New("missing name or description"))
+		c.Render(w, r, "error-message.html", errors.New("missing name or description"))
 		return
 	}
 
@@ -160,7 +160,7 @@ func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
 	app.Description = description
 
 	if err := models.Apps.Update(app); err != nil {
-		c.RenderError(w, r, err)
+		c.Render(w, r, "error-message.html", err)
 		return
 	}
 
@@ -253,6 +253,11 @@ func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	content := r.FormValue("content")
+	if len(content) > 10000 {
+		c.Render(w, r, "error-message.html", errors.New("promotion content too long"))
+		return
+	}
+
 	if _, err = models.Activities.Insert(&models.Activity{
 		UserID:      user.ID,
 		Action:      "promoted",

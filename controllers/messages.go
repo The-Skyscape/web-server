@@ -160,6 +160,10 @@ func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) 
 	c.Request = r
 
 	user := c.CurrentUser()
+	if user == nil {
+		c.Render(w, r, "error-message.html", errors.New("authentication required"))
+		return
+	}
 
 	profile, err := models.Profiles.Get(r.FormValue("id"))
 	if err != nil {
@@ -248,6 +252,9 @@ func (c *MessagesController) NextPage() int {
 func truncateMessage(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
+	}
+	if maxLen <= 3 {
+		return s[:maxLen]
 	}
 	return s[:maxLen-3] + "..."
 }
