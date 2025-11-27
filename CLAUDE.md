@@ -432,3 +432,158 @@ http.Handle("POST /path", c.ProtectFunc(c.handler, auth.Required))
 ```
 
 Use `app.Serve()` for rendering templates, `c.ProtectFunc()` for controller methods.
+
+## Real-Time Features
+
+### HTMX Polling Pattern
+
+The application uses HTMX polling for real-time updates without WebSockets. This pattern works well with the devtools framework:
+
+**Feed Polling** (`/feed/poll`):
+```html
+<!-- Initial poll element in feed.html -->
+<div id="feed-poll"
+  hx-get="{{host}}/feed/poll?after={{now.Unix}}"
+  hx-trigger="every 5s" hx-target="#feed" hx-swap="afterbegin">
+</div>
+```
+
+**Message Polling** (`/messages/{id}/poll`):
+```html
+<!-- Poll element updates itself via OOB swap -->
+<div id="message-poll"
+  hx-get="{{host}}/messages/{{$profile.Handle}}/poll?after={{now.Unix}}"
+  hx-trigger="every 3s" hx-target="#messages-container" hx-swap="afterbegin">
+</div>
+```
+
+**Key Pattern - Out-of-Band Timestamp Updates:**
+```html
+<!-- In poll response partial (e.g., feed-poll.html) -->
+{{range $activities}}
+{{template "feed-post.html" .}}
+{{end}}
+
+{{if gt (len $activities) 0}}
+{{$latest := index $activities (sub (len $activities) 1)}}
+<div id="feed-poll"
+  hx-get="{{host}}/feed/poll?after={{$latest.CreatedAt.Unix}}"
+  hx-trigger="every 5s" hx-target="#feed" hx-swap="afterbegin" hx-swap-oob="true">
+</div>
+{{end}}
+```
+
+The OOB swap (`hx-swap-oob="true"`) updates the poll element with the new timestamp, ensuring the next poll only fetches items newer than the last received.
+
+**Controller Pattern:**
+```go
+func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
+    afterStr := r.URL.Query().Get("after")
+    var after time.Time
+    if afterStr != "" {
+        if unix, err := strconv.ParseInt(afterStr, 10, 64); err == nil {
+            after = time.Unix(unix, 0)
+        }
+    }
+
+    activities, _ := models.Activities.Search(`
+        WHERE CreatedAt > ?
+        ORDER BY CreatedAt ASC
+    `, after)
+
+    c.Render(w, r, "feed-poll.html", activities)
+}
+```
+
+### Push Notifications
+
+Web Push notifications implemented via VAPID:
+
+**Models** (`models/push.go`):
+- `PushSubscription` - Stores user's browser push subscription
+- `PushNotificationLog` - Tracks rate limiting per (recipient, source) pair
+
+**Rate Limiting:**
+- Notifications are rate-limited to 1 per hour per source per recipient
+- This prevents spam while allowing notifications from different senders
+- When multiple messages arrive, notification aggregates: "You have N new messages"
+
+**Environment Variables:**
+- `VAPID_PUBLIC_KEY` - Public key for browser subscription
+- `VAPID_PRIVATE_KEY` - Private key for signing push messages
+
+**Usage:**
+```go
+models.SendPushNotification(
+    recipientID,
+    sourceID,    // Sender/poster ID for per-conversation throttling
+    "Title",
+    "Body text",
+    "/url/to/open",
+)
+```
+
+### Service Worker Considerations
+
+The service worker (`views/static/sw.js.html`) caches pages for offline use but must exclude dynamic endpoints:
+
+```javascript
+// Skip API, auth, and poll requests - these need fresh data
+if (event.request.url.includes('/api/') ||
+    event.request.url.includes('/oauth/') ||
+    event.request.url.includes('/signin') ||
+    event.request.url.includes('/signup') ||
+    event.request.url.includes('/poll')) {
+  return;
+}
+```
+
+**Important:** Always add new dynamic endpoints to the skip list to prevent stale cached responses.
+
+## Working with Devtools at Scale
+
+### Framework Strengths
+
+1. **Consistent MVC Pattern**: Every feature follows the same controller/model/view structure, making the codebase predictable and navigable.
+
+2. **Template Method Exposure**: Public controller methods are automatically available in templates via `{{controllerName.MethodName}}`. This reduces boilerplate while maintaining type safety.
+
+3. **Embedded Replicas**: The LibSQL replica pattern provides fast reads with automatic sync. No need to manage complex replication - just call `db.Sync()` when you need fresh data after writes.
+
+4. **Composable Middleware**: Auth middleware (`auth.Required`, `auth.Optional`) chains cleanly with route handlers.
+
+### Common Pitfalls
+
+1. **Profile.ID vs Profile.UserID**: Profiles have both an `ID` (the profile's own ID) and a `UserID` (the auth user's ID). For queries involving profile relationships (messages, follows), use `Profile.ID`, not `Profile.UserID`.
+
+2. **Template Data Requirements**: Email templates often require specific data (e.g., `year` for footer, `user` for personalization). Check existing templates for required fields.
+
+3. **Service Worker Caching**: New dynamic endpoints must be excluded from caching, or users will see stale data.
+
+4. **Value vs Pointer Receivers**: The `Handle()` method uses a value receiver to create a fresh copy per request. Other methods can use pointer receivers.
+
+### Patterns That Scale Well
+
+1. **Background Goroutines for Notifications**: Heavy operations like sending emails/push notifications run in goroutines to not block the response:
+   ```go
+   go func() {
+       for _, follower := range followers {
+           models.SendPushNotification(...)
+           models.Emails.Send(...)
+       }
+   }()
+   ```
+
+2. **Pagination with Infinite Scroll**: HTMX `hx-trigger="revealed"` combined with `hx-swap="afterend"` creates seamless infinite scroll without breaking the back button.
+
+3. **Per-Entity Rate Limiting**: Rate limits keyed on multiple fields (recipient + source) prevent spam while allowing legitimate notifications from different sources.
+
+4. **Unix Timestamps for URLs**: Using `.Unix()` for timestamps in URLs avoids encoding issues with RFC3339 format (colons cause problems).
+
+### Adding New Real-Time Features
+
+1. Create a poll endpoint in the controller
+2. Create a partial template that renders items + updates the poll element via OOB swap
+3. Add the initial poll element to the main view
+4. Add the poll path to the service worker skip list
+5. Consider rate limiting if the feature triggers notifications
