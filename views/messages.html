@@ -7,13 +7,11 @@
 <body>
   {{template "layout/start"}}
 
-  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
-    <div class="absolute inset-0 bg-black opacity-40"></div>
-    <div class='flex flex-col gap-3 items-center px-4 py-18'>
-      <h1 class="text-3xl md:text-4xl font-bold tracking-wide opacity-80">Messages</h1>
-      <span class="text-lg md:text-xl font-bold opacity-60 text-center">
-        Your conversations with other developers
-      </span>
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b border-white/10 w-full">
+    <div class="absolute inset-0 bg-gradient-to-b from-black/50 to-black/30"></div>
+    <div class="relative flex flex-col gap-2 items-center px-4 py-16">
+      <h1 class="text-3xl md:text-4xl font-bold tracking-wide text-white/90">Messages</h1>
+      <p class="text-lg md:text-xl text-white/60 text-center max-w-lg">Your conversations with other developers</p>
     </div>
   </div>
 

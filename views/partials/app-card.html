@@ -1,34 +1,24 @@
-<a href="{{host}}/app/{{.ID}}" class="card w-full max-w-sm bg-base-100 shadow-lg">
-  <figure class="relative">
-    <img src="https://apps.skysca.pe/{{.ID}}" alt="Screenshot of {{.Name}}" class="w-full h-36 object-cover object-top">
-    <div class="absolute inset-0 bg-black opacity-40"></div>
+<a href="{{host}}/app/{{.ID}}"
+  class="card w-full max-w-sm bg-base-100/80 backdrop-blur-sm border border-white/5 overflow-hidden group hover:bg-base-100 hover:shadow-xl hover:shadow-primary/5 hover:border-white/10 transition-all duration-300">
+  <figure class="relative h-36 overflow-hidden">
+    <img src="https://apps.skysca.pe/{{.ID}}" alt="{{.Name}}" class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500">
+    <div class="absolute inset-0 bg-gradient-to-t from-base-100 via-transparent to-transparent"></div>
   </figure>
 
-  <div class="card-body">
-    <div class="flex items-center min-w-0">
+  <div class="card-body gap-3 -mt-4">
+    <div class="flex items-center gap-2 min-w-0">
       {{with .Owner}}
-      <div class="avatar flex-shrink-0">
-        <div class="w-5 p-0.5 rounded-full bg-white/10 border border-white/10 mr-1">
-          <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-        </div>
+      <div class="w-6 h-6 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+        <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
       </div>
-
-      <span class="text-base font-semibold opacity-80 flex-shrink-0">
-        @{{.Handle}} /&nbsp;
-      </span>
+      <span class="text-sm text-white/50 shrink-0">@{{.Handle}}</span>
+      <span class="text-white/30">/</span>
       {{end}}
-
-      <h2 class="text-base font-semibold truncate min-w-0">
-        {{.Name}}
-      </h2>
+      <h2 class="text-sm font-semibold truncate">{{.Name}}</h2>
     </div>
 
-    <hr class="my-2 opacity-15">
-
-    <p class="text-sm font-bold opacity-60 tracking-wider line-clamp-2">
-      {{with .Description}}{{.}}{{else}}
-      <span class="italic opacity-80">No description</span>
-      {{end}}
+    <p class="text-sm text-white/50 line-clamp-2">
+      {{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}
     </p>
   </div>
 </a>

@@ -57,8 +57,10 @@ func SendPushNotification(userID string, sourceID string, title string, body str
 		return err
 	}
 	if len(subscriptions) == 0 {
+		log.Printf("[Push] No subscriptions found for user %s", userID)
 		return nil // No subscriptions, nothing to send
 	}
+	log.Printf("[Push] Found %d subscription(s) for user %s", len(subscriptions), userID)
 
 	// Check rate limiting - only send one notification per hour per source
 	oneHourAgo := time.Now().Add(-1 * time.Hour)

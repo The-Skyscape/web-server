@@ -28,26 +28,21 @@
 <body>
   {{template "layout/start"}}
 
-  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
-    <div class="absolute inset-0 bg-black opacity-40"></div>
-    <div class='flex flex-col gap-3 items-center px-4 py-18'>
-      <h1 class="text-3xl md:text-4xl font-bold tracking-wide opacity-80">The Skyscape Repos</h1>
-      <span class="text-lg md:text-xl font-bold opacity-60 text-center">
-        Discover and learn about the code that is being ran on, and is running, The Skyscape.
-      </span>
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b border-white/10 w-full">
+    <div class="absolute inset-0 bg-gradient-to-b from-black/50 to-black/30"></div>
+    <div class="relative flex flex-col gap-2 items-center px-4 py-16">
+      <h1 class="text-3xl md:text-4xl font-bold tracking-wide text-white/90">The Skyscape Repos</h1>
+      <p class="text-lg md:text-xl text-white/60 text-center max-w-lg">Discover and learn about the code that is being ran on, and is running, The Skyscape.</p>
     </div>
   </div>
 
   <div class="w-full max-w-screen-sm px-4 -mt-6">
-    <label class="input input-lg w-full shadow-lg border-2! border-white/40">
-      <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.3-4.3"></path>
-        </g>
+    <label class="input input-lg w-full bg-base-100/90 backdrop-blur-sm border border-white/20 shadow-xl focus-within:border-primary/50 transition-colors">
+      <svg class="h-5 w-5 text-white/40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.3-4.3"></path>
       </svg>
-
-      <input name="query" type="search" class="grow" placeholder="Search through our directory of repos"
+      <input name="query" type="search" class="grow" placeholder="Search repos..."
         hx-trigger="input changed delay:200ms, search" hx-get="{{host}}/repos" hx-target="#repo-cards"
         hx-select="#repo-cards" hx-swap="outerHTML" hx-replace-url="true" value='{{req.URL.Query.Get "query"}}'>
     </label>

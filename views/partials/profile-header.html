@@ -1,64 +1,55 @@
-<div
-  class="relative -mb-12 w-full h-40 md:h-64 bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/20">
-  <div class="absolute inset-0 bg-black/40"></div>
+<div class="relative -mb-12 w-full h-40 md:h-56 bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b border-white/10">
+  <div class="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60"></div>
 </div>
 
 {{with $profile := profile.CurrentProfile}}
-<div class="max-w-screen-lg w-full mx-auto relative z-20 px-4">
+<div class="max-w-screen-lg w-full mx-auto relative z-30 px-4">
   <div class="flex flex-col md:flex-row gap-4 items-center">
-    <div class="avatar">
-      <div class="w-24 rounded-full p-1 bg-base-100 border-2 border-white/40">
-        <img src="{{$profile.Avatar}}" alt="Avatar" class="rounded-full">
-      </div>
+    <div class="w-24 h-24 rounded-full p-1 bg-base-100 border-2 border-white/20 shadow-xl shrink-0">
+      <img src="{{$profile.Avatar}}" alt="{{$profile.Name}}" class="rounded-full w-full h-full">
     </div>
-    <div class="flex flex-col items-center md:items-start justify-center gap-2 pb-2.5">
-      <span class="text-2xl font-semibold">{{$profile.Name}}</span>
+    <div class="flex flex-col items-center md:items-start gap-1 pb-2">
+      <h1 class="text-2xl font-bold">{{$profile.Name}}</h1>
       <div class="flex items-center gap-2">
-        <span class="text-lg font-bold opacity-60">@{{$profile.Handle}}</span>
+        <span class="text-white/50">@{{$profile.Handle}}</span>
         {{if $profile.User.IsAdmin}}
-        <span class="badge badge-success badge-soft badge-sm">Admin</span>
+        <span class="badge badge-success badge-soft badge-xs">Admin</span>
         {{end}}
       </div>
     </div>
     <div class="flex items-center gap-2 md:ml-auto bg-transparent" data-theme="light">
-      <div class="btn shadow-xl" _="on click
-                          call navigator.clipboard.writeText('https://web.skysca.pe/user/{{$profile.Handle}}') then
-                            set my textContent to 'Copied ✓' then
+      <button class="btn shadow-lg" _="on click
+                          call navigator.clipboard.writeText('https://theskyscape.com/user/{{$profile.Handle}}') then
+                            set my textContent to 'Copied!' then
                             add .btn-success to me then
                             wait 2s then
-                            set my textContent to 'Share Link' then
-                            remove .btn-success from me then
-                           ">
-        Share Link
-      </div>
+                            set my textContent to 'Share' then
+                            remove .btn-success from me">
+        Share
+      </button>
       {{with $user := auth.CurrentUser}}
       {{if eq $profile.UserID $user.ID}}
-      <button class="btn btn-primary shadow-xl" _="on click call edit_profile_modal.showModal()">
-        Edit My Profile
+      <button class="btn btn-primary shadow-lg" _="on click call edit_profile_modal.showModal()">
+        Edit Profile
       </button>
       {{else}}
       {{if $profile.IsFollowedBy $user.ID}}
-      <a href="{{host}}/messages/{{$profile.Handle}}" class="btn btn-primary shadow-xl">
-        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
-          stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+      <a href="{{host}}/messages/{{$profile.Handle}}" class="btn btn-primary shadow-lg">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
         Message
       </a>
       <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn shadow-xl">
-          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true"
-            height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z">
-            </path>
-          </svg>
-        </div>
-        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-sm">
-          <li><a hx-delete="{{host}}/user/{{$profile.UserID}}/follow" class="text-error">Unfollow @{{$profile.Handle}}</a></li>
+        <button tabindex="0" class="btn btn-square shadow-lg">
+          {{template "icon-dots.html"}}
+        </button>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-200 rounded-box z-[100] w-44 p-2 shadow-lg border border-white/10">
+          <li><a hx-delete="{{host}}/user/{{$profile.UserID}}/follow" class="text-error">Unfollow</a></li>
         </ul>
       </div>
       {{else}}
-      <button class="btn btn-primary shadow-xl" hx-post="{{host}}/user/{{$profile.UserID}}/follow">
+      <button class="btn btn-primary shadow-lg" hx-post="{{host}}/user/{{$profile.UserID}}/follow">
         Follow
       </button>
       {{end}}

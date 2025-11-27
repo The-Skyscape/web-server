@@ -1,45 +1,40 @@
 <a href="{{host}}/user/{{.Handle}}"
-  class="card w-full max-w-sm md:max-w-72 bg-base-100 shadow-lg overflow-hidden h-92 hover:shadow-xl transition"
+  class="card w-full max-w-sm md:max-w-72 bg-base-100/80 backdrop-blur-sm border border-white/5 overflow-hidden group hover:bg-base-100 hover:shadow-xl hover:shadow-primary/5 hover:border-white/10 transition-all duration-300"
   hx-boost="true">
 
-  <img src="{{host}}/public/background.png" class="w-full h-24 border-b-2 border-white/20 -mb-16">
+  <div class="h-24 bg-[url('{{host}}/public/background.png')] bg-cover bg-center -mb-12">
+    <div class="w-full h-full bg-gradient-to-b from-transparent to-base-100/80"></div>
+  </div>
 
-  <div class="card-body">
-    <div class="avatar mx-auto mb-1">
-      <div class="w-18 p-1 rounded-full bg-base-100 border-2 border-white/40">
-        <img src="{{.Avatar}}" alt="Avatar" class="rounded-full">
+  <div class="card-body pt-0">
+    <div class="avatar mx-auto -mt-2">
+      <div class="w-16 p-0.5 rounded-full bg-base-100 border-2 border-white/20 group-hover:border-primary/30 transition-colors">
+        <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
       </div>
     </div>
 
-    <div class="flex flex-col mb-1">
-      <h2 class="text-xl font-semibold">
-        {{.Name}}
-      </h2>
-
-      <div class="flex items-center gap-2">
-        <span class="text-base font-bold opacity-60">
-          @{{.Handle}}
-        </span>
+    <div class="text-center">
+      <h2 class="text-lg font-semibold">{{.Name}}</h2>
+      <div class="flex items-center justify-center gap-2">
+        <span class="text-sm text-white/50">@{{.Handle}}</span>
         {{if .User.IsAdmin}}
-        <span class="badge badge-success badge-soft badge-sm">Admin</span>
+        <span class="badge badge-success badge-soft badge-xs">Admin</span>
         {{end}}
         {{with $currentUser := auth.CurrentUser}}
         {{if $.IsFollowedBy $currentUser.ID}}
-        <span class="badge badge-info badge-soft badge-sm">Following</span>
+        <span class="badge badge-info badge-soft badge-xs">Following</span>
         {{end}}
         {{end}}
       </div>
     </div>
 
-    <div class="flex gap-3 text-sm mb-2 opacity-60">
-      <span><span class="font-bold">{{.FollowersCount}}</span> Followers</span>
-      <span><span class="font-bold">{{.FollowingCount}}</span> Following</span>
+    <div class="flex justify-center gap-4 text-xs text-white/40">
+      <span><span class="font-semibold text-white/60">{{.FollowersCount}}</span> Followers</span>
+      <span><span class="font-semibold text-white/60">{{.FollowingCount}}</span> Following</span>
     </div>
 
-    <div class="text-base font-bold opacity-80 line-clamp-3">
-      {{with .Description}}{{.}}{{else}}
-      <span class="italic opacity-80">No description</span>
-      {{end}}
-    </div>
+    <p class="text-sm text-white/60 line-clamp-2 text-center">
+      {{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}
+    </p>
   </div>
 </a>

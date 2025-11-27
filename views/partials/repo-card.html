@@ -1,37 +1,26 @@
-<a href="{{host}}/repo/{{.ID}}" class="card w-full max-w-sm md:max-w-72 bg-base-100 shadow-lg">
-  <div class="card-body">
-    <div class="flex items-center min-w-0">
+<a href="{{host}}/repo/{{.ID}}"
+  class="card w-full max-w-sm md:max-w-72 bg-base-100/80 backdrop-blur-sm border border-white/5 group hover:bg-base-100 hover:shadow-xl hover:shadow-secondary/5 hover:border-white/10 transition-all duration-300">
+  <div class="card-body gap-3">
+    <div class="flex items-center gap-2 min-w-0">
       {{with .Owner}}
-      <div class="avatar flex-shrink-0">
-        <div class="w-5 p-0.5 rounded-full bg-white/10 border border-white/10 mr-1">
-          <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-        </div>
+      <div class="w-6 h-6 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+        <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
       </div>
-
-      <span class="text-base font-semibold opacity-80 flex-shrink-0">
-        @{{.Handle}} /&nbsp;
-      </span>
+      <span class="text-sm text-white/50 shrink-0">@{{.Handle}}</span>
+      <span class="text-white/30">/</span>
       {{end}}
-
-      <h2 class="text-base font-semibold truncate min-w-0">
-        {{.Name}}
-      </h2>
+      <h2 class="text-sm font-semibold truncate">{{.Name}}</h2>
     </div>
 
-    <hr class="my-2 opacity-15">
-
-    <div class="flex items-center gap-3 mb-2 text-xs opacity-60">
+    <div class="flex items-center gap-2 text-xs text-white/40">
       <span class="flex items-center gap-1">
-        <span>⭐</span>
-        <span class="font-bold">{{.StarsCount}}</span>
-        <span>stargazers</span>
+        <span class="text-yellow-400/80">★</span>
+        <span class="font-medium text-white/60">{{.StarsCount}}</span>
       </span>
     </div>
 
-    <p class="text-sm font-bold opacity-60 tracking-wider line-clamp-2">
-      {{with .Description}}{{.}}{{else}}
-      <span class="italic opacity-80">No description</span>
-      {{end}}
+    <p class="text-sm text-white/50 line-clamp-2">
+      {{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}
     </p>
   </div>
 </a>

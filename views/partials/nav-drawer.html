@@ -1,41 +1,27 @@
-<div class="bg-base-300 min-h-full w-80 px-4 py-8 flex flex-col gap-6 items-center">
-  <ul class="menu menu-xl w-full">
-    <li>
-      {{with auth.CurrentUser}}
-      <a href="{{host}}/profile">
-        <div class="w-full flex gap-4">
-          <div class="avatar w-12">
-            <div class="h-12 rounded-full bg-white/10 border border-white/10 p-1 shadow-lg">
-              <img src="{{.Avatar}}" alt="Avatar" class="rounded-full">
-            </div>
-          </div>
-
-          <div class="flex flex-col items-start justify-between">
-            <span class="text-lg font-semibold truncate text-ellipsis">{{.Name}}</span>
-            <span class="text-sm font-bold opacity-60">@{{.Handle}}</span>
-          </div>
-        </div>
-      </a>
-      {{else}}
-    <li>
-      <a href="{{host}}/">
-        <div class="w-full flex gap-4">
-          <div class="avatar w-12">
-            <div class="h-12 rounded-full bg-base-100 border border-white/20 px-1 py-2.5">
-              <img src="{{host}}/public/logo.svg" alt="Logo">
-            </div>
-          </div>
-
-          <div class="flex flex-col items-start justify-between">
-            <span class="text-lg font-semibold truncate text-ellipsis">The Skyscape</span>
-            <span class="text-sm font-bold opacity-60">Join Today</span>
-          </div>
-        </div>
-      </a>
-    </li>
+<div class="bg-base-300/95 backdrop-blur-sm min-h-full w-80 px-4 py-6 flex flex-col gap-4">
+  <div class="px-2">
+    {{with auth.CurrentUser}}
+    <a href="{{host}}/profile" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors">
+      <div class="w-11 h-11 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+        <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+      </div>
+      <div class="min-w-0">
+        <div class="font-semibold truncate">{{.Name}}</div>
+        <div class="text-sm text-white/50">@{{.Handle}}</div>
+      </div>
+    </a>
+    {{else}}
+    <a href="{{host}}/" class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors">
+      <div class="w-11 h-11 rounded-full bg-base-100 border border-white/20 p-2 shrink-0">
+        <img src="{{host}}/public/logo.svg" alt="Logo" class="w-full h-full">
+      </div>
+      <div class="min-w-0">
+        <div class="font-semibold">The Skyscape</div>
+        <div class="text-sm text-white/50">Join Today</div>
+      </div>
+    </a>
     {{end}}
-    </li>
-  </ul>
+  </div>
 
   <ul class="menu menu-xl space-y-4 w-full" hx-boost="true">
     <li>
@@ -130,53 +116,37 @@
 
   {{with auth.CurrentUser}}
   {{if .IsAdmin}}
-  <div class="w-full mt-auto shadow">
-    <div class="card bg-warning/30 text-white w-full">
-      <div class="card-body">
-        <h2 class="text-xl font-semibold">
-          Admin Account
-        </h2>
-
-        <a target="_blank" href="https://hq.theskyscape.com" class="btn btn-sm btn-warning mt-4">
-          Open Admin Panel
-        </a>
-        <button _="on click call verify_modal.showModal()" class="btn btn-sm btn-ghost mt-2">
-          Preview Verification
-        </button>
-      </div>
+  <div class="mt-auto px-2">
+    <div class="rounded-xl bg-warning/20 border border-warning/30 p-4">
+      <h3 class="font-semibold text-warning mb-3">Admin Account</h3>
+      <a target="_blank" href="https://hq.theskyscape.com" class="btn btn-sm btn-warning w-full mb-2">
+        Open Admin Panel
+      </a>
+      <button _="on click call verify_modal.showModal()" class="btn btn-sm btn-ghost w-full">
+        Preview Verification
+      </button>
     </div>
   </div>
   {{else}}
-  <div class="w-full mt-auto shadow">
-    <div class="card bg-primary/20 text-primary-content w-full">
-      <div class="card-body">
-        <h2 class="text-xl text-center font-semibold">
-          Get Verified
-        </h2>
-
-        <button _="on click call verify_modal.showModal()" class="btn btn-sm btn-primary mt-4">
-          Learn More
-        </button>
-      </div>
+  <div class="mt-auto px-2">
+    <div class="rounded-xl bg-primary/10 border border-primary/20 p-4 text-center">
+      <h3 class="font-semibold mb-3">Get Verified</h3>
+      <button _="on click call verify_modal.showModal()" class="btn btn-sm btn-primary w-full">
+        Learn More
+      </button>
     </div>
   </div>
   {{end}}
   {{else}}
-  <div class="w-full mt-auto shadow">
-    <div class="card bg-primary/20 text-primary-content w-full">
-      <div class="card-body" hx-boost="true">
-        <h2 class="text-xl text-center font-semibold">
-          Signin To Join
-        </h2>
-
-        <a href="{{host}}/" class="btn btn-sm btn-primary mt-4 mb-2">
-          Create an Account
-        </a>
-
-        <a href="{{host}}/signin?next={{req.URL.Path}}" class="btn btn-sm btn-ghost">
-          Access Your Account
-        </a>
-      </div>
+  <div class="mt-auto px-2">
+    <div class="rounded-xl bg-primary/10 border border-primary/20 p-4 text-center" hx-boost="true">
+      <h3 class="font-semibold mb-3">Join The Skyscape</h3>
+      <a href="{{host}}/" class="btn btn-sm btn-primary w-full mb-2">
+        Create an Account
+      </a>
+      <a href="{{host}}/signin?next={{req.URL.Path}}" class="btn btn-sm btn-ghost w-full">
+        Sign In
+      </a>
     </div>
   </div>
   {{end}}

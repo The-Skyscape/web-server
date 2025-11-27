@@ -81,7 +81,8 @@ func (c *PushController) subscribe(w http.ResponseWriter, r *http.Request) {
 		JSONError(w, http.StatusBadRequest, "missing subscription data")
 		return
 	}
-	log.Printf("[Push] Subscription endpoint: %s...", req.Endpoint[:min(50, len(req.Endpoint))])
+	log.Printf("[Push] Subscription endpoint: %s...", req.Endpoint[:min(80, len(req.Endpoint))])
+	log.Printf("[Push] Subscription keys - P256dh length: %d, Auth length: %d", len(req.Keys.P256dh), len(req.Keys.Auth))
 
 	// Check if subscription already exists for this endpoint
 	existing, _ := models.PushSubscriptions.First(

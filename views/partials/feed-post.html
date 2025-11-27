@@ -1,171 +1,88 @@
-<div class="card bg-base-100 shadow-lg w-full">
-  <div class="card-body">
+<article class="card bg-base-100/80 backdrop-blur-sm border border-white/5 w-full">
+  <div class="card-body gap-3">
     {{with .User}}
-    <div class="flex items-center gap-2 px-2">
-      <div class="avatar">
-        <div class="w-5 p-0.5 bg-white/10 rounded-full border border-white/10">
-          <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-        </div>
+    <header class="flex items-center gap-2">
+      <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+        <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
       </div>
-
-      <span class="text-sm font-semibold opacity-80">
-        @{{.Handle}}
-      </span>
-      <span class="text-sm font-semibold opacity-60 capitalize">
-        {{$.Action}}
-      </span>
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="text-sm font-medium">@{{.Handle}}</span>
+        <span class="text-sm text-white/50 capitalize">{{$.Action}}</span>
+      </div>
 
       {{$user := auth.CurrentUser}}
       {{if and $user (eq $user.ID .ID)}}
       <div class="dropdown dropdown-end ml-auto">
-        <div tabindex="0" role="button" class="btn btn-ghost">
-          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true"
-            height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z">
-            </path>
-          </svg>
-        </div>
-
-        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-sm">
-          <li><a hx-confirm="Are you sure you want to delete this post?" hx-delete="{{host}}/feed/{{$.ID}}">Delete</a>
-          </li>
+        <button tabindex="0" class="btn btn-ghost btn-sm btn-square">
+          {{template "icon-dots.html"}}
+        </button>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-200 rounded-box z-50 w-40 p-2 shadow-lg border border-white/10">
+          <li><a hx-confirm="Are you sure you want to delete this post?" hx-delete="{{host}}/feed/{{$.ID}}" class="text-error">Delete</a></li>
         </ul>
       </div>
       {{end}}
-
-    </div>
+    </header>
     {{end}}
 
     {{if $.Content}}
-    {{if or .Repo .Profile .App}}
-    <p class="px-4 pb-2 text-base opacity-80">
+    <p class="text-base {{if or .Repo .Profile .App}}text-white/70{{else}}text-white/90 text-lg{{end}}">
       {{$.Content}}
     </p>
-    {{else}}
-    <p class="px-4 pb-2 text-lg opacity-90">
-      {{$.Content}}
-    </p>
-    {{end}}
     {{end}}
 
     {{if or .Repo .Profile .App}}
-    <ul class="menu gap-2 w-full p-0 rounded-box border border-neutral/40" hx-boost="true">
+    <div class="rounded-xl border border-white/10 overflow-hidden hover:border-white/20 transition-colors" hx-boost="true">
       {{with .Repo}}
-      <li>
-        <a href="{{host}}/repo/{{.ID}}" class="p-4">
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center min-w-0">
-              {{with .Owner}}
-              <div class="avatar shrink-0">
-                <div class="w-5 p-0.5 rounded-full bg-white/10 border border-white/10 mr-1">
-                  <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-                </div>
-              </div>
-
-              <span class="text-base font-semibold opacity-80 whitespace-nowrap">
-                @{{.Handle}} /&nbsp;
-              </span>
-              {{end}}
-
-              <span class="text-lg font-semibold truncate">
-                {{.Name}}
-              </span>
+      <a href="{{host}}/repo/{{.ID}}" class="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            {{with .Owner}}
+            <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
             </div>
-
-            <span class="px-2 text-sm font-bold opacity-60">
-              {{with .Description}}{{.}}{{else}}
-              <span class="italic opacity-80">
-                No description
-              </span>
-              {{end}}
-            </span>
+            <span class="text-sm text-white/50">@{{.Handle}}</span>
+            <span class="text-white/30">/</span>
+            {{end}}
+            <span class="font-medium truncate">{{.Name}}</span>
           </div>
-
-          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em" width="1em"
-            xmlns="http://www.w3.org/2000/svg" class="ml-auto">
-            <path
-              d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z">
-            </path>
-          </svg>
-        </a>
-      </li>
+          <p class="text-sm text-white/50 truncate">{{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}</p>
+        </div>
+        {{template "icon-chevron-right.html"}}
+      </a>
       {{end}}
-
 
       {{with .Profile}}
-      <li>
-        <a href="{{host}}/user/{{.Handle}}" class="p-4">
-          <div class="avatar">
-            <div class="bg-white/10 p-1 w-10 border border-white/10 rounded-full">
-              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-            </div>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-base font-semibold">
-              {{.Name}}
-            </span>
-
-            <span class="text-xs font-semibold opacity-80">
-              {{with .Description}}{{.}}{{else}}
-              <span class="italic opacity-80">
-                No description
-              </span>
-              {{end}}
-            </span>
-          </div>
-
-          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em" width="1em"
-            xmlns="http://www.w3.org/2000/svg" class="ml-auto">
-            <path
-              d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z">
-            </path>
-          </svg>
-        </a>
-      </li>
+      <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
+        <div class="w-10 h-10 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+          <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+        </div>
+        <div class="flex-1 min-w-0">
+          <span class="font-medium block">{{.Name}}</span>
+          <p class="text-sm text-white/50 truncate">{{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}</p>
+        </div>
+        {{template "icon-chevron-right.html"}}
+      </a>
       {{end}}
-
 
       {{with .App}}
-      <li>
-        <a href="{{host}}/app/{{.ID}}" class="p-4">
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center min-w-0">
-              {{with .Owner}}
-              <div class="avatar shrink-0">
-                <div class="w-5 p-0.5 rounded-full bg-white/10 border border-white/10 mr-1">
-                  <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-                </div>
-              </div>
-
-              <span class="text-base font-semibold opacity-80 whitespace-nowrap">
-                @{{.Handle}} /&nbsp;
-              </span>
-              {{end}}
-
-              <span class="text-lg font-semibold truncate">
-                {{.Name}}
-              </span>
+      <a href="{{host}}/app/{{.ID}}" class="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            {{with .Owner}}
+            <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
             </div>
-
-            <span class="px-2 text-sm font-bold opacity-60">
-              {{with .Description}}{{.}}{{else}}
-              <span class="italic opacity-80">
-                No description
-              </span>
-              {{end}}
-            </span>
+            <span class="text-sm text-white/50">@{{.Handle}}</span>
+            <span class="text-white/30">/</span>
+            {{end}}
+            <span class="font-medium truncate">{{.Name}}</span>
           </div>
-
-          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em" width="1em"
-            xmlns="http://www.w3.org/2000/svg" class="ml-auto">
-            <path
-              d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z">
-            </path>
-          </svg>
-        </a>
-      </li>
+          <p class="text-sm text-white/50 truncate">{{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}</p>
+        </div>
+        {{template "icon-chevron-right.html"}}
+      </a>
       {{end}}
-    </ul>
+    </div>
     {{end}}
   </div>
-</div>
+</article>
