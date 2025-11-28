@@ -7,7 +7,7 @@
       </div>
     </div>
 
-    <span>@{{.Handle}}</span>
+    <span class="hidden md:inline">@{{.Handle}}</span>
   </a>
   {{end}}
 
@@ -19,14 +19,15 @@
 
   <div class="flex items-center gap-2 ml-auto bg-transparent" data-theme="light">
     {{$user := auth.CurrentUser}}
+
     {{if $user}}
     {{if .IsStarredBy $user.ID}}
-    <button class="btn btn-sm shadow-xl group opacity-80" hx-delete="{{host}}/repo/{{.ID}}/star" _="on mouseenter set my textContent to 'Unstar' then add .btn-error to me
+    <button class="btn btn-sm shadow-xl group opacity-80 hidden md:flex" hx-delete="{{host}}/repo/{{.ID}}/star" _="on mouseenter set my textContent to 'Unstar' then add .btn-error to me
          on mouseleave set my textContent to '⭐ Starred ({{.StarsCount}})' then remove .btn-error from me">
       ⭐ Starred ({{.StarsCount}})
     </button>
     {{else}}
-    <button class="btn btn-sm shadow-xl opacity-80" hx-post="{{host}}/repo/{{.ID}}/star">
+    <button class="btn btn-sm shadow-xl opacity-80 hidden md:flex" hx-post="{{host}}/repo/{{.ID}}/star">
       ⭐ Star ({{.StarsCount}})
     </button>
     {{end}}
@@ -45,7 +46,7 @@
     </button>
 
     {{if $user}}
-    <a href="https://code.skysca.pe/clone?repo=https://{{$user.Handle}}@theskyscape.com/repo/{{.ID}}.git" target="_blank"
+    <a href="https://code.skysca.pe/clone?repo=https://{{$user.Handle}}@theskyscape.com/repo/{{.ID}}" target="_blank"
       class="btn btn-sm btn-secondary shadow-xl hidden md:flex">
       <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
         stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
@@ -66,8 +67,17 @@
 
     <ul tabindex="-1"
       class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
+      {{if .IsStarredBy $user.ID}}
+      <li class="md:hidden">
+        <a hx-delete="{{host}}/repo/{{.ID}}/star">⭐ Unstar</a>
+      </li>
+      {{else}}
+      <li class="md:hidden">
+        <a hx-post="{{host}}/repo/{{.ID}}/star">⭐ Star ({{.StarsCount}})</a>
+      </li>
+      {{end}}
       <li>
-        <a href="https://code.skysca.pe/clone?repo=https://{{$user.Handle}}@theskyscape.com/repo/{{.ID}}.git" target="_blank">
+        <a href="https://code.skysca.pe/clone?repo=https://{{$user.Handle}}@theskyscape.com/repo/{{.ID}}" target="_blank">
           Open in SkyCode
         </a>
       </li>
