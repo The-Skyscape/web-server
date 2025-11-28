@@ -43,6 +43,17 @@
           add .btn-primary to me then">
       Clone Repo
     </button>
+
+    {{if $user}}
+    <a href="https://code.skysca.pe/clone?repo=https://{{$user.Handle}}@theskyscape.com/repo/{{.ID}}.git" target="_blank"
+      class="btn btn-sm btn-secondary shadow-xl hidden md:flex">
+      <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+        stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+      </svg>
+      Open in SkyCode
+    </a>
+    {{end}}
   </div>
   {{if $user}}
   <div class="dropdown dropdown-end">
@@ -55,6 +66,11 @@
 
     <ul tabindex="-1"
       class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
+      <li>
+        <a href="https://code.skysca.pe/clone?repo=https://{{$user.Handle}}@theskyscape.com/repo/{{.ID}}.git" target="_blank">
+          Open in SkyCode
+        </a>
+      </li>
       <li>
         <a _="on click
           call navigator.clipboard.writeText('https://theskyscape.com/repo/{{.ID}}') then
