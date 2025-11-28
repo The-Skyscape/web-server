@@ -47,12 +47,14 @@ self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // Skip API, auth, and poll requests
+  // Skip API, auth, poll, and dynamic content requests
   if (event.request.url.includes('/api/') ||
       event.request.url.includes('/oauth/') ||
       event.request.url.includes('/signin') ||
       event.request.url.includes('/signup') ||
-      event.request.url.includes('/poll')) {
+      event.request.url.includes('/poll') ||
+      event.request.url.includes('/app/') ||
+      event.request.url.includes('/repo/')) {
     return;
   }
 
