@@ -109,12 +109,10 @@
       {{end}}
       {{end}}
       {{end}}
-      {{else}}
-      <div class="text-center py-12 opacity-60">
-        <p class="text-lg mb-2">Your feed is empty.</p>
-        <p>Follow people to see their posts, or create your own!</p>
-      </div>
       {{end}}
+
+      <!-- Welcome card at the end of feed (or as empty state) -->
+      {{template "feed-welcome.html"}}
     </div>
   </div>
 

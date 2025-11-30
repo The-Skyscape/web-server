@@ -1,0 +1,52 @@
+<article class="card bg-gradient-to-br from-primary/20 via-base-100/80 to-secondary/20 backdrop-blur-sm border border-white/10 w-full">
+  <div class="card-body gap-4">
+    <header class="text-center">
+      <h2 class="text-xl font-bold mb-2">Welcome to The Skyscape</h2>
+      <p class="text-white/60">Your developer journey starts here. Build, share, and connect with the community.</p>
+    </header>
+
+    <div class="grid gap-3">
+      <!-- Learn with Skykit -->
+      <a href="{{host}}/repo/skykit" class="flex items-center gap-4 p-4 rounded-xl border border-white/10 hover:border-primary/30 hover:bg-white/5 transition-all group" hx-boost="true">
+        <div class="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold group-hover:text-primary transition-colors">Learn with Skykit</div>
+          <p class="text-sm text-white/50">A lightweight MVC framework - perfect for getting started</p>
+        </div>
+        {{template "icon-chevron-right.html"}}
+      </a>
+
+      <!-- Create a Repo -->
+      <button _="on click call create_repo_modal.showModal()" class="flex items-center gap-4 p-4 rounded-xl border border-white/10 hover:border-secondary/30 hover:bg-white/5 transition-all group text-left w-full">
+        <div class="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-secondary">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold group-hover:text-secondary transition-colors">Create Your First Repo</div>
+          <p class="text-sm text-white/50">Start building and share your code with the world</p>
+        </div>
+        {{template "icon-chevron-right.html"}}
+      </button>
+
+      <!-- Explore the Community -->
+      <a href="{{host}}/explore" class="flex items-center gap-4 p-4 rounded-xl border border-white/10 hover:border-accent/30 hover:bg-white/5 transition-all group" hx-boost="true">
+        <div class="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-accent">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold group-hover:text-accent transition-colors">Explore the Community</div>
+          <p class="text-sm text-white/50">Discover repos, apps, and developers to follow</p>
+        </div>
+        {{template "icon-chevron-right.html"}}
+      </a>
+    </div>
+  </div>
+</article>
