@@ -64,28 +64,31 @@ func (c *CommentsController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create activity for the comment
-	var activitySubjectID string
-	activitySubjectType := "repo"
+	// Create activity for the comment (except for post comments)
+	// Post comments don't create separate activities since they're already part of the feed
+	if subjectType != "post" {
+		var activitySubjectID string
+		activitySubjectType := "repo"
 
-	if subjectType == "file" {
-		// Extract repo ID from "file:{repo_id}:{path}" format
-		parts := strings.SplitN(subjectID, ":", 3)
-		if len(parts) >= 2 {
-			activitySubjectID = parts[1]
+		if subjectType == "file" {
+			// Extract repo ID from "file:{repo_id}:{path}" format
+			parts := strings.SplitN(subjectID, ":", 3)
+			if len(parts) >= 2 {
+				activitySubjectID = parts[1]
+			}
+		} else {
+			activitySubjectID = subjectID
 		}
-	} else {
-		activitySubjectID = subjectID
-	}
 
-	if activitySubjectID != "" {
-		models.Activities.Insert(&models.Activity{
-			UserID:      user.ID,
-			Action:      "commented",
-			SubjectType: activitySubjectType,
-			SubjectID:   activitySubjectID,
-			Content:     content,
-		})
+		if activitySubjectID != "" {
+			models.Activities.Insert(&models.Activity{
+				UserID:      user.ID,
+				Action:      "commented",
+				SubjectType: activitySubjectType,
+				SubjectID:   activitySubjectID,
+				Content:     content,
+			})
+		}
 	}
 
 	c.Refresh(w, r)

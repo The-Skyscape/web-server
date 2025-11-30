@@ -93,22 +93,26 @@
 
       {{$limit := feed.Limit}}
       {{$nextPage := feed.NextPage}}
-      {{$activities := feed.RecentActivities}}
-      {{if $activities}}
-      {{range $index, $activity := $activities}}
+      {{$feedItems := feed.FeedWithPromotions}}
+      {{if $feedItems}}
+      {{range $index, $item := $feedItems}}
+      {{if $item.IsPromotion}}
+      {{template "feed-promotion.html" $item.Promotion}}
+      {{else}}
       {{if eq (mod (add $index 1) $limit) 0}}
       <div hx-get="{{host}}/?page={{$nextPage}}&limit={{$limit}}" hx-trigger="revealed" hx-swap="afterend"
         hx-select="#feed > *">
-        {{template "feed-post.html" $activity}}
+        {{template "feed-post.html" $item.Activity}}
       </div>
       {{else}}
-      {{template "feed-post.html" $activity}}
+      {{template "feed-post.html" $item.Activity}}
+      {{end}}
       {{end}}
       {{end}}
       {{else}}
       <div class="text-center py-12 opacity-60">
-        <p class="text-lg mb-2">No activity yet.</p>
-        <p>Create a repo or launch an app to get started!</p>
+        <p class="text-lg mb-2">Your feed is empty.</p>
+        <p>Follow people to see their posts, or create your own!</p>
       </div>
       {{end}}
     </div>

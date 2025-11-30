@@ -21,6 +21,8 @@ var (
 	Stars      = database.Manage(DB, new(Star))
 	Files      = database.Manage(DB, new(File))
 	Images     = database.Manage(DB, new(Image))
+	Reactions  = database.Manage(DB, new(Reaction))
+	Promotions = database.Manage(DB, new(Promotion))
 
 	PasswordResetTokens  = database.Manage(DB, new(ResetPasswordToken))
 	RateLimits           = database.Manage(DB, new(RateLimit))

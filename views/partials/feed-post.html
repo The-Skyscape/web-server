@@ -90,5 +90,127 @@
       {{end}}
     </div>
     {{end}}
+
+    <!-- Reactions and Comments Section -->
+    <footer class="flex flex-col gap-3 pt-2 border-t border-white/5">
+      <!-- Reaction Counts Display -->
+      {{$reactions := .ReactionCounts}}
+      {{if .HasReactions}}
+      <div class="flex flex-wrap gap-2">
+        {{range $emoji, $count := $reactions}}
+        <span class="badge badge-ghost gap-1 text-xs">
+          {{if eq $emoji "thumbsup"}}👍{{end}}
+          {{if eq $emoji "heart"}}❤️{{end}}
+          {{if eq $emoji "tada"}}🎉{{end}}
+          {{if eq $emoji "smile"}}😄{{end}}
+          {{if eq $emoji "confused"}}😕{{end}}
+          {{if eq $emoji "rocket"}}🚀{{end}}
+          {{$count}}
+        </span>
+        {{end}}
+      </div>
+      {{end}}
+
+      <!-- Action Bar -->
+      {{$user := auth.CurrentUser}}
+      {{if $user}}
+      <div class="flex items-center gap-2">
+        <!-- Reaction Picker -->
+        {{$userReaction := .UserReaction $user.ID}}
+        <div class="dropdown dropdown-top">
+          <button tabindex="0" class="btn btn-ghost btn-sm gap-1">
+            {{if $userReaction}}
+            {{if eq $userReaction.Emoji "thumbsup"}}👍{{end}}
+            {{if eq $userReaction.Emoji "heart"}}❤️{{end}}
+            {{if eq $userReaction.Emoji "tada"}}🎉{{end}}
+            {{if eq $userReaction.Emoji "smile"}}😄{{end}}
+            {{if eq $userReaction.Emoji "confused"}}😕{{end}}
+            {{if eq $userReaction.Emoji "rocket"}}🚀{{end}}
+            {{else}}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+            </svg>
+            React
+            {{end}}
+          </button>
+          <div tabindex="0" class="dropdown-content z-50 p-2 shadow-lg bg-base-200 rounded-box border border-white/10">
+            <div class="flex gap-1">
+              {{$postID := $.ID}}
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+                <input type="hidden" name="emoji" value="thumbsup">
+                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">👍</button>
+              </form>
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+                <input type="hidden" name="emoji" value="heart">
+                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">❤️</button>
+              </form>
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+                <input type="hidden" name="emoji" value="tada">
+                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">🎉</button>
+              </form>
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+                <input type="hidden" name="emoji" value="smile">
+                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">😄</button>
+              </form>
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+                <input type="hidden" name="emoji" value="confused">
+                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">😕</button>
+              </form>
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+                <input type="hidden" name="emoji" value="rocket">
+                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">🚀</button>
+              </form>
+            </div>
+            {{if $userReaction}}
+            <div class="border-t border-white/10 mt-2 pt-2">
+              <form hx-delete="{{host}}/post/{{$postID}}/react" hx-swap="none">
+                <button type="submit" class="btn btn-ghost btn-xs btn-block text-error">Remove reaction</button>
+              </form>
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <!-- Comment Toggle Button -->
+        <button class="btn btn-ghost btn-sm gap-1" onclick="document.getElementById('comments-{{$.ID}}').classList.toggle('hidden')">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
+          </svg>
+          {{.CommentsCount}}
+        </button>
+      </div>
+      {{end}}
+
+      <!-- Comments Section (hidden by default) -->
+      <div id="comments-{{$.ID}}" class="hidden space-y-3">
+        <!-- Existing Comments -->
+        {{range .Comments}}
+        {{$comment := .}}
+        <div class="flex gap-2 pl-2 border-l-2 border-white/10">
+          {{with .User}}
+          <div class="w-6 h-6 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium">@{{.Handle}}</span>
+            </div>
+            <p class="text-sm text-white/70">{{$comment.Content}}</p>
+          </div>
+          {{end}}
+        </div>
+        {{end}}
+
+        <!-- Comment Form -->
+        {{if $user}}
+        <form hx-post="{{host}}/comment" hx-swap="none" class="flex gap-2">
+          <input type="hidden" name="subject_id" value="{{$.ID}}">
+          <input type="hidden" name="subject_type" value="post">
+          <input type="text" name="content" placeholder="Write a comment..." class="input input-sm input-bordered flex-1 bg-white/5">
+          <button type="submit" class="btn btn-sm btn-primary">Post</button>
+        </form>
+        {{end}}
+      </div>
+    </footer>
   </div>
 </article>

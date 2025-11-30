@@ -71,3 +71,45 @@ func (a *Activity) File() *File {
 	}
 	return file
 }
+
+// Comments returns all comments on this activity/post
+func (a *Activity) Comments() []*Comment {
+	comments, _ := Comments.Search(`
+		WHERE SubjectID = ?
+		ORDER BY CreatedAt ASC
+	`, a.ID)
+	return comments
+}
+
+// CommentsCount returns the number of comments on this activity/post
+func (a *Activity) CommentsCount() int {
+	return Comments.Count("WHERE SubjectID = ?", a.ID)
+}
+
+// Reactions returns all reactions on this activity/post
+func (a *Activity) Reactions() []*Reaction {
+	reactions, _ := Reactions.Search(`
+		WHERE ActivityID = ?
+	`, a.ID)
+	return reactions
+}
+
+// ReactionCounts returns a map of emoji to count for this activity
+func (a *Activity) ReactionCounts() map[string]int {
+	counts := make(map[string]int)
+	for _, r := range a.Reactions() {
+		counts[r.Emoji]++
+	}
+	return counts
+}
+
+// UserReaction returns the current user's reaction on this activity, if any
+func (a *Activity) UserReaction(userID string) *Reaction {
+	reaction, _ := Reactions.First("WHERE ActivityID = ? AND UserID = ?", a.ID, userID)
+	return reaction
+}
+
+// HasReactions returns true if the activity has any reactions
+func (a *Activity) HasReactions() bool {
+	return len(a.Reactions()) > 0
+}

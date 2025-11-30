@@ -2,6 +2,11 @@
   <div class="modal-box max-w-2xl">
     <h3 class="font-bold text-lg mb-4">Promote App</h3>
 
+    <div class="alert alert-info mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <span>Your promotion will be visible to everyone for <strong>7 days</strong>.</span>
+    </div>
+
     <div class="error-message text-center text-error mb-4" role="alert" aria-live="polite"></div>
 
     {{with apps.CurrentApp}}
@@ -17,6 +22,7 @@
       <div class="card bg-base-100 shadow-lg w-full border border-white/10">
         <div class="card-body">
           <div class="flex items-center gap-2 px-2 pb-2">
+            <span class="badge badge-primary badge-sm">Promoted</span>
             {{with auth.CurrentUser}}
             <div class="avatar">
               <div class="w-5 p-0.5 bg-white/10 rounded-full border border-white/10">
@@ -27,10 +33,8 @@
             <span class="text-sm font-semibold opacity-80">
               @{{.Handle}}
             </span>
-            <span class="text-sm font-semibold opacity-60 capitalize">
-              promoted
-            </span>
             {{end}}
+            <span class="text-xs text-white/30 ml-auto">7 days left</span>
           </div>
 
           <ul class="menu gap-2 w-full p-0 rounded-box border border-neutral/40">

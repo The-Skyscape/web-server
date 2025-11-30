@@ -85,6 +85,83 @@ func (c *FeedController) RecentActivities() []*models.Activity {
 	return activities
 }
 
+// PersonalizedActivities returns activities from followed users + own posts
+func (c *FeedController) PersonalizedActivities() []*models.Activity {
+	auth := c.Use("auth").(*AuthController)
+	user := auth.CurrentUser()
+	if user == nil {
+		return c.RecentActivities() // Fallback to global feed for logged out users
+	}
+
+	profile, _ := models.Profiles.First("WHERE UserID = ?", user.ID)
+	if profile == nil {
+		return c.RecentActivities()
+	}
+
+	// Build list of user IDs: own ID + all followed user IDs
+	following := profile.Following()
+	userIDs := make([]interface{}, 0, len(following)+1)
+	userIDs = append(userIDs, user.ID)
+	for _, f := range following {
+		userIDs = append(userIDs, f.FolloweeID)
+	}
+
+	page := c.Page()
+	limit := c.Limit()
+	offset := (page - 1) * limit
+
+	// Build placeholder string for IN clause
+	placeholders := "?"
+	for i := 1; i < len(userIDs); i++ {
+		placeholders += ",?"
+	}
+
+	args := append(userIDs, limit, offset)
+	activities, _ := models.Activities.Search(`
+		WHERE UserID IN (`+placeholders+`)
+		ORDER BY CreatedAt DESC
+		LIMIT ? OFFSET ?
+	`, args...)
+
+	return activities
+}
+
+// ActivePromotions returns all non-expired promotions
+func (c *FeedController) ActivePromotions() []*models.Promotion {
+	return models.ActivePromotions()
+}
+
+// FeedItem represents either an Activity or Promotion in the feed
+type FeedItem struct {
+	Activity  *models.Activity
+	Promotion *models.Promotion
+}
+
+// IsPromotion returns true if this is a promotion item
+func (f FeedItem) IsPromotion() bool {
+	return f.Promotion != nil
+}
+
+// FeedWithPromotions returns personalized activities interlaced with promotions every 5 posts
+func (c *FeedController) FeedWithPromotions() []FeedItem {
+	activities := c.PersonalizedActivities()
+	promotions := c.ActivePromotions()
+
+	result := make([]FeedItem, 0, len(activities)+len(promotions))
+	promoIndex := 0
+
+	for i, activity := range activities {
+		result = append(result, FeedItem{Activity: activity})
+		// Insert promotion every 5 posts
+		if (i+1)%5 == 0 && promoIndex < len(promotions) {
+			result = append(result, FeedItem{Promotion: promotions[promoIndex]})
+			promoIndex++
+		}
+	}
+
+	return result
+}
+
 // MyRepos returns all repos owned by the current user for the promote dropdown
 func (c *FeedController) MyRepos() []*models.Repo {
 	auth := c.Use("auth").(*AuthController)
@@ -114,7 +191,7 @@ func (c *FeedController) MyApps() []*models.App {
 	return apps
 }
 
-// pollFeed returns new activities since the given timestamp
+// pollFeed returns new activities since the given timestamp (filtered by followed users)
 func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
 	// Parse the 'after' timestamp (Unix seconds)
 	afterStr := r.URL.Query().Get("after")
@@ -125,11 +202,46 @@ func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get new activities since timestamp
-	activities, _ := models.Activities.Search(`
-		WHERE CreatedAt > ?
-		ORDER BY CreatedAt ASC
-	`, after)
+	auth := c.Use("auth").(*AuthController)
+	user := auth.CurrentUser()
+
+	var activities []*models.Activity
+
+	if user == nil {
+		// Fallback to global feed for logged out users
+		activities, _ = models.Activities.Search(`
+			WHERE CreatedAt > ?
+			ORDER BY CreatedAt ASC
+		`, after)
+	} else {
+		profile, _ := models.Profiles.First("WHERE UserID = ?", user.ID)
+		if profile == nil {
+			activities, _ = models.Activities.Search(`
+				WHERE CreatedAt > ?
+				ORDER BY CreatedAt ASC
+			`, after)
+		} else {
+			// Build list of user IDs: own ID + all followed user IDs
+			following := profile.Following()
+			userIDs := make([]interface{}, 0, len(following)+1)
+			userIDs = append(userIDs, user.ID)
+			for _, f := range following {
+				userIDs = append(userIDs, f.FolloweeID)
+			}
+
+			// Build placeholder string for IN clause
+			placeholders := "?"
+			for i := 1; i < len(userIDs); i++ {
+				placeholders += ",?"
+			}
+
+			args := append(userIDs, after)
+			activities, _ = models.Activities.Search(`
+				WHERE UserID IN (`+placeholders+`) AND CreatedAt > ?
+				ORDER BY CreatedAt ASC
+			`, args...)
+		}
+	}
 
 	c.Render(w, r, "feed-poll.html", activities)
 }

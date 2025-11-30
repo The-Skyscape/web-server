@@ -51,6 +51,7 @@ func main() {
 		application.WithController(controllers.Files()),
 		application.WithController(controllers.Apps()),
 		application.WithController(controllers.Comments()),
+		application.WithController(controllers.Reactions()),
 		application.WithController(controllers.Follows()),
 		application.WithController(controllers.Stars()),
 		application.WithController(controllers.Messages()),

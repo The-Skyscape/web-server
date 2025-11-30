@@ -258,12 +258,12 @@ func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err = models.Activities.Insert(&models.Activity{
+	if _, err = models.Promotions.Insert(&models.Promotion{
 		UserID:      user.ID,
-		Action:      "promoted",
 		SubjectType: "app",
 		SubjectID:   app.ID,
 		Content:     content,
+		ExpiresAt:   time.Now().Add(models.DefaultPromotionDuration),
 	}); err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
