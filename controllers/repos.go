@@ -29,7 +29,7 @@ func (c *ReposController) Setup(app *application.App) {
 	http.Handle("GET /repo/{repo}/file/{path...}", c.Serve("file.html", auth.Optional))
 	http.Handle("POST /repos", c.ProtectFunc(c.createRepo, auth.Required))
 	http.Handle("PUT /repo/{repo}", c.ProtectFunc(c.updateRepo, auth.Required))
-	http.Handle("POST /repos/{repo}/promote", c.ProtectFunc(c.promoteRepo, auth.Required))
+	http.Handle("POST /repos/{repo}/share", c.ProtectFunc(c.shareRepo, auth.Required))
 	http.Handle("DELETE /repo/{repo}", c.ProtectFunc(c.deleteRepo, auth.Required))
 }
 
@@ -245,7 +245,7 @@ func (c *ReposController) deleteRepo(w http.ResponseWriter, r *http.Request) {
 	c.Redirect(w, r, "/profile")
 }
 
-func (c *ReposController) promoteRepo(w http.ResponseWriter, r *http.Request) {
+func (c *ReposController) shareRepo(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
 	if err != nil {
@@ -260,19 +260,19 @@ func (c *ReposController) promoteRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if repo.OwnerID != user.ID {
-		c.Render(w, r, "error-message.html", errors.New("you can only promote your own repos"))
+		c.Render(w, r, "error-message.html", errors.New("you can only share your own repos"))
 		return
 	}
 
 	content := r.FormValue("content")
 	if len(content) > MaxContentLength {
-		c.Render(w, r, "error-message.html", errors.New("promotion content too long"))
+		c.Render(w, r, "error-message.html", errors.New("content too long"))
 		return
 	}
 
 	if _, err = models.Activities.Insert(&models.Activity{
 		UserID:      user.ID,
-		Action:      "promoted",
+		Action:      "posted",
 		SubjectType: "repo",
 		SubjectID:   repo.ID,
 		Content:     content,

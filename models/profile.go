@@ -137,13 +137,6 @@ func CreateProfile(userID, description string) (*Profile, error) {
 		return nil, err
 	}
 
-	Activities.Insert(&Activity{
-		UserID:      userID,
-		Action:      "joined",
-		SubjectType: "profile",
-		SubjectID:   userID,
-	})
-
 	return p, err
 }
 

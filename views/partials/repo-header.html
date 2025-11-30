@@ -90,7 +90,7 @@
           Share
         </a>
       </li>
-      <li><a _="on click call promote_repo_modal.showModal()">Promote</a></li>
+      <li><a _="on click call share_repo_modal.showModal()">Post to Feed</a></li>
       {{if eq $user.ID .Owner.ID}}
       <li><a _="on click call edit_repo_modal.showModal()">Edit</a></li>
       <li><a hx-confirm="Are you sure you want to delete this repo?" hx-delete="{{host}}/repo/{{.ID}}">Archive</a></li>

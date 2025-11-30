@@ -99,6 +99,15 @@ func (a *App) VerifySecret(secret string) bool {
 	return err == nil
 }
 
+// ActivePromotion returns the current active (non-expired) promotion for this app, if any
+func (a *App) ActivePromotion() *Promotion {
+	promo, _ := Promotions.First(`
+		WHERE SubjectType = 'app' AND SubjectID = ? AND ExpiresAt > ?
+		ORDER BY CreatedAt DESC
+	`, a.ID, time.Now())
+	return promo
+}
+
 func (app *App) Build() (*Image, error) {
 	host := containers.Local()
 	tmpDir, err := os.MkdirTemp("", "app-*")

@@ -27,6 +27,7 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("POST /app/{app}/edit", c.ProtectFunc(c.update, auth.Required))
 	http.Handle("POST /app/{app}/launch", c.ProtectFunc(c.launch, auth.Required))
 	http.Handle("POST /apps/{app}/promote", c.ProtectFunc(c.promoteApp, auth.Required))
+	http.Handle("DELETE /apps/{app}/promote", c.ProtectFunc(c.cancelPromotion, auth.Required))
 	http.Handle("DELETE /app/{app}", c.ProtectFunc(c.shutdown, auth.Required))
 }
 
@@ -252,6 +253,12 @@ func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if app already has an active promotion
+	if existing := app.ActivePromotion(); existing != nil {
+		c.Render(w, r, "error-message.html", errors.New("this app already has an active promotion"))
+		return
+	}
+
 	content := r.FormValue("content")
 	if len(content) > MaxContentLength {
 		c.Render(w, r, "error-message.html", errors.New("promotion content too long"))
@@ -270,4 +277,38 @@ func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Redirect(w, r, "/")
+}
+
+func (c *AppsController) cancelPromotion(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	app, err := models.Apps.Get(r.PathValue("app"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	repo := app.Repo()
+	if repo == nil || repo.OwnerID != user.ID {
+		c.Render(w, r, "error-message.html", errors.New("you can only cancel your own promotions"))
+		return
+	}
+
+	promo := app.ActivePromotion()
+	if promo == nil {
+		c.Render(w, r, "error-message.html", errors.New("no active promotion found"))
+		return
+	}
+
+	if err = models.Promotions.Delete(promo); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	c.Refresh(w, r)
 }
