@@ -5,8 +5,10 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"github.com/The-Skyscape/devtools/pkg/emailing"
 	"www.theskyscape.com/models"
 )
 
@@ -64,9 +66,60 @@ func (c *CommentsController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create activity for the comment (except for post comments)
-	// Post comments don't create separate activities since they're already part of the feed
-	if subjectType != "post" {
+	// Handle post comments - notify the post author
+	if subjectType == "post" {
+		go func() {
+			activity, err := models.Activities.Get(subjectID)
+			if err != nil || activity == nil {
+				return
+			}
+
+			// Don't notify yourself
+			if activity.UserID == user.ID {
+				return
+			}
+
+			// Rate limit: 1 notification per hour per recipient
+			allowed, _, _ := models.Check(activity.UserID, "comment-notification", 1, time.Hour)
+			if !allowed {
+				return
+			}
+			models.Record(activity.UserID, "comment-notification", time.Hour)
+
+			// Get post author's profile and user
+			postAuthor, _ := models.Profiles.First("WHERE UserID = ?", activity.UserID)
+			if postAuthor == nil {
+				return
+			}
+			postAuthorUser := postAuthor.User()
+			if postAuthorUser == nil {
+				return
+			}
+
+			// Get commenter's profile
+			commenter, _ := models.Profiles.First("WHERE UserID = ?", user.ID)
+			if commenter == nil {
+				return
+			}
+
+			// Truncate comment for preview
+			preview := content
+			if len(preview) > 200 {
+				preview = preview[:197] + "..."
+			}
+
+			// Send email notification
+			models.Emails.Send(postAuthorUser.Email,
+				"New comment on your post",
+				emailing.WithTemplate("new-comment.html"),
+				emailing.WithData("commenter", commenter),
+				emailing.WithData("recipient", postAuthor),
+				emailing.WithData("comment", preview),
+				emailing.WithData("year", time.Now().Year()),
+			)
+		}()
+	} else {
+		// Create activity for non-post comments (repo/file comments)
 		var activitySubjectID string
 		activitySubjectType := "repo"
 

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New comment on your post</title>
+  {{template "email-styles" .}}
+</head>
+
+<body>
+  <div class="email-wrapper">
+    {{template "email-header" .}}
+
+    <div class="email-content">
+      <h2>Someone commented on your post!</h2>
+
+      <p>Hey {{recipient.Name}},</p>
+
+      <p><strong>{{commenter.Name}}</strong> (@{{commenter.Handle}}) commented on your post:</p>
+
+      <div style="background: #1a1a2e; border-left: 4px solid #6366f1; padding: 16px; margin: 24px 0; border-radius: 4px;">
+        <p style="margin: 0; white-space: pre-wrap;">{{comment}}</p>
+      </div>
+
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="https://www.theskyscape.com/" class="btn">View on Feed</a>
+      </div>
+
+      <p>
+        Happy coding!<br>
+        <strong>The Skyscape Team</strong>
+      </p>
+    </div>
+
+    {{template "email-footer" .}}
+  </div>
+</body>
+
+</html>

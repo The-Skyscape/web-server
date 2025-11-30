@@ -110,10 +110,12 @@
       {{end}}
       {{end}}
       {{end}}
-
-      <!-- Welcome card at the end of feed (or as empty state) -->
-      {{template "feed-welcome.html"}}
     </div>
+
+    <!-- Welcome card at the end of feed (only on page 1, outside #feed to prevent infinite scroll duplication) -->
+    {{if eq feed.Page 1}}
+    {{template "feed-welcome.html"}}
+    {{end}}
   </div>
 
   {{template "layout/end"}}
