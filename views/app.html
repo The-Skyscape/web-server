@@ -188,7 +188,8 @@
           <label class="text-xs font-bold opacity-60 tracking-wider">
             Current Version
           </label>
-          <a href="{{host}}/app/{{$app.ID}}/history" class="flex items-center justify-between p-2 rounded-lg bg-base-200 hover:bg-base-300 transition" hx-boost="true">
+          {{if $isOwner}}
+          <a href="{{host}}/app/{{$app.ID}}/manage" class="flex items-center justify-between p-2 rounded-lg bg-base-200 hover:bg-base-300 transition cursor-pointer" hx-boost="true">
             <div class="flex items-center gap-2">
               <span class="badge badge-success badge-sm">Running</span>
               <span class="font-mono text-sm opacity-80">{{slice $img.GitHash 0 7}}</span>
@@ -196,6 +197,15 @@
             </div>
             {{template "icon-chevron-right.html"}}
           </a>
+          {{else}}
+          <div class="flex items-center p-2 rounded-lg bg-base-200">
+            <div class="flex items-center gap-2">
+              <span class="badge badge-success badge-sm">Running</span>
+              <span class="font-mono text-sm opacity-80">{{slice $img.GitHash 0 7}}</span>
+              <span class="text-sm opacity-60">{{timeAgo $img.CreatedAt}}</span>
+            </div>
+          </div>
+          {{end}}
         </div>
         {{end}}
 

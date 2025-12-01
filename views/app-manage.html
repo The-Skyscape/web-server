@@ -1,0 +1,245 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{with $app := apps.CurrentApp}}
+    {{$user := auth.CurrentUser}}
+    {{$owner := $app.Owner}}
+    {{$isOwner := and $user $owner (eq $user.ID $owner.ID)}}
+
+    {{if not $isOwner}}
+    <!-- Access denied -->
+    <div class="alert alert-error">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>You don't have permission to manage this app.</span>
+      <a href="{{host}}/app/{{$app.ID}}" class="btn btn-sm" hx-boost="true">Back to App</a>
+    </div>
+    {{else}}
+
+    <!-- Header -->
+    <div class="flex items-center gap-2">
+      {{with $owner}}
+      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost text-lg px-2">
+        <div class="avatar">
+          <div class="w-8 p-1 rounded-full bg-white/10 border border-white/10 shadow">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <span class="hidden md:inline">@{{.Handle}}</span>
+      </a>
+      {{end}}
+
+      <span class="text-lg font-bold opacity-80">/</span>
+      <a hx-boost="true" href="{{host}}/app/{{$app.ID}}" class="text-xl font-semibold hover:underline">
+        {{$app.Name}}
+      </a>
+      <span class="text-lg font-bold opacity-80">/</span>
+      <span class="text-xl font-semibold opacity-60">Manage</span>
+
+      <div class="flex items-center gap-2 ml-auto bg-transparent" data-theme="light">
+        <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="btn btn-sm btn-primary shadow-xl">
+          Open App
+          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+            <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72"></path>
+          </svg>
+        </a>
+      </div>
+
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost">
+          {{template "icon-dots.html"}}
+        </div>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
+          <li><a href="{{host}}/app/{{$app.ID}}" hx-boost="true">View App Page</a></li>
+          <li><a href="{{host}}/app/{{$app.ID}}/history" hx-boost="true">Version History</a></li>
+          <li><a _="on click call edit_app_modal.showModal()">Edit</a></li>
+          <li><a hx-delete="{{host}}/app/{{$app.ID}}" hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- App Preview -->
+    <div class="card relative w-full aspect-video max-h-64 rounded-box overflow-hidden bg-base-100 shadow-lg border border-white/5">
+      <img src="https://apps.skysca.pe/{{$app.ID}}" class="absolute inset-0 z-10 w-full h-full object-cover">
+      <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="bg-black/40 inset-0 absolute z-20 flex opacity-0 hover:opacity-100 transition-opacity">
+        <div class="btn btn-lg btn-primary opacity-90 m-auto">Visit App</div>
+      </a>
+    </div>
+
+    <!-- Two-column layout -->
+    <div class="flex flex-col md:flex-row gap-8 w-full">
+
+      <!-- Left Column: Observability Widgets -->
+      <div class="flex flex-col gap-4 w-full md:w-1/2">
+        {{$metrics := apps.CurrentAppMetrics}}
+
+        <!-- Container Status Widget -->
+        <div class="card bg-base-200 border border-base-100 shadow-lg">
+          <div class="card-body p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-base-100 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold">Container Status</h3>
+                  <p class="text-xs opacity-50">Docker Swarm Service</p>
+                </div>
+              </div>
+              {{with $metrics}}
+              {{if eq .ContainerStatus "running"}}
+              <span class="badge badge-success">Running</span>
+              {{else if eq .ContainerStatus "stopped"}}
+              <span class="badge badge-error">Stopped</span>
+              {{else}}
+              <span class="badge badge-warning">{{.ContainerStatus}}</span>
+              {{end}}
+              {{else}}
+              <span class="badge badge-ghost">Unknown</span>
+              {{end}}
+            </div>
+            {{with $metrics}}
+            <div class="mt-3 pt-3 border-t border-base-100">
+              <div class="flex justify-between text-sm">
+                <span class="opacity-50">Replicas</span>
+                <span class="font-medium">{{.ReplicaCount}}</span>
+              </div>
+              <div class="text-xs opacity-40 mt-2">Last checked {{timeAgo .LastCheckAt}}</div>
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <!-- Resource Usage Widget -->
+        <div class="card bg-base-200 border border-base-100 shadow-lg">
+          <div class="card-body p-4">
+            <div class="flex items-center gap-3">
+              <div class="p-2.5 bg-base-100 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold">Resource Usage</h3>
+                <p class="text-xs opacity-50">CPU and Memory</p>
+              </div>
+            </div>
+            {{with $metrics}}
+            <div class="mt-3 pt-3 border-t border-base-100 flex flex-col gap-3">
+              <!-- CPU -->
+              <div class="flex flex-col gap-1">
+                <div class="flex justify-between text-sm">
+                  <span class="opacity-50">CPU</span>
+                  <span class="font-medium">{{printf "%.1f" .CPUUsagePercent}}%</span>
+                </div>
+                <progress class="progress progress-primary h-2 w-full" value="{{printf "%.0f" .CPUUsagePercent}}" max="100"></progress>
+              </div>
+              <!-- Memory -->
+              <div class="flex flex-col gap-1">
+                <div class="flex justify-between text-sm">
+                  <span class="opacity-50">Memory</span>
+                  {{if gt .MemoryLimitMB 0}}
+                  <span class="font-medium">{{.MemoryUsedMB}} MB <span class="opacity-50">/ {{.MemoryLimitMB}} MB</span></span>
+                  {{else}}
+                  <span class="font-medium opacity-50">N/A</span>
+                  {{end}}
+                </div>
+                {{if gt .MemoryLimitMB 0}}
+                <progress class="progress progress-secondary h-2 w-full" value="{{.MemoryUsedMB}}" max="{{.MemoryLimitMB}}"></progress>
+                {{else}}
+                <progress class="progress h-2 w-full" value="0" max="100"></progress>
+                {{end}}
+              </div>
+            </div>
+            {{else}}
+            <div class="mt-3 pt-3 border-t border-base-100 text-sm opacity-50">
+              Resource data not available
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <!-- Storage Widget -->
+        <div class="card bg-base-200 border border-base-100 shadow-lg">
+          <div class="card-body p-4">
+            <div class="flex items-center gap-3">
+              <div class="p-2.5 bg-base-100 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold">Storage</h3>
+                <p class="text-xs opacity-50">Database Volume</p>
+              </div>
+            </div>
+            {{with $metrics}}
+            {{if gt .VolumeTotalGB 0}}
+            <div class="mt-3 pt-3 border-t border-base-100">
+              <div class="flex justify-between text-sm mb-2">
+                <span class="opacity-50">Volume Usage</span>
+                <span class="font-medium">{{printf "%.2f" .VolumeUsedGB}} GB <span class="opacity-50">/ {{printf "%.0f" .VolumeTotalGB}} GB</span></span>
+              </div>
+              <progress class="progress progress-info h-2 w-full" value="{{.VolumeUsedPct}}" max="100"></progress>
+              <div class="text-right text-xs opacity-40 mt-1">{{.VolumeUsedPct}}% used</div>
+            </div>
+            {{else}}
+            <div class="mt-3 pt-3 border-t border-base-100 text-sm opacity-50">
+              No dedicated volume
+            </div>
+            {{end}}
+            {{else}}
+            <div class="mt-3 pt-3 border-t border-base-100 text-sm opacity-50">
+              Storage data not available
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card bg-base-200 border border-base-100 shadow-lg">
+          <div class="card-body p-4">
+            <h3 class="font-semibold mb-3">Quick Actions</h3>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-sm btn-primary" hx-post="{{host}}/app/{{$app.ID}}/launch">
+                <span class="htmx-indicator loading loading-spinner loading-xs"></span>
+                Launch New Version
+              </button>
+              <a href="{{host}}/app/{{$app.ID}}/users" class="btn btn-sm btn-ghost" hx-boost="true">
+                OAuth Users
+              </a>
+              <button class="btn btn-sm btn-ghost" _="on click call edit_app_modal.showModal()">
+                Edit App
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Launch History -->
+      <div class="flex flex-col gap-4 w-full md:w-1/2">
+        {{template "launch-history.html" $app}}
+      </div>
+    </div>
+
+    {{template "edit-app-modal.html" $app}}
+    {{end}}
+    {{else}}
+    <h1 class="text-2xl font-semibold">App not found</h1>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

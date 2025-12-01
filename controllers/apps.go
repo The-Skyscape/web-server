@@ -24,6 +24,7 @@ func (c *AppsController) Setup(app *application.App) {
 
 	http.Handle("GET /apps", c.Serve("apps.html", auth.Optional))
 	http.Handle("/app/{app}", c.Serve("app.html", auth.Optional))
+	http.Handle("/app/{app}/manage", c.Serve("app-manage.html", auth.Required))
 	http.Handle("/app/{app}/history", c.Serve("app-history.html", auth.Optional))
 	http.Handle("GET /app/{app}/comments", c.Serve("app-comments.html", auth.Optional))
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
@@ -72,6 +73,20 @@ func (c *AppsController) CurrentImage() *models.Image {
 		}
 	}
 	return nil
+}
+
+func (c *AppsController) CurrentAppMetrics() *models.AppMetrics {
+	app := c.CurrentApp()
+	if app == nil {
+		return nil
+	}
+
+	metrics, err := models.AppMetricsManager.First("WHERE AppID = ?", app.ID)
+	if err != nil {
+		return nil
+	}
+
+	return metrics
 }
 
 const defaultCommentLimit = 10

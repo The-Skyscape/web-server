@@ -32,4 +32,6 @@ var (
 
 	OAuthAuthorizations     = database.Manage(DB, new(OAuthAuthorization))
 	OAuthAuthorizationCodes = database.Manage(DB, new(OAuthAuthorizationCode))
+
+	AppMetricsManager = database.Manage(DB, new(AppMetrics))
 )
