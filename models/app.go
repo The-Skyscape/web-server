@@ -171,3 +171,13 @@ func (app *App) Images() []*Image {
 
 	return images
 }
+
+func (a *App) Comments(limit, offset int) []*Comment {
+	comments, _ := Comments.Search(`
+		WHERE SubjectID = ?
+			AND Content != ''
+		ORDER BY CreatedAt DESC
+		LIMIT ? OFFSET ?
+	`, a.ID, limit, offset)
+	return comments
+}

@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -24,6 +25,7 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("GET /apps", c.Serve("apps.html", auth.Optional))
 	http.Handle("/app/{app}", c.Serve("app.html", auth.Optional))
 	http.Handle("/app/{app}/history", c.Serve("app-history.html", auth.Optional))
+	http.Handle("GET /app/{app}/comments", c.Serve("app-comments.html", auth.Optional))
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
 	http.Handle("POST /app/{app}/edit", c.ProtectFunc(c.update, auth.Required))
 	http.Handle("POST /app/{app}/launch", c.ProtectFunc(c.launch, auth.Required))
@@ -69,6 +71,38 @@ func (c *AppsController) CurrentImage() *models.Image {
 		}
 	}
 	return nil
+}
+
+const defaultCommentLimit = 10
+
+func (c *AppsController) CommentPage() int {
+	page, _ := strconv.Atoi(c.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	return page
+}
+
+func (c *AppsController) CommentLimit() int {
+	limit, _ := strconv.Atoi(c.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 {
+		limit = defaultCommentLimit
+	}
+	return limit
+}
+
+func (c *AppsController) CommentNextPage() int {
+	return c.CommentPage() + 1
+}
+
+func (c *AppsController) Comments() []*models.Comment {
+	app := c.CurrentApp()
+	if app == nil {
+		return nil
+	}
+	limit := c.CommentLimit()
+	offset := (c.CommentPage() - 1) * limit
+	return app.Comments(limit, offset)
 }
 
 func (c *AppsController) AllApps() []*models.App {
