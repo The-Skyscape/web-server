@@ -18,6 +18,8 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/pkg/errors"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
 )
 
 // sanitizeBranch validates and sanitizes branch names to prevent path traversal
@@ -338,8 +340,17 @@ func (c *Content) Lines() []string {
 }
 
 func (c *Content) Markdown() template.HTML {
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM, // GitHub Flavored Markdown (tables, strikethrough, autolinks, task lists)
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+	)
+
 	var buf bytes.Buffer
-	if err := goldmark.Convert([]byte(c.Content), &buf); err != nil {
+	if err := md.Convert([]byte(c.Content), &buf); err != nil {
 		return template.HTML(template.HTMLEscapeString(c.Content))
 	}
 

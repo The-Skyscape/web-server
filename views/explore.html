@@ -44,8 +44,14 @@
     </div>
 
     <div class="flex flex-wrap gap-6 md:gap-9">
-      {{range apps.RecentApps}}
+      {{with apps.RecentApps}}
+      {{range .}}
       {{template "app-card.html" .}}
+      {{end}}
+      {{else}}
+      <div class="text-center py-8 opacity-60 w-full">
+        <p class="text-sm">No apps found</p>
+      </div>
       {{end}}
     </div>
 
@@ -63,8 +69,14 @@
     </div>
 
     <div class="flex flex-wrap gap-6">
-      {{range profile.RecentProfiles}}
+      {{with profile.RecentProfiles}}
+      {{range .}}
       {{template "profile-card.html" .}}
+      {{end}}
+      {{else}}
+      <div class="text-center py-8 opacity-60 w-full">
+        <p class="text-sm">No users found</p>
+      </div>
       {{end}}
     </div>
 
@@ -81,9 +93,15 @@
       </a>
     </div>
 
-    <div class="hidden lg:flex flex-wrap gap-6">
-      {{range repos.RecentRepos}}
+    <div class="hidden lg:grid lg:grid-cols-3 gap-6">
+      {{with repos.RecentRepos}}
+      {{range .}}
       {{template "repo-card.html" .}}
+      {{end}}
+      {{else}}
+      <div class="text-center py-8 opacity-60 w-full">
+        <p class="text-sm">No repos found</p>
+      </div>
       {{end}}
     </div>
   </div>

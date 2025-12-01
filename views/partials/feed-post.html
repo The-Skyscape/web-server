@@ -16,7 +16,7 @@
         <button tabindex="0" class="btn btn-ghost btn-sm btn-square">
           {{template "icon-dots.html"}}
         </button>
-        <ul tabindex="-1" class="dropdown-content menu bg-base-200 rounded-box z-50 w-40 p-2 shadow-lg border border-white/10">
+        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-sm border border-white/20">
           <li><a hx-confirm="Are you sure you want to delete this post?" hx-delete="{{host}}/feed/{{$.ID}}" class="text-error">Delete</a></li>
         </ul>
       </div>
@@ -188,7 +188,7 @@
         {{$comment := .}}
         <div class="flex gap-2 pl-2 border-l-2 border-white/10">
           {{with .User}}
-          <div class="w-6 h-6 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+          <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
             <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
           </div>
           <div class="flex-1 min-w-0">

@@ -48,7 +48,7 @@
     </label>
   </div>
 
-  <div id="repo-cards" class="max-w-screen-xl flex flex-wrap gap-6 w-full mx-auto relative z-20 px-7 py-12"
+  <div id="repo-cards" class="max-w-screen-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mx-auto relative z-20 px-7 py-12"
     hx-boost="true">
     {{$repos := repos.AllRepos}}
     {{if $repos}}

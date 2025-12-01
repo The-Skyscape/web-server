@@ -31,6 +31,7 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("POST /app/{app}/launch", c.ProtectFunc(c.launch, auth.Required))
 	http.Handle("POST /apps/{app}/promote", c.ProtectFunc(c.promoteApp, auth.Required))
 	http.Handle("DELETE /apps/{app}/promote", c.ProtectFunc(c.cancelPromotion, auth.Required))
+	http.Handle("POST /app/{app}/share", c.ProtectFunc(c.shareApp, auth.Required))
 	http.Handle("DELETE /app/{app}", c.ProtectFunc(c.shutdown, auth.Required))
 }
 
@@ -122,6 +123,27 @@ func (c *AppsController) AllApps() []*models.App {
 		ORDER BY repos.CreatedAt DESC
 	`, "%"+query+"%")
 	return apps
+}
+
+func (c *AppsController) ReadmeFile() *models.Blob {
+	app := c.CurrentApp()
+	if app == nil {
+		return nil
+	}
+
+	repo := app.Repo()
+	if repo == nil {
+		return nil
+	}
+
+	files := []string{"README.md", "README", "readme.md", "readme"}
+	for _, name := range files {
+		if file, err := repo.Open("main", name); err == nil {
+			return file
+		}
+	}
+
+	return nil
 }
 
 func (c *AppsController) RecentApps() []*models.App {
@@ -361,4 +383,38 @@ func (c *AppsController) cancelPromotion(w http.ResponseWriter, r *http.Request)
 	}
 
 	c.Refresh(w, r)
+}
+
+func (c *AppsController) shareApp(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	app, err := models.Apps.Get(r.PathValue("app"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	content := r.FormValue("content")
+	if len(content) > MaxContentLength {
+		c.Render(w, r, "error-message.html", errors.New("content too long"))
+		return
+	}
+
+	if _, err = models.Activities.Insert(&models.Activity{
+		UserID:      user.ID,
+		Action:      "posted",
+		SubjectType: "app",
+		SubjectID:   app.ID,
+		Content:     content,
+	}); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	c.Redirect(w, r, "/")
 }

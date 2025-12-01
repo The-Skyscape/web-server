@@ -36,7 +36,7 @@
              else
                add [@disabled] to me
              end">
-          Post
+          Share
         </button>
       </div>
       <form id="post-form" class="flex flex-col w-full gap-2" hx-post="{{host}}/feed/post" hx-target=".error" hx-encoding="multipart/form-data">
@@ -47,7 +47,7 @@
           {{$repos := feed.MyRepos}}
           {{if $repos}}
           <select name="repo_id" class="select select-bordered select-sm w-auto">
-            <option value="">Promote a Repo</option>
+            <option value="">Share a Repo</option>
             {{range $repos}}
             <option value="{{.ID}}">{{.Name}}</option>
             {{end}}
@@ -57,7 +57,7 @@
           {{$apps := feed.MyApps}}
           {{if $apps}}
           <select name="app_id" class="select select-bordered select-sm w-auto">
-            <option value="">Promote an App</option>
+            <option value="">Share an App</option>
             {{range $apps}}
             <option value="{{.ID}}">{{.Name}}</option>
             {{end}}
