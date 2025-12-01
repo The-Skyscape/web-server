@@ -73,10 +73,10 @@
       </div>
     </div>
 
-    <!-- Two column layout like repo page -->
-    <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
-      <!-- Main content -->
-      <div class="flex flex-col gap-4 w-full max-w-screen-md">
+    <!-- Grid layout: reorders on mobile so comments come last -->
+    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 w-full">
+      <!-- Preview - row 1 on both -->
+      <div class="flex flex-col gap-4 md:col-start-1 md:row-start-1">
         <!-- App Preview -->
         <div class="card relative w-full aspect-video rounded-box overflow-hidden bg-base-100 shadow-lg border border-white/5">
           <img src="https://apps.skysca.pe/{{$app.ID}}" class="absolute inset-0 z-10 w-full h-full object-cover">
@@ -96,71 +96,19 @@
         <!-- CTA Buttons -->
         {{template "app-cta-buttons.html" $app}}
 
-        <!-- About section in a card -->
+        <!-- About section -->
         <div class="card bg-base-100 w-full shadow-lg border border-white/5">
           <div class="card-body">
-            <h2 class="card-title">About This App</h2>
-            <p class="text-base opacity-80 leading-relaxed">
+            <h2 class="card-title text-lg">About This App</h2>
+            <p class="text-sm opacity-80 leading-relaxed">
               {{$app.Description}}
             </p>
           </div>
         </div>
-
-        <!-- Comments Section -->
-        <div class="flex flex-col gap-4 w-full">
-          <label class="text-xs font-bold opacity-60 tracking-wider">
-            Comments
-          </label>
-
-          {{with $user}}
-          <form class="flex flex-col w-full" hx-post="{{host}}/comment" hx-target=".comment-error" hx-swap="innerHTML">
-            <input type="hidden" name="subject_id" value="{{$app.ID}}">
-            <input type="hidden" name="subject_type" value="app">
-            <textarea required name="content" class="textarea w-full"
-              placeholder="Leave a comment about this app..."></textarea>
-            <div class="flex items-center justify-between px-4 pt-2">
-              <span class="text-sm font-semibold opacity-60">
-                @{{.Handle}}
-              </span>
-              <button class="btn btn-xs btn-secondary">
-                Post
-              </button>
-            </div>
-            <div class="comment-error"></div>
-          </form>
-          {{else}}
-          <div class="flex items-center justify-between gap-4 p-3 rounded-box bg-base-200 text-sm" hx-boost="true">
-            <span class="opacity-70">Sign in to leave a comment</span>
-            <a href="{{host}}/signin?next=/app/{{$app.ID}}" class="btn btn-xs btn-ghost">Sign In</a>
-          </div>
-          {{end}}
-
-          <div id="app-comments" class="flex flex-col">
-            {{$comments := apps.Comments}}
-            {{$limit := apps.CommentLimit}}
-            {{$nextPage := apps.CommentNextPage}}
-            {{if $comments}}
-            {{range $index, $comment := $comments}}
-            {{if eq (mod (add $index 1) $limit) 0}}
-            <div hx-get="{{host}}/app/{{$app.ID}}/comments?page={{$nextPage}}&limit={{$limit}}" hx-trigger="revealed" hx-swap="afterend"
-              hx-select="#app-comments > *">
-              {{template "app-comment.html" $comment}}
-            </div>
-            {{else}}
-            {{template "app-comment.html" $comment}}
-            {{end}}
-            {{end}}
-            {{else}}
-            <div class="text-center py-8 text-sm opacity-60">
-              No comments yet. Be the first to share your thoughts!
-            </div>
-            {{end}}
-          </div>
-        </div>
       </div>
 
-      <!-- Sidebar -->
-      <div class="flex flex-col gap-4 px-2 w-full md:max-w-108">
+      <!-- Sidebar - row 1 col 2 on desktop, row 2 on mobile -->
+      <div class="flex flex-col gap-4 px-2 w-full md:w-108 order-last md:order-none md:col-start-2 md:row-start-1 md:row-span-2">
         <!-- Source Repo -->
         {{if and $owner $repo}}
         <label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
@@ -240,6 +188,58 @@
           </a>
         </div>
         {{end}}
+      </div>
+
+      <!-- Comments Section - row 2 on desktop, row 3 (last) on mobile -->
+      <div class="flex flex-col gap-4 w-full md:col-start-1 md:row-start-2 order-last">
+        <label class="text-xs font-bold opacity-60 tracking-wider">
+          Comments
+        </label>
+
+        {{with $user}}
+        <form class="flex flex-col w-full" hx-post="{{host}}/comment" hx-target=".comment-error" hx-swap="innerHTML">
+          <input type="hidden" name="subject_id" value="{{$app.ID}}">
+          <input type="hidden" name="subject_type" value="app">
+          <textarea required name="content" class="textarea w-full"
+            placeholder="Leave a comment about this app..."></textarea>
+          <div class="flex items-center justify-between px-4 pt-2">
+            <span class="text-sm font-semibold opacity-60">
+              @{{.Handle}}
+            </span>
+            <button class="btn btn-sm btn-secondary">
+              Post
+            </button>
+          </div>
+          <div class="comment-error"></div>
+        </form>
+        {{else}}
+        <div class="flex items-center justify-between gap-4 p-3 rounded-box bg-base-200 text-sm" hx-boost="true">
+          <span class="opacity-70">Sign in to leave a comment</span>
+          <a href="{{host}}/signin?next=/app/{{$app.ID}}" class="btn btn-sm btn-ghost">Sign In</a>
+        </div>
+        {{end}}
+
+        <div id="app-comments" class="flex flex-col">
+          {{$comments := apps.Comments}}
+          {{$limit := apps.CommentLimit}}
+          {{$nextPage := apps.CommentNextPage}}
+          {{if $comments}}
+          {{range $index, $comment := $comments}}
+          {{if eq (mod (add $index 1) $limit) 0}}
+          <div hx-get="{{host}}/app/{{$app.ID}}/comments?page={{$nextPage}}&limit={{$limit}}" hx-trigger="revealed" hx-swap="afterend"
+            hx-select="#app-comments > *">
+            {{template "app-comment.html" $comment}}
+          </div>
+          {{else}}
+          {{template "app-comment.html" $comment}}
+          {{end}}
+          {{end}}
+          {{else}}
+          <div class="text-center py-8 text-sm opacity-60">
+            No comments yet. Be the first to share your thoughts!
+          </div>
+          {{end}}
+        </div>
       </div>
     </div>
 
