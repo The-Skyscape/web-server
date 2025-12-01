@@ -1,7 +1,7 @@
 {{$user := auth.CurrentUser}}
+{{if $user}}
+<!-- Signed in: Show action buttons -->
 <div class="flex flex-col sm:flex-row gap-3">
-  {{if $user}}
-  <!-- Signed in: Show Login with Skyscape (outline) then Open App (primary) -->
   <a href="https://{{.ID}}.skysca.pe/auth/signin" target="_blank"
      class="btn btn-outline flex-1 order-2 sm:order-1">
     Login with Skyscape
@@ -16,21 +16,21 @@
       </path>
     </svg>
   </a>
-  {{else}}
-  <!-- Not signed in: Show Sign In (outline) then Open App (primary) -->
-  <a href="{{host}}/signin?next=/app/{{.ID}}"
-     class="btn btn-outline flex-1 order-2 sm:order-1" hx-boost="true">
-    Sign In
-  </a>
-  <a href="https://{{.ID}}.skysca.pe" target="_blank"
-     class="btn btn-primary flex-1 order-1 sm:order-2">
-    Open App
-    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em"
-      xmlns="http://www.w3.org/2000/svg">
-      <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"
-        d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72">
-      </path>
-    </svg>
-  </a>
-  {{end}}
 </div>
+{{else}}
+<!-- Not signed in: Show CTA card -->
+<div class="card bg-primary/20 border-2 border-primary/50 shadow-lg">
+  <div class="card-body" hx-boost="true">
+    <div class="card-title">Sign in to get full access</div>
+    <p class="text-sm opacity-80">
+      Create an account or sign in to use this app with your Skyscape identity and access all features.
+    </p>
+    <div class="card-actions justify-end mt-2">
+      <a href="{{host}}/signin?next=/app/{{.ID}}" class="btn btn-primary btn-sm">
+        Sign In
+        {{template "icon-chevron-right.html"}}
+      </a>
+    </div>
+  </div>
+</div>
+{{end}}
