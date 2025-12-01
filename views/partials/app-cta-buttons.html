@@ -18,19 +18,14 @@
   </a>
 </div>
 {{else}}
-<!-- Not signed in: Show CTA card -->
-<div class="card bg-primary/20 border-2 border-primary/50 shadow-lg">
-  <div class="card-body" hx-boost="true">
-    <div class="card-title">Sign in to get full access</div>
-    <p class="text-sm opacity-80">
-      Create an account or sign in to use this app with your Skyscape identity and access all features.
-    </p>
-    <div class="card-actions justify-end mt-2">
-      <a href="{{host}}/signin?next=/app/{{.ID}}" class="btn btn-primary btn-sm">
-        Sign In
-        {{template "icon-chevron-right.html"}}
-      </a>
-    </div>
+<!-- Not signed in: Show inline CTA -->
+<div class="flex items-center justify-between gap-4 p-4 rounded-box bg-secondary/20 border border-secondary/30" hx-boost="true">
+  <div class="flex flex-col gap-1">
+    <span class="font-semibold">Sign in to get full access</span>
+    <span class="text-sm opacity-70">Use this app with your Skyscape identity</span>
   </div>
+  <a href="{{host}}/signin?next=/app/{{.ID}}" class="btn btn-secondary btn-sm shrink-0">
+    Sign In
+  </a>
 </div>
 {{end}}
