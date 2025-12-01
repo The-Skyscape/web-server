@@ -107,54 +107,54 @@
         </div>
 
         <!-- Comments Section -->
-        <div class="card bg-base-100 w-full shadow-lg border border-white/5">
-          <div class="card-body">
-            <h2 class="card-title">Comments</h2>
+        <div class="flex flex-col gap-4 w-full">
+          <label class="text-xs font-bold opacity-60 tracking-wider">
+            Comments
+          </label>
 
-            {{with $user}}
-            <form class="flex flex-col w-full" hx-post="{{host}}/comment" hx-target=".comment-error" hx-swap="innerHTML">
-              <input type="hidden" name="subject_id" value="{{$app.ID}}">
-              <input type="hidden" name="subject_type" value="app">
-              <textarea required name="content" class="textarea w-full"
-                placeholder="Leave a comment about this app..."></textarea>
-              <div class="flex items-center justify-between px-4 pt-2">
-                <span class="text-sm font-semibold opacity-60">
-                  @{{.Handle}}
-                </span>
-                <button class="btn btn-xs btn-secondary">
-                  Post
-                </button>
-              </div>
-              <div class="comment-error"></div>
-            </form>
+          {{with $user}}
+          <form class="flex flex-col w-full" hx-post="{{host}}/comment" hx-target=".comment-error" hx-swap="innerHTML">
+            <input type="hidden" name="subject_id" value="{{$app.ID}}">
+            <input type="hidden" name="subject_type" value="app">
+            <textarea required name="content" class="textarea w-full"
+              placeholder="Leave a comment about this app..."></textarea>
+            <div class="flex items-center justify-between px-4 pt-2">
+              <span class="text-sm font-semibold opacity-60">
+                @{{.Handle}}
+              </span>
+              <button class="btn btn-xs btn-secondary">
+                Post
+              </button>
+            </div>
+            <div class="comment-error"></div>
+          </form>
+          {{else}}
+          <div class="flex items-center justify-between gap-4 p-3 rounded-box bg-base-200 text-sm" hx-boost="true">
+            <span class="opacity-70">Sign in to leave a comment</span>
+            <a href="{{host}}/signin?next=/app/{{$app.ID}}" class="btn btn-xs btn-ghost">Sign In</a>
+          </div>
+          {{end}}
+
+          <div id="app-comments" class="flex flex-col">
+            {{$comments := apps.Comments}}
+            {{$limit := apps.CommentLimit}}
+            {{$nextPage := apps.CommentNextPage}}
+            {{if $comments}}
+            {{range $index, $comment := $comments}}
+            {{if eq (mod (add $index 1) $limit) 0}}
+            <div hx-get="{{host}}/app/{{$app.ID}}/comments?page={{$nextPage}}&limit={{$limit}}" hx-trigger="revealed" hx-swap="afterend"
+              hx-select="#app-comments > *">
+              {{template "app-comment.html" $comment}}
+            </div>
             {{else}}
-            <div class="flex items-center justify-between gap-4 p-3 rounded-box bg-base-200 text-sm" hx-boost="true">
-              <span class="opacity-70">Sign in to leave a comment</span>
-              <a href="{{host}}/signin?next=/app/{{$app.ID}}" class="btn btn-xs btn-ghost">Sign In</a>
+            {{template "app-comment.html" $comment}}
+            {{end}}
+            {{end}}
+            {{else}}
+            <div class="text-center py-8 text-sm opacity-60">
+              No comments yet. Be the first to share your thoughts!
             </div>
             {{end}}
-
-            <div id="app-comments" class="flex flex-col">
-              {{$comments := apps.Comments}}
-              {{$limit := apps.CommentLimit}}
-              {{$nextPage := apps.CommentNextPage}}
-              {{if $comments}}
-              {{range $index, $comment := $comments}}
-              {{if eq (mod (add $index 1) $limit) 0}}
-              <div hx-get="{{host}}/app/{{$app.ID}}/comments?page={{$nextPage}}&limit={{$limit}}" hx-trigger="revealed" hx-swap="afterend"
-                hx-select="#app-comments > *">
-                {{template "app-comment.html" $comment}}
-              </div>
-              {{else}}
-              {{template "app-comment.html" $comment}}
-              {{end}}
-              {{end}}
-              {{else}}
-              <div class="text-center py-8 text-sm opacity-60">
-                No comments yet. Be the first to share your thoughts!
-              </div>
-              {{end}}
-            </div>
           </div>
         </div>
       </div>
