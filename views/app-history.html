@@ -1,0 +1,157 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{with $app := apps.CurrentApp}}
+    {{$user := auth.CurrentUser}}
+    {{$owner := $app.Owner}}
+    {{$isOwner := and $user $owner (eq $user.ID $owner.ID)}}
+    {{$currentImage := apps.CurrentImage}}
+
+    <!-- Header matching repo-header style -->
+    <div class="flex items-center gap-2">
+      {{with $owner}}
+      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost text-lg px-2">
+        <div class="avatar">
+          <div class="w-8 p-1 rounded-full bg-white/10 border border-white/10 shadow">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <span class="hidden md:inline">@{{.Handle}}</span>
+      </a>
+      {{end}}
+
+      <span class="text-lg font-bold opacity-80">/</span>
+
+      <a hx-boost="true" href="{{host}}/app/{{$app.ID}}" class="text-xl font-semibold hover:underline">
+        {{$app.Name}}
+      </a>
+
+      <span class="text-lg font-bold opacity-80">/</span>
+
+      <span class="text-xl font-semibold opacity-60">History</span>
+
+      <div class="flex items-center gap-2 ml-auto bg-transparent" data-theme="light">
+        {{if $isOwner}}
+        <button class="btn btn-sm btn-primary shadow-xl hidden md:flex" hx-post="{{host}}/app/{{$app.ID}}/launch">
+          Launch New Version
+        </button>
+        {{end}}
+      </div>
+
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost">
+          {{template "icon-dots.html"}}
+        </div>
+        <ul tabindex="-1"
+          class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
+          <li>
+            <a target="_blank" href="https://{{$app.ID}}.skysca.pe">Open App</a>
+          </li>
+          <li>
+            <a href="{{host}}/app/{{$app.ID}}" hx-boost="true">View App Page</a>
+          </li>
+          {{if $isOwner}}
+          <li class="md:hidden">
+            <a hx-post="{{host}}/app/{{$app.ID}}/launch">Launch New Version</a>
+          </li>
+          <li><a _="on click call edit_app_modal.showModal()">Edit</a></li>
+          <li><a hx-delete="{{host}}/app/{{$app.ID}}" hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
+          {{end}}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Current Status -->
+    {{if $currentImage}}
+    <div class="flex items-center gap-3 px-2">
+      <span class="badge badge-success">Running</span>
+      <span class="font-mono text-sm opacity-80">{{slice $currentImage.GitHash 0 7}}</span>
+      <span class="text-sm opacity-60">launched {{timeAgo $currentImage.CreatedAt}}</span>
+    </div>
+    {{end}}
+
+    <!-- Version History -->
+    <div class="card bg-base-100 w-full shadow-lg border border-white/5">
+      <div class="card-body">
+        <h2 class="card-title">Version History</h2>
+
+        <div class="flex flex-col gap-2 w-full mt-4">
+          {{range $app.Images}}
+          <div class="collapse collapse-arrow bg-base-200/50 border border-white/5 rounded-box">
+            <input type="radio" name="launch-history-items">
+            <div class="collapse-title flex justify-between">
+              <div class="text-sm font-bold opacity-80 flex gap-2 flex-wrap items-center">
+                <span class="font-mono">{{.GitHash}}</span>
+                <span class="opacity-60">{{timeAgo .CreatedAt}}</span>
+              </div>
+
+              {{if eq .Status "running"}}
+              <span class="badge badge-sm badge-soft badge-success ml-auto capitalize">{{.Status}}</span>
+              {{else if eq .Status "deploying"}}
+              <span class="badge badge-sm badge-soft badge-info ml-auto capitalize">{{.Status}}</span>
+              {{else if eq .Status "failed"}}
+              <span class="badge badge-sm badge-soft badge-error ml-auto capitalize">{{.Status}}</span>
+              {{else if or (eq .Status "building") (eq .Status "ready")}}
+              <span class="badge badge-sm badge-soft badge-warning ml-auto capitalize">building</span>
+              {{else}}
+              <span class="badge badge-sm badge-soft badge-ghost ml-auto capitalize">{{.Status}}</span>
+              {{end}}
+            </div>
+
+            <div class="collapse-content">
+              <div class="flex flex-col gap-4 w-full p-4 bg-base-300/50 rounded-box border border-white/5">
+                {{with .Error}}
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold opacity-60 tracking-wider">Launch Error</label>
+                  <span class="text-error text-sm">{{.}}</span>
+                </div>
+                {{end}}
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold opacity-60 tracking-wider">Launched by</label>
+                  {{with $owner}}
+                  <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-2 w-max" hx-boost="true">
+                    <div class="avatar">
+                      <div class="w-6 p-0.5 rounded-full bg-white/10 border border-white/10">
+                        <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+                      </div>
+                    </div>
+                    <span class="text-sm font-medium">@{{.Handle}}</span>
+                  </a>
+                  {{end}}
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold opacity-60 tracking-wider">Launch Time</label>
+                  <span class="text-sm opacity-80">{{format .CreatedAt "Jan 02, 2006 15:04:05"}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {{else}}
+          <div class="text-center py-8 text-sm opacity-60">
+            No versions have been launched yet.
+          </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+
+    {{template "promote-app-modal.html" $app}}
+    {{template "edit-app-modal.html" $app}}
+    {{else}}
+    <h1 class="text-2xl font-semibold">App not found</h1>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

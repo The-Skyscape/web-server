@@ -2,36 +2,201 @@
 
 <head>
   {{template "includes.html"}}
-
 </head>
 
 <body>
   {{template "layout/start"}}
 
-  <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
-    <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
-      {{with apps.CurrentApp}}
-      {{template "app-header.html" .}}
+  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{with $app := apps.CurrentApp}}
+    {{$user := auth.CurrentUser}}
+    {{$owner := $app.Owner}}
+    {{$repo := $app.Repo}}
+    {{$isOwner := and $user $owner (eq $user.ID $owner.ID)}}
 
-      <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
-        <div class="flex flex-col gap-4 w-full max-w-screen-md">
-          {{template "app-preview.html" .}}
-          {{template "launch-history.html" .}}
+    <!-- Header matching repo-header style -->
+    <div class="flex items-center gap-2">
+      {{with $owner}}
+      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost text-lg px-2">
+        <div class="avatar">
+          <div class="w-8 p-1 rounded-full bg-white/10 border border-white/10 shadow">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <span class="hidden md:inline">@{{.Handle}}</span>
+      </a>
+      {{end}}
+
+      <span class="text-lg font-bold opacity-80">/</span>
+
+      <span class="text-xl font-semibold">{{$app.Name}}</span>
+
+      <div class="flex items-center gap-2 ml-auto bg-transparent" data-theme="light">
+        <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="btn btn-sm btn-primary shadow-xl hidden md:flex">
+          Open App
+          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em"
+            xmlns="http://www.w3.org/2000/svg">
+            <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"
+              d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72">
+            </path>
+          </svg>
+        </a>
+      </div>
+
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost">
+          {{template "icon-dots.html"}}
+        </div>
+        <ul tabindex="-1"
+          class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
+          <li class="md:hidden">
+            <a target="_blank" href="https://{{$app.ID}}.skysca.pe">Open App</a>
+          </li>
+          <li>
+            <a _="on click
+              call navigator.clipboard.writeText('https://theskyscape.com/app/{{$app.ID}}') then
+              set my textContent to 'Copied ✓' then
+              wait 2s then
+              set my textContent to 'Share'">
+              Share
+            </a>
+          </li>
+          {{if $user}}
+          <li><a _="on click call promote_app_modal.showModal()">Promote</a></li>
+          {{end}}
+          {{if $isOwner}}
+          <li><a href="{{host}}/app/{{$app.ID}}/history" hx-boost="true">Manage Versions</a></li>
+          <li><a _="on click call edit_app_modal.showModal()">Edit</a></li>
+          <li><a hx-delete="{{host}}/app/{{$app.ID}}" hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
+          {{end}}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Two column layout like repo page -->
+    <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
+      <!-- Main content -->
+      <div class="flex flex-col gap-4 w-full max-w-screen-md">
+        <!-- App Preview -->
+        <div class="card relative w-full aspect-video rounded-box overflow-hidden bg-base-100 shadow-lg border border-white/5">
+          <img src="https://apps.skysca.pe/{{$app.ID}}" class="absolute inset-0 z-10 w-full h-full object-cover">
+          <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="bg-black/40 inset-0 absolute z-20 flex opacity-0 hover:opacity-100 transition-opacity">
+            <div class="btn btn-lg btn-primary opacity-90 m-auto">
+              Visit App
+              <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em"
+                xmlns="http://www.w3.org/2000/svg">
+                <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"
+                  d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72">
+                </path>
+              </svg>
+            </div>
+          </a>
         </div>
 
-        <div class="flex flex-col gap-4 px-2 w-full md:max-w-108">
-          {{template "app-details.html" .}}
+        <!-- CTA Buttons -->
+        {{template "app-cta-buttons.html" $app}}
+
+        <!-- About section in a card -->
+        <div class="card bg-base-100 w-full shadow-lg border border-white/5">
+          <div class="card-body">
+            <h2 class="card-title">About This App</h2>
+            <p class="text-base opacity-80 leading-relaxed">
+              {{$app.Description}}
+            </p>
+          </div>
         </div>
       </div>
 
-      {{template "promote-app-modal.html" .}}
-      {{template "oauth-secret-modal.html" .}}
-      {{else}}
-      <h1 class="text-2xl font-semibold">
-        App not found
-      </h1>
-      {{end}}
+      <!-- Sidebar -->
+      <div class="flex flex-col gap-4 px-2 w-full md:max-w-108">
+        <!-- Source Repo -->
+        {{if and $owner $repo}}
+        <label class="text-xs font-bold opacity-60 -mb-3 tracking-wider">
+          Source Code
+        </label>
+        <a href="{{host}}/repo/{{$repo.ID}}" class="flex items-center justify-between p-2 rounded-lg bg-base-200 hover:bg-base-300 transition" hx-boost="true">
+          <div class="flex items-center gap-2">
+            <div class="flex items-center justify-center w-5 h-5 rounded-full bg-secondary/20 text-secondary shrink-0 mr-2">
+              <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path>
+                <path d="M12 22V12"></path>
+                <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"></path>
+                <path d="m7.5 4.27 9 5.15"></path>
+              </svg>
+            </div>
+            <span class="font-medium">@{{$owner.Handle}} / {{$repo.ID}}</span>
+          </div>
+          {{template "icon-chevron-right.html"}}
+        </a>
+        {{end}}
+
+        <!-- Active Skyscapers -->
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-bold opacity-60 tracking-wider">
+            Active Skyscapers
+          </label>
+
+          {{$auths := apps.AuthorizedUsers}}
+          {{$count := len $auths}}
+          {{if $auths}}
+          <div class="flex items-center gap-3">
+            <div class="avatar-group -space-x-4">
+              {{range $i, $auth := $auths}}
+              {{if lt $i 6}}
+              {{with $authUser := $auth.User}}
+              <a href="{{host}}/user/{{$authUser.Handle}}" class="avatar" hx-boost="true" title="@{{$authUser.Handle}}">
+                <div class="w-10 rounded-full border-2 border-base-100">
+                  <img src="{{$authUser.Avatar}}" alt="{{$authUser.Name}}">
+                </div>
+              </a>
+              {{end}}
+              {{end}}
+              {{end}}
+              {{if gt $count 6}}
+              <div class="avatar placeholder">
+                <div class="bg-neutral text-neutral-content w-10 rounded-full border-2 border-base-100">
+                  <span>+{{sub $count 6}}</span>
+                </div>
+              </div>
+              {{end}}
+            </div>
+            <span class="text-sm opacity-60">
+              {{$count}} Skyscaper{{if gt $count 1}}s{{end}}
+            </span>
+          </div>
+          {{else}}
+          <div class="px-3 text-sm opacity-60">
+            No active users yet
+          </div>
+          {{end}}
+        </div>
+
+        <!-- Current Version -->
+        {{$img := apps.CurrentImage}}
+        {{if $img}}
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-bold opacity-60 tracking-wider">
+            Current Version
+          </label>
+          <a href="{{host}}/app/{{$app.ID}}/history" class="flex items-center justify-between p-2 rounded-lg bg-base-200 hover:bg-base-300 transition" hx-boost="true">
+            <div class="flex items-center gap-2">
+              <span class="badge badge-success badge-sm">Running</span>
+              <span class="font-mono text-sm opacity-80">{{slice $img.GitHash 0 7}}</span>
+              <span class="text-sm opacity-60">{{timeAgo $img.CreatedAt}}</span>
+            </div>
+            {{template "icon-chevron-right.html"}}
+          </a>
+        </div>
+        {{end}}
+      </div>
     </div>
+
+    {{template "promote-app-modal.html" $app}}
+    {{template "oauth-secret-modal.html" $app}}
+    {{template "edit-app-modal.html" $app}}
+    {{else}}
+    <h1 class="text-2xl font-semibold">App not found</h1>
+    {{end}}
   </div>
 
   {{template "layout/end"}}

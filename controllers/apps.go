@@ -23,6 +23,7 @@ func (c *AppsController) Setup(app *application.App) {
 
 	http.Handle("GET /apps", c.Serve("apps.html", auth.Optional))
 	http.Handle("/app/{app}", c.Serve("app.html", auth.Optional))
+	http.Handle("/app/{app}/history", c.Serve("app-history.html", auth.Optional))
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
 	http.Handle("POST /app/{app}/edit", c.ProtectFunc(c.update, auth.Required))
 	http.Handle("POST /app/{app}/launch", c.ProtectFunc(c.launch, auth.Required))
@@ -53,6 +54,21 @@ func (c *AppsController) AuthorizedUsers() []*models.OAuthAuthorization {
 
 	auths, _ := models.OAuthAuthorizations.Search("WHERE AppID = ? AND Revoked = false", app.ID)
 	return auths
+}
+
+func (c *AppsController) CurrentImage() *models.Image {
+	app := c.CurrentApp()
+	if app == nil {
+		return nil
+	}
+
+	images := app.Images()
+	for _, img := range images {
+		if img.Status == "running" {
+			return img
+		}
+	}
+	return nil
 }
 
 func (c *AppsController) AllApps() []*models.App {

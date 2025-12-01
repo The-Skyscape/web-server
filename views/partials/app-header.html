@@ -1,23 +1,25 @@
+{{$user := auth.CurrentUser}}
+{{$owner := .Owner}}
+{{$isOwner := and $user $owner (eq $user.ID $owner.ID)}}
+
 <div class="flex flex-col gap-2">
   <div class="flex justify-between items-center">
-    <h1 class="text-2xl font-semibold">
-      {{.Name}}
-    </h1>
+    <div class="flex items-center gap-3">
+      <a href="{{host}}/app/{{.ID}}" class="btn btn-ghost btn-sm btn-circle" hx-boost="true">
+        {{template "icon-chevron-left.html"}}
+      </a>
+      <h1 class="text-2xl font-semibold">{{.Name}}</h1>
+    </div>
 
     <div class="flex items-center gap-2">
       <a target="_blank" href="https://{{.ID}}.skysca.pe" class="btn btn-sm btn-primary">
         Open App
       </a>
 
-      {{$user := auth.CurrentUser}}
       {{if $user}}
       <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-ghost">
-          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true"
-            height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z">
-            </path>
-          </svg>
+          {{template "icon-dots.html"}}
         </div>
 
         <ul tabindex="-1"
@@ -31,7 +33,7 @@
               Share
             </a>
             <a _="on click call promote_app_modal.showModal()">Promote</a>
-            {{if eq $user.ID $.Owner.ID}}
+            {{if $isOwner}}
             <a _="on click call edit_app_modal.showModal()">Edit</a>
             <a hx-post="{{host}}/app/{{$.ID}}/launch">Relaunch</a>
             <a hx-delete="{{host}}/app/{{$.ID}}">Shutdown</a>
@@ -41,7 +43,6 @@
       </div>
       {{end}}
     </div>
-
   </div>
 
   <p class="text-lg font-semibold opacity-60 tracking-wide">
