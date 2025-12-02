@@ -109,7 +109,7 @@ func (c *ThoughtsController) view(w http.ResponseWriter, r *http.Request) {
 
 	// Only allow viewing published thoughts (unless owner)
 	auth := c.Use("auth").(*AuthController)
-	user := auth.CurrentUser()
+	user, _, _ := auth.Authenticate(r)
 	if !thought.Published && (user == nil || user.ID != thought.UserID) {
 		c.RenderError(w, r, errors.New("thought not found"))
 		return
