@@ -2,7 +2,7 @@
 
 <head>
   {{template "includes.html"}}
-  {{with profile.CurrentProfile}}
+  {{with thoughts.CurrentProfile}}
   <title>Thoughts by @{{.Handle}} | The Skyscape</title>
   {{end}}
 </head>
@@ -10,7 +10,7 @@
 <body>
   {{template "layout/start"}}
 
-  {{with $profile := profile.CurrentProfile}}
+  {{with $profile := thoughts.CurrentProfile}}
   {{$user := auth.CurrentUser}}
   {{$isOwner := and $user (eq $user.ID $profile.UserID)}}
 

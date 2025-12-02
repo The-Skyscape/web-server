@@ -57,6 +57,20 @@ func (c *ThoughtsController) CurrentThought() *models.Thought {
 	return thought
 }
 
+// CurrentProfile returns the profile for the user path parameter
+func (c *ThoughtsController) CurrentProfile() *models.Profile {
+	handle := c.PathValue("user")
+	if handle == "" {
+		return nil
+	}
+	user, err := models.Auth.Users.Get(handle)
+	if err != nil {
+		return nil
+	}
+	profile, _ := models.Profiles.First("WHERE UserID = ?", user.ID)
+	return profile
+}
+
 // AllThoughts returns all published thoughts
 func (c *ThoughtsController) AllThoughts() []*models.Thought {
 	thoughts, _ := models.Thoughts.Search(`
