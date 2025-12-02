@@ -1,0 +1,80 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+  {{with profile.CurrentProfile}}
+  <title>Thoughts by @{{.Handle}} | The Skyscape</title>
+  {{end}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  {{with $profile := profile.CurrentProfile}}
+  {{$user := auth.CurrentUser}}
+  {{$isOwner := and $user (eq $user.ID $profile.UserID)}}
+
+  <div class="max-w-screen-lg w-full mx-auto px-4 py-8 md:py-12">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center gap-4">
+        <a href="{{host}}/user/{{$profile.Handle}}" class="btn btn-ghost btn-sm" hx-boost="true">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+          Back
+        </a>
+        <h1 class="text-xl font-bold">Thoughts by @{{$profile.Handle}}</h1>
+      </div>
+      {{if $isOwner}}
+      <a href="{{host}}/thoughts/new" class="btn btn-primary btn-sm" hx-boost="true">
+        New Thought
+      </a>
+      {{end}}
+    </div>
+
+    <!-- Thoughts List -->
+    <div class="flex flex-col gap-6" hx-boost="true">
+      {{range $profile.Thoughts}}
+      <article class="card bg-base-100/80 backdrop-blur-sm border border-white/5 hover:border-white/10 transition-all">
+        <div class="card-body gap-3">
+          <div class="flex items-center justify-between">
+            <a href="{{host}}/thought/{{.ID}}" class="hover:underline">
+              <h2 class="text-xl font-bold">{{.Title}}</h2>
+            </a>
+            {{if not .Published}}
+            <span class="badge badge-warning badge-sm">Draft</span>
+            {{end}}
+          </div>
+          <div class="flex items-center gap-4 text-sm text-white/50">
+            <span>{{.CreatedAt.Format "Jan 2, 2006"}}</span>
+            <span class="flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {{.ViewsCount}}
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="text-yellow-400/80">&#9733;</span>
+              {{.StarsCount}}
+            </span>
+          </div>
+        </div>
+      </article>
+      {{else}}
+      <div class="text-center py-12 opacity-60">
+        <p class="text-lg">No thoughts yet.</p>
+        {{if $isOwner}}
+        <a href="{{host}}/thoughts/new" class="btn btn-primary mt-4" hx-boost="true">Write your first thought</a>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+
+  {{template "layout/end"}}
+</body>
+
+</html>

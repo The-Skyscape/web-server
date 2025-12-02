@@ -1,5 +1,5 @@
-<article class="card bg-gradient-to-r from-primary/10 to-secondary/10 backdrop-blur-sm border border-primary/20 w-full">
-  <div class="card-body gap-3">
+<article class="card bg-primary/10 backdrop-blur-sm border border-primary/20 w-full">
+  <div class="card-body gap-4">
     <header class="flex items-center gap-2">
       <span class="badge badge-primary badge-sm">Promoted</span>
       {{with .User}}
@@ -14,28 +14,33 @@
     </header>
 
     {{if .Content}}
-    <p class="text-base text-white/80">
+    <p class="text-lg font-semibold text-white/90 my-2">
       {{.Content}}
     </p>
     {{end}}
 
     <div class="rounded-xl border border-primary/20 overflow-hidden hover:border-primary/40 transition-colors" hx-boost="true">
       {{with .App}}
-      <a href="{{host}}/app/{{.ID}}" class="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1">
-            {{with .Owner}}
-            <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+      <a href="{{host}}/app/{{.ID}}" class="block hover:bg-white/5 transition-colors">
+        <figure class="h-48 md:h-102 overflow-hidden border-b border-white/10">
+          <img src="https://apps.skysca.pe/{{.ID}}" alt="{{.Name}}" class="w-full h-full object-cover object-top">
+        </figure>
+        <div class="flex items-center gap-3 p-4 bg-base-100/80">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              {{with .Owner}}
+              <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+                <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+              </div>
+              <span class="text-sm text-white/50">@{{.Handle}}</span>
+              <span class="text-white/30">/</span>
+              {{end}}
+              <span class="font-medium truncate">{{.Name}}</span>
             </div>
-            <span class="text-sm text-white/50">@{{.Handle}}</span>
-            <span class="text-white/30">/</span>
-            {{end}}
-            <span class="font-medium truncate">{{.Name}}</span>
+            <p class="text-sm text-white/50 truncate">{{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}</p>
           </div>
-          <p class="text-sm text-white/50 truncate">{{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}</p>
+          {{template "icon-chevron-right.html"}}
         </div>
-        {{template "icon-chevron-right.html"}}
       </a>
       {{end}}
 

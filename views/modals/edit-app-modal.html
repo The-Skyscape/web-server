@@ -5,6 +5,15 @@
     {{with apps.CurrentApp}}
     <form hx-post="{{host}}/app/{{.ID}}/edit" hx-target="previous .error-message" hx-swap="innerHTML" class="flex flex-col gap-4">
 
+      {{with $user := auth.CurrentUser}}
+      {{if $user.IsAdmin}}
+      <label class="floating-label">
+        <input required name="id" type="text" class="input w-full" placeholder="ID" value="{{$.ID}}">
+        <span>ID (Admin Only)</span>
+      </label>
+      {{end}}
+      {{end}}
+
       <label class="floating-label">
         <input required name="name" type="text" class="input w-full" placeholder="Name" value="{{.Name}}">
         <span>Name</span>

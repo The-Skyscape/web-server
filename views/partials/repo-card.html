@@ -8,13 +8,12 @@
       <span class="text-white/30">/</span>
       {{end}}
       <h2 class="text-sm font-semibold truncate">{{.Name}}</h2>
-    </div>
-
-    <div class="flex items-center gap-2 text-xs text-white/50">
-      <span class="flex items-center gap-1">
+      {{if gt .StarsCount 0}}
+      <span class="flex items-center gap-1 text-xs text-white/40 ml-auto shrink-0">
         <span class="text-yellow-400/80">★</span>
-        <span class="font-medium text-white/60">{{.StarsCount}}</span>
+        {{.StarsCount}}
       </span>
+      {{end}}
     </div>
 
     <p class="text-sm text-white/60 line-clamp-2">

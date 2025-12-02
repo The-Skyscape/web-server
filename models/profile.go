@@ -231,3 +231,46 @@ func (p *Profile) MarkMessagesReadFrom(from *Profile) error {
 	}
 	return nil
 }
+
+// RecentActivities returns the user's recent activity feed posts
+func (p *Profile) RecentActivities(limit int) []*Activity {
+	activities, _ := Activities.Search(`
+		WHERE UserID = ?
+		ORDER BY CreatedAt DESC
+		LIMIT ?
+	`, p.UserID, limit)
+	return activities
+}
+
+// Thoughts returns all published thoughts by this user
+func (p *Profile) Thoughts() []*Thought {
+	thoughts, _ := Thoughts.Search(`
+		WHERE UserID = ? AND Published = true
+		ORDER BY CreatedAt DESC
+	`, p.UserID)
+	return thoughts
+}
+
+// AllThoughts returns all thoughts by this user (including drafts) - for owner view
+func (p *Profile) AllThoughts() []*Thought {
+	thoughts, _ := Thoughts.Search(`
+		WHERE UserID = ?
+		ORDER BY CreatedAt DESC
+	`, p.UserID)
+	return thoughts
+}
+
+// RecentThoughts returns the most recent published thoughts
+func (p *Profile) RecentThoughts(limit int) []*Thought {
+	thoughts, _ := Thoughts.Search(`
+		WHERE UserID = ? AND Published = true
+		ORDER BY CreatedAt DESC
+		LIMIT ?
+	`, p.UserID, limit)
+	return thoughts
+}
+
+// ThoughtsCount returns the count of published thoughts
+func (p *Profile) ThoughtsCount() int {
+	return Thoughts.Count("WHERE UserID = ? AND Published = true", p.UserID)
+}

@@ -119,17 +119,22 @@ func (c *CommentsController) create(w http.ResponseWriter, r *http.Request) {
 			)
 		}()
 	} else {
-		// Create activity for non-post comments (repo/file comments)
+		// Create activity for non-post comments (repo/file/app comments)
 		var activitySubjectID string
-		activitySubjectType := "repo"
+		activitySubjectType := subjectType
 
 		if subjectType == "file" {
 			// Extract repo ID from "file:{repo_id}:{path}" format
 			parts := strings.SplitN(subjectID, ":", 3)
 			if len(parts) >= 2 {
 				activitySubjectID = parts[1]
+				activitySubjectType = "repo"
 			}
+		} else if subjectType == "app" || subjectType == "repo" {
+			activitySubjectID = subjectID
 		} else {
+			// Default to repo for backwards compatibility
+			activitySubjectType = "repo"
 			activitySubjectID = subjectID
 		}
 

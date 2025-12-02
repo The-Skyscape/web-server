@@ -71,11 +71,11 @@ func (p *ProfileController) RecentProfiles() []*models.Profile {
 	query := p.URL.Query().Get("query")
 	profiles, _ := models.Profiles.Search(`
 	  INNER JOIN users on users.ID = profiles.UserID
-		WHERE 
+		WHERE
 			users.Name           LIKE $1        OR
 			users.Handle         LIKE LOWER($1) OR
 			profiles.Description LIKE $1
-		ORDER BY profiles.CreatedAt DESC
+		ORDER BY (SELECT COUNT(*) FROM follows WHERE FolloweeID = profiles.ID) DESC
 		LIMIT 4
 	`, "%"+query+"%")
 	return profiles

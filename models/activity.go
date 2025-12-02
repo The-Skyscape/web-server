@@ -27,6 +27,10 @@ func (a *Activity) User() *authentication.User {
 }
 
 func (a *Activity) Profile() *Profile {
+	// Only return profile if SubjectType is "profile"
+	if a.SubjectType != "profile" {
+		return nil
+	}
 	profile, err := Profiles.Get(a.SubjectID)
 	if err != nil {
 		return nil
@@ -59,6 +63,19 @@ func (a *Activity) App() *App {
 	}
 
 	return app
+}
+
+func (a *Activity) Thought() *Thought {
+	// Only return thought if SubjectType is "thought"
+	if a.SubjectType != "thought" {
+		return nil
+	}
+	thought, err := Thoughts.Get(a.SubjectID)
+	if err != nil {
+		return nil
+	}
+
+	return thought
 }
 
 func (a *Activity) File() *File {

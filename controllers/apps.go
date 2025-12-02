@@ -25,7 +25,7 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("GET /apps", c.Serve("apps.html", auth.Optional))
 	http.Handle("/app/{app}", c.Serve("app.html", auth.Optional))
 	http.Handle("/app/{app}/manage", c.Serve("app-manage.html", auth.Required))
-	http.Handle("/app/{app}/history", c.Serve("app-history.html", auth.Optional))
+	http.Handle("/app/{app}/history", c.ProtectFunc(c.redirectToManage, auth.Optional))
 	http.Handle("GET /app/{app}/comments", c.Serve("app-comments.html", auth.Optional))
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
 	http.Handle("POST /app/{app}/edit", c.ProtectFunc(c.update, auth.Required))
@@ -175,7 +175,7 @@ func (c *AppsController) RecentApps() []*models.App {
 				repos.Description LIKE $1 OR
 				users.Handle      LIKE LOWER($1)
 			)
-		ORDER BY repos.CreatedAt DESC
+		ORDER BY (SELECT COUNT(*) FROM oauth_authorizations WHERE AppID = apps.ID AND Revoked = false) DESC
 		LIMIT 3
 	`, "%"+query+"%")
 	return apps
@@ -230,7 +230,10 @@ func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := app.Repo()
-	if repo == nil || repo.OwnerID != user.ID {
+	isOwner := repo != nil && repo.OwnerID == user.ID
+
+	// Allow owner or admin to edit
+	if !isOwner && !user.IsAdmin {
 		c.Render(w, r, "error-message.html", errors.New("you are not the owner"))
 		return
 	}
@@ -246,6 +249,39 @@ func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
 	// Update app fields
 	app.Name = name
 	app.Description = description
+
+	// Handle ID change (admin only)
+	newID := r.FormValue("id")
+	if newID != "" && newID != app.ID && user.IsAdmin {
+		// Check if new ID is already taken
+		if _, err := models.Apps.Get(newID); err == nil {
+			c.Render(w, r, "error-message.html", errors.New("an app with this ID already exists"))
+			return
+		}
+
+		oldID := app.ID
+
+		// Update app ID
+		if err := models.DB.Query("UPDATE apps SET ID = ?, Name = ?, Description = ? WHERE ID = ?", newID, name, description, oldID).Exec(); err != nil {
+			c.Render(w, r, "error-message.html", errors.New("failed to update app ID"))
+			return
+		}
+
+		// Update related tables with AppID column
+		models.DB.Query("UPDATE images SET AppID = ? WHERE AppID = ?", newID, oldID).Exec()
+		models.DB.Query("UPDATE app_metrics SET AppID = ? WHERE AppID = ?", newID, oldID).Exec()
+		models.DB.Query("UPDATE oauth_authorizations SET AppID = ? WHERE AppID = ?", newID, oldID).Exec()
+		models.DB.Query("UPDATE oauth_authorization_codes SET ClientID = ? WHERE ClientID = ?", newID, oldID).Exec()
+
+		// Update related tables with SubjectID column (for app subjects)
+		models.DB.Query("UPDATE activities SET SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", newID, oldID).Exec()
+		models.DB.Query("UPDATE promotions SET SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", newID, oldID).Exec()
+		models.DB.Query("UPDATE comments SET SubjectID = ? WHERE SubjectID = ?", newID, oldID).Exec()
+
+		// Redirect to the new app URL
+		c.Redirect(w, r, "/app/"+newID+"/manage")
+		return
+	}
 
 	if err := models.Apps.Update(app); err != nil {
 		c.Render(w, r, "error-message.html", err)
@@ -270,8 +306,9 @@ func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := app.Repo()
-	if repo == nil || repo.OwnerID != user.ID {
-		c.Render(w, r, "error-message.html", errors.New("app not found"))
+	isOwner := repo != nil && repo.OwnerID == user.ID
+	if !isOwner && !user.IsAdmin {
+		c.Render(w, r, "error-message.html", errors.New("permission denied"))
 		return
 	}
 
@@ -306,7 +343,8 @@ func (c *AppsController) shutdown(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := app.Repo()
-	if repo == nil || repo.OwnerID != user.ID {
+	isOwner := repo != nil && repo.OwnerID == user.ID
+	if !isOwner && !user.IsAdmin {
 		c.Render(w, r, "error-message.html", errors.New("permission denied"))
 		return
 	}
@@ -432,4 +470,9 @@ func (c *AppsController) shareApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Redirect(w, r, "/")
+}
+
+func (c *AppsController) redirectToManage(w http.ResponseWriter, r *http.Request) {
+	appID := r.PathValue("app")
+	c.Redirect(w, r, "/app/"+appID+"/manage")
 }

@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-4 w-full max-w-sm px-4 py-6">
+<div class="flex flex-col gap-4 w-full max-w-md px-4 py-6">
   <p class="text-lg opacity-80 font-semibold tracking-wide leading-relaxed">
     {{or .Description ""}}
   </p>
@@ -14,7 +14,9 @@
       </a>
     </div>
 
-    {{with .RecentFollowers 4}}
+    {{$followersCount := .FollowersCount}}
+    {{$handle := .Handle}}
+    {{with .RecentFollowers 3}}
     <!-- Desktop: List view -->
     <div class="hidden md:flex flex-col gap-2">
       {{range .}}
@@ -32,6 +34,18 @@
       </a>
       {{end}}
       {{end}}
+      {{if gt $followersCount 3}}
+      <a href="{{host}}/user/{{$handle}}/followers" class="flex items-center gap-2 hover:opacity-80 transition" hx-boost="true">
+        <div class="avatar">
+          <div class="w-8 rounded-full bg-base-100 border border-white/10 flex items-center justify-center">
+            <span class="text-xs text-white/60">+{{sub $followersCount 3}}</span>
+          </div>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-medium text-white/60">View all</span>
+        </div>
+      </a>
+      {{end}}
     </div>
 
     <!-- Mobile: Avatar stack -->
@@ -45,7 +59,88 @@
       </a>
       {{end}}
       {{end}}
+      {{if gt $followersCount 3}}
+      <a href="{{host}}/user/{{$handle}}/followers" class="avatar" hx-boost="true">
+        <div class="w-10 rounded-full border-2 border-base-100 bg-base-100 flex items-center justify-center">
+          <span class="text-xs text-white/60">+{{sub $followersCount 3}}</span>
+        </div>
+      </a>
+      {{end}}
     </div>
     {{end}}
   </div>
+
+  <!-- Activity Feed Section (hidden on mobile) -->
+  {{$profile := .}}
+  {{with .RecentActivities 5}}
+  <div class="hidden md:flex flex-col gap-3 pt-4 border-t border-white/10">
+    <h3 class="text-sm font-bold opacity-60 uppercase tracking-wider">Recent Activity</h3>
+    <div class="flex flex-col gap-4">
+      {{range .}}
+      <article class="card bg-base-100/80 backdrop-blur-sm border border-white/5 overflow-hidden">
+        <div class="card-body p-3 gap-2">
+          <header class="flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+              <img src="{{$profile.Avatar}}" alt="{{$profile.Name}}" class="rounded-full w-full h-full">
+            </div>
+            <span class="text-sm font-medium">@{{$profile.Handle}}</span>
+            <span class="text-sm text-white/50 capitalize">{{.Action}}</span>
+          </header>
+          {{if .Content}}
+          <p class="text-sm text-white/80 line-clamp-2">{{.Content}}</p>
+          {{end}}
+        </div>
+        {{if or .Repo .App .Profile}}
+        <div class="border-t border-white/10" hx-boost="true">
+          {{with .Repo}}
+          <a href="{{host}}/repo/{{.ID}}" class="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors">
+            <div class="flex items-center justify-center w-6 h-6 rounded bg-secondary/20 text-secondary shrink-0">
+              <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+                stroke-linejoin="round" class="h-3 w-3" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path>
+                <path d="M12 22V12"></path>
+                <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"></path>
+                <path d="m7.5 4.27 9 5.15"></path>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="text-sm font-medium truncate block">{{.Name}}</span>
+              <span class="text-xs text-white/50 truncate block">{{with .Description}}{{.}}{{else}}No description{{end}}</span>
+            </div>
+            {{template "icon-chevron-right.html"}}
+          </a>
+          {{end}}
+          {{with .App}}
+          <a href="{{host}}/app/{{.ID}}" class="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors">
+            <div class="flex items-center justify-center w-6 h-6 rounded bg-primary/20 text-primary shrink-0">
+              <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="h-3 w-3" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="text-sm font-medium truncate block">{{.Name}}</span>
+              <span class="text-xs text-white/50 truncate block">{{with .Description}}{{.}}{{else}}No description{{end}}</span>
+            </div>
+            {{template "icon-chevron-right.html"}}
+          </a>
+          {{end}}
+          {{with .Profile}}
+          <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors">
+            <div class="w-6 h-6 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="text-sm font-medium truncate block">{{.Name}}</span>
+              <span class="text-xs text-white/50 truncate block">@{{.Handle}}</span>
+            </div>
+            {{template "icon-chevron-right.html"}}
+          </a>
+          {{end}}
+        </div>
+        {{end}}
+      </article>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
 </div>

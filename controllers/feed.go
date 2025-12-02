@@ -148,13 +148,25 @@ func (c *FeedController) FeedWithPromotions() []FeedItem {
 	promotions := c.ActivePromotions()
 
 	result := make([]FeedItem, 0, len(activities)+len(promotions))
-	promoIndex := 0
+
+	// Calculate starting promotion index based on page
+	// Each page of 10 activities shows 2 promotions (at positions 5 and 10)
+	page := c.Page()
+	limit := c.Limit()
+	promosPerPage := limit / 5 // Number of promotions inserted per page
+	promoIndex := (page - 1) * promosPerPage
+
+	// Wrap around if we've shown all promotions
+	numPromos := len(promotions)
+	if numPromos > 0 {
+		promoIndex = promoIndex % numPromos
+	}
 
 	for i, activity := range activities {
 		result = append(result, FeedItem{Activity: activity})
 		// Insert promotion every 5 posts
-		if (i+1)%5 == 0 && promoIndex < len(promotions) {
-			result = append(result, FeedItem{Promotion: promotions[promoIndex]})
+		if (i+1)%5 == 0 && numPromos > 0 {
+			result = append(result, FeedItem{Promotion: promotions[promoIndex%numPromos]})
 			promoIndex++
 		}
 	}

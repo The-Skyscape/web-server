@@ -12,8 +12,9 @@
     {{$user := auth.CurrentUser}}
     {{$owner := $app.Owner}}
     {{$isOwner := and $user $owner (eq $user.ID $owner.ID)}}
+    {{$canManage := or $isOwner (and $user $user.IsAdmin)}}
 
-    {{if not $isOwner}}
+    {{if not $canManage}}
     <!-- Access denied -->
     <div class="alert alert-error">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
@@ -44,13 +45,18 @@
       <span class="text-lg font-bold opacity-80">/</span>
       <span class="text-xl font-semibold opacity-60">Manage</span>
 
-      <div class="flex items-center gap-2 ml-auto bg-transparent" data-theme="light">
-        <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="btn btn-sm btn-primary shadow-xl">
-          Open App
-          <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-            <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72"></path>
-          </svg>
-        </a>
+      <div class="flex items-center gap-2 ml-auto">
+        <button class="btn btn-sm btn-ghost" _="on click call promote_app_modal.showModal()">
+          Promote
+        </button>
+        <div class="bg-transparent" data-theme="light">
+          <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="btn btn-sm btn-primary shadow-xl">
+            Open App
+            <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+              <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72"></path>
+            </svg>
+          </a>
+        </div>
       </div>
 
       <div class="dropdown dropdown-end">
@@ -59,30 +65,109 @@
         </div>
         <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
           <li><a href="{{host}}/app/{{$app.ID}}" hx-boost="true">View App Page</a></li>
-          <li><a href="{{host}}/app/{{$app.ID}}/history" hx-boost="true">Version History</a></li>
+          <li><a href="{{host}}/app/{{$app.ID}}/users" hx-boost="true">OAuth Users</a></li>
           <li><a _="on click call edit_app_modal.showModal()">Edit</a></li>
           <li><a hx-delete="{{host}}/app/{{$app.ID}}" hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
         </ul>
       </div>
     </div>
 
-    <!-- App Preview -->
-    <div class="card relative w-full aspect-video max-h-64 rounded-box overflow-hidden bg-base-100 shadow-lg border border-white/5">
-      <img src="https://apps.skysca.pe/{{$app.ID}}" class="absolute inset-0 z-10 w-full h-full object-cover">
-      <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="bg-black/40 inset-0 absolute z-20 flex opacity-0 hover:opacity-100 transition-opacity">
-        <div class="btn btn-lg btn-primary opacity-90 m-auto">Visit App</div>
-      </a>
-    </div>
+    <!-- Two-column layout: Left (preview + history) 2fr, Right (widgets) 1fr -->
+    <div class="flex flex-col lg:flex-row gap-6 w-full">
 
-    <!-- Two-column layout -->
-    <div class="flex flex-col md:flex-row gap-8 w-full">
+      <!-- Left Column: Preview + Launch History (2fr) -->
+      <div class="flex flex-col gap-6 w-full lg:w-2/3">
+        <!-- App Preview -->
+        <div class="card relative w-full aspect-video rounded-box overflow-hidden bg-base-100 shadow-lg border border-white/5">
+          <img src="https://apps.skysca.pe/{{$app.ID}}" class="absolute inset-0 z-10 w-full h-full object-cover">
+          <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="bg-black/40 inset-0 absolute z-20 flex">
+            <div class="btn btn-lg btn-primary opacity-90 m-auto">
+              Visit App
+              <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72"></path>
+              </svg>
+            </div>
+          </a>
+        </div>
 
-      <!-- Left Column: Observability Widgets -->
-      <div class="flex flex-col gap-4 w-full md:w-1/2">
+        <!-- Launch History -->
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center justify-between py-2">
+            <h3 class="font-semibold text-lg">Launch History</h3>
+            <button class="btn btn-sm btn-primary" hx-post="{{host}}/app/{{$app.ID}}/launch">
+              <span class="htmx-indicator loading loading-spinner loading-xs"></span>
+              Launch New Version
+            </button>
+          </div>
+
+          <div class="flex flex-col gap-2 w-full">
+            {{range $app.Images}}
+            <div class="collapse collapse-arrow bg-base-300/50 border border-white/5 rounded-box">
+              <input type="radio" name="launch-history-items">
+              <div class="collapse-title flex justify-between">
+                <div class="text-sm font-bold opacity-80 flex gap-2 flex-wrap items-center">
+                  <span class="font-mono">{{.GitHash}}</span>
+                  <span class="opacity-60">{{timeAgo .CreatedAt}}</span>
+                </div>
+
+                {{if eq .Status "running"}}
+                <span class="badge badge-sm badge-soft badge-success ml-auto capitalize">{{.Status}}</span>
+                {{else if eq .Status "deploying"}}
+                <span class="badge badge-sm badge-soft badge-info ml-auto capitalize">{{.Status}}</span>
+                {{else if eq .Status "failed"}}
+                <span class="badge badge-sm badge-soft badge-error ml-auto capitalize">{{.Status}}</span>
+                {{else if or (eq .Status "building") (eq .Status "ready")}}
+                <span class="badge badge-sm badge-soft badge-warning ml-auto capitalize">building</span>
+                {{else}}
+                <span class="badge badge-sm badge-soft badge-ghost ml-auto capitalize">{{.Status}}</span>
+                {{end}}
+              </div>
+
+              <div class="collapse-content">
+                <div class="flex flex-col gap-4 w-full p-4 bg-base-100/50 rounded-box border border-white/5">
+                  {{with .Error}}
+                  <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold opacity-60 tracking-wider">Launch Error</label>
+                    <span class="text-error text-sm">{{.}}</span>
+                  </div>
+                  {{end}}
+
+                  <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold opacity-60 tracking-wider">Launched by</label>
+                    {{with $owner}}
+                    <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-2 w-max" hx-boost="true">
+                      <div class="avatar">
+                        <div class="w-6 p-0.5 rounded-full bg-white/10 border border-white/10">
+                          <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+                        </div>
+                      </div>
+                      <span class="text-sm font-medium">@{{.Handle}}</span>
+                    </a>
+                    {{end}}
+                  </div>
+
+                  <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold opacity-60 tracking-wider">Launch Time</label>
+                    <span class="text-sm opacity-80">{{format .CreatedAt "Jan 02, 2006 15:04:05"}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {{else}}
+            <div class="text-center py-8 text-sm opacity-60">
+              No versions have been launched yet.
+            </div>
+            {{end}}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Observability Widgets (1fr) -->
+      <div class="flex flex-col gap-4 w-full lg:w-1/3">
         {{$metrics := apps.CurrentAppMetrics}}
 
         <!-- Container Status Widget -->
-        <div class="card bg-base-200 border border-base-100 shadow-lg">
+        <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
           <div class="card-body p-4">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -98,21 +183,21 @@
               </div>
               {{with $metrics}}
               {{if eq .ContainerStatus "running"}}
-              <span class="badge badge-success">Running</span>
+              <span class="badge badge-soft badge-success">Running</span>
               {{else if eq .ContainerStatus "stopped"}}
-              <span class="badge badge-error">Stopped</span>
+              <span class="badge badge-soft badge-error">Stopped</span>
               {{else}}
-              <span class="badge badge-warning">{{.ContainerStatus}}</span>
+              <span class="badge badge-soft badge-warning">{{.ContainerStatus}}</span>
               {{end}}
               {{else}}
-              <span class="badge badge-ghost">Unknown</span>
+              <span class="badge badge-soft badge-ghost">Unknown</span>
               {{end}}
             </div>
             {{with $metrics}}
-            <div class="mt-3 pt-3 border-t border-base-100">
+            <div class="mt-3 pt-3 border-t border-white/5">
               <div class="flex justify-between text-sm">
                 <span class="opacity-50">Replicas</span>
-                <span class="font-medium">{{.ReplicaCount}}</span>
+                <span class="text-base font-bold opacity-90 mx-2">{{.ReplicaCount}}</span>
               </div>
               <div class="text-xs opacity-40 mt-2">Last checked {{timeAgo .LastCheckAt}}</div>
             </div>
@@ -121,7 +206,7 @@
         </div>
 
         <!-- Resource Usage Widget -->
-        <div class="card bg-base-200 border border-base-100 shadow-lg">
+        <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
           <div class="card-body p-4">
             <div class="flex items-center gap-3">
               <div class="p-2.5 bg-base-100 rounded-xl">
@@ -131,11 +216,14 @@
               </div>
               <div>
                 <h3 class="font-semibold">Resource Usage</h3>
-                <p class="text-xs opacity-50">CPU and Memory</p>
+                <p class="text-xs opacity-50">CPU 0.2 cores / Memory 512 MB</p>
+              </div>
+              <div class="ml-auto tooltip" data-tip="Coming Soon">
+                <button class="btn btn-xs btn-primary" disabled>Upgrade</button>
               </div>
             </div>
             {{with $metrics}}
-            <div class="mt-3 pt-3 border-t border-base-100 flex flex-col gap-3">
+            <div class="mt-3 pt-3 border-t border-white/5 flex flex-col gap-3">
               <!-- CPU -->
               <div class="flex flex-col gap-1">
                 <div class="flex justify-between text-sm">
@@ -149,20 +237,20 @@
                 <div class="flex justify-between text-sm">
                   <span class="opacity-50">Memory</span>
                   {{if gt .MemoryLimitMB 0}}
-                  <span class="font-medium">{{.MemoryUsedMB}} MB <span class="opacity-50">/ {{.MemoryLimitMB}} MB</span></span>
+                  <span class="font-medium">{{.MemoryUsedMB}} MB <span class="opacity-50">/ 512 MB</span></span>
                   {{else}}
                   <span class="font-medium opacity-50">N/A</span>
                   {{end}}
                 </div>
                 {{if gt .MemoryLimitMB 0}}
-                <progress class="progress progress-secondary h-2 w-full" value="{{.MemoryUsedMB}}" max="{{.MemoryLimitMB}}"></progress>
+                <progress class="progress progress-secondary h-2 w-full" value="{{.MemoryUsedMB}}" max="512"></progress>
                 {{else}}
                 <progress class="progress h-2 w-full" value="0" max="100"></progress>
                 {{end}}
               </div>
             </div>
             {{else}}
-            <div class="mt-3 pt-3 border-t border-base-100 text-sm opacity-50">
+            <div class="mt-3 pt-3 border-t border-white/5 text-sm opacity-50">
               Resource data not available
             </div>
             {{end}}
@@ -170,7 +258,7 @@
         </div>
 
         <!-- Storage Widget -->
-        <div class="card bg-base-200 border border-base-100 shadow-lg">
+        <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
           <div class="card-body p-4">
             <div class="flex items-center gap-3">
               <div class="p-2.5 bg-base-100 rounded-xl">
@@ -180,59 +268,86 @@
               </div>
               <div>
                 <h3 class="font-semibold">Storage</h3>
-                <p class="text-xs opacity-50">Database Volume</p>
+                <p class="text-xs opacity-50">Database Volume 1 GB</p>
+              </div>
+              <div class="ml-auto tooltip" data-tip="Coming Soon">
+                <button class="btn btn-xs btn-primary" disabled>Upgrade</button>
               </div>
             </div>
             {{with $metrics}}
-            {{if gt .VolumeTotalGB 0}}
-            <div class="mt-3 pt-3 border-t border-base-100">
+            <div class="mt-3 pt-3 border-t border-white/5">
               <div class="flex justify-between text-sm mb-2">
                 <span class="opacity-50">Volume Usage</span>
-                <span class="font-medium">{{printf "%.2f" .VolumeUsedGB}} GB <span class="opacity-50">/ {{printf "%.0f" .VolumeTotalGB}} GB</span></span>
+                {{if gt .VolumeTotalGB 0.0}}
+                <span class="font-medium">{{printf "%.1f" .VolumeUsedGB}} GB <span class="opacity-50">/ {{printf "%.0f" .VolumeTotalGB}} GB</span></span>
+                {{else}}
+                <span class="font-medium">0 GB <span class="opacity-50">/ 1 GB</span></span>
+                {{end}}
               </div>
               <progress class="progress progress-info h-2 w-full" value="{{.VolumeUsedPct}}" max="100"></progress>
               <div class="text-right text-xs opacity-40 mt-1">{{.VolumeUsedPct}}% used</div>
             </div>
             {{else}}
-            <div class="mt-3 pt-3 border-t border-base-100 text-sm opacity-50">
-              No dedicated volume
-            </div>
-            {{end}}
-            {{else}}
-            <div class="mt-3 pt-3 border-t border-base-100 text-sm opacity-50">
-              Storage data not available
+            <div class="mt-3 pt-3 border-t border-white/5">
+              <div class="flex justify-between text-sm mb-2">
+                <span class="opacity-50">Volume Usage</span>
+                <span class="font-medium">0 GB <span class="opacity-50">/ 1 GB</span></span>
+              </div>
+              <progress class="progress progress-info h-2 w-full" value="0" max="100"></progress>
+              <div class="text-right text-xs opacity-40 mt-1">0% used</div>
             </div>
             {{end}}
           </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="card bg-base-200 border border-base-100 shadow-lg">
-          <div class="card-body p-4">
-            <h3 class="font-semibold mb-3">Quick Actions</h3>
-            <div class="flex flex-wrap gap-2">
-              <button class="btn btn-sm btn-primary" hx-post="{{host}}/app/{{$app.ID}}/launch">
-                <span class="htmx-indicator loading loading-spinner loading-xs"></span>
-                Launch New Version
-              </button>
-              <a href="{{host}}/app/{{$app.ID}}/users" class="btn btn-sm btn-ghost" hx-boost="true">
-                OAuth Users
-              </a>
-              <button class="btn btn-sm btn-ghost" _="on click call edit_app_modal.showModal()">
-                Edit App
-              </button>
-            </div>
+        <!-- OAuth Users -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">OAuth Users</h3>
           </div>
+          {{$auths := apps.AuthorizedUsers}}
+          {{if $auths}}
+          <div class="flex flex-col gap-2">
+            {{range $auths}}
+            <div class="flex items-center justify-between p-2 bg-base-100/80 backdrop-blur-sm border border-white/5 rounded-lg">
+              {{with .User}}
+              <div class="flex items-center gap-2">
+                <div class="avatar">
+                  <div class="w-8 p-0.5 rounded-full bg-white/10 border border-white/10">
+                    <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+                  </div>
+                </div>
+                <div>
+                  <div class="text-sm font-medium">{{.Name}}</div>
+                  <div class="text-xs opacity-50">@{{.Handle}}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <a href="{{host}}/user/{{.Handle}}" target="_blank" class="btn btn-xs btn-ghost">
+                  Profile
+                </a>
+              {{end}}
+                <button
+                  hx-delete="{{host}}/app/{{$app.ID}}/users/{{.UserID}}"
+                  hx-confirm="Revoke access for this user?"
+                  class="btn btn-xs btn-ghost text-error">
+                  Revoke
+                </button>
+              </div>
+            </div>
+            {{end}}
+          </div>
+          {{else}}
+          <div class="text-sm opacity-50 text-center py-4">
+            No authorized users yet
+          </div>
+          {{end}}
         </div>
-      </div>
-
-      <!-- Right Column: Launch History -->
-      <div class="flex flex-col gap-4 w-full md:w-1/2">
-        {{template "launch-history.html" $app}}
       </div>
     </div>
 
     {{template "edit-app-modal.html" $app}}
+    {{template "promote-app-modal.html" $app}}
     {{end}}
     {{else}}
     <h1 class="text-2xl font-semibold">App not found</h1>

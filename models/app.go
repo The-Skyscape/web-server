@@ -65,6 +65,17 @@ func NewApp(repo *Repo, name, description string) (*App, error) {
 		SubjectID:   app.ID,
 	})
 
+	// Automatically start building and deploying the app
+	go func() {
+		app.Status = "launching"
+		Apps.Update(app)
+
+		if _, err := app.Build(); err != nil {
+			app.Error = err.Error()
+			Apps.Update(app)
+		}
+	}()
+
 	return app, nil
 }
 
@@ -180,4 +191,9 @@ func (a *App) Comments(limit, offset int) []*Comment {
 		LIMIT ? OFFSET ?
 	`, a.ID, limit, offset)
 	return comments
+}
+
+// AuthorizedUsersCount returns the number of users who have authorized this app
+func (a *App) AuthorizedUsersCount() int {
+	return OAuthAuthorizations.Count("WHERE AppID = ? AND Revoked = false", a.ID)
 }

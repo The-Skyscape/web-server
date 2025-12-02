@@ -59,6 +59,7 @@ func main() {
 		application.WithController(controllers.OAuth()),
 		application.WithController(controllers.API()),
 		application.WithController(controllers.Push()),
+		application.WithController(controllers.Thoughts()),
 	)
 }
 

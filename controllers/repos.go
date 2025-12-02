@@ -74,7 +74,7 @@ func (c *ReposController) RecentRepos() []*models.Repo {
 				repos.Description LIKE $1 OR
 				users.Handle      LIKE LOWER($1)
 			)
-		ORDER BY repos.CreatedAt DESC
+		ORDER BY (SELECT COUNT(*) FROM stars WHERE RepoID = repos.ID) DESC
 		LIMIT 3
 	`, "%"+query+"%")
 	return repos

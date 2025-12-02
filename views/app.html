@@ -13,6 +13,7 @@
     {{$owner := $app.Owner}}
     {{$repo := $app.Repo}}
     {{$isOwner := and $user $owner (eq $user.ID $owner.ID)}}
+    {{$canManage := or $isOwner (and $user $user.IsAdmin)}}
 
     <!-- Header matching repo-header style -->
     <div class="flex items-center gap-2">
@@ -65,8 +66,8 @@
           <li><a _="on click call share_app_modal.showModal()">Share to Feed</a></li>
           <li><a _="on click call promote_app_modal.showModal()">Promote</a></li>
           {{end}}
-          {{if $isOwner}}
-          <li><a href="{{host}}/app/{{$app.ID}}/history" hx-boost="true">Manage Versions</a></li>
+          {{if $canManage}}
+          <li><a href="{{host}}/app/{{$app.ID}}/manage" hx-boost="true">Manage</a></li>
           <li><a _="on click call edit_app_modal.showModal()">Edit</a></li>
           <li><a hx-delete="{{host}}/app/{{$app.ID}}" hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
           {{end}}
