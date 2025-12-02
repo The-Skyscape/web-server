@@ -104,6 +104,57 @@
       </div>
       {{end}}
     </div>
+
+    <div class="flex px-4 items-center justify-between w-full mt-8">
+      <h2 class="text-2xl font-bold opacity-80">Recent Thoughts</h2>
+      <a href="{{host}}/thoughts" class="btn btn-ghost">
+        All Thoughts
+        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 320 512" height="1em" width="1em"
+          xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z">
+          </path>
+        </svg>
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {{with thoughts.RecentThoughts}}
+      {{range .}}
+      <a href="{{host}}/thought/{{.ID}}" class="card bg-base-100/80 backdrop-blur-sm border border-white/5 hover:border-white/10 hover:shadow-xl transition-all duration-300">
+        <div class="card-body gap-3">
+          <h3 class="card-title text-lg">{{.Title}}</h3>
+          {{with .Profile}}
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-full bg-white/10 border border-white/10 p-0.5">
+              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+            </div>
+            <span class="text-sm text-white/60">@{{.Handle}}</span>
+          </div>
+          {{end}}
+          <div class="flex items-center gap-4 text-sm text-white/50">
+            <span>{{.CreatedAt.Format "Jan 2, 2006"}}</span>
+            <span class="flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {{.ViewsCount}}
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="text-yellow-400/80">&#9733;</span>
+              {{.StarsCount}}
+            </span>
+          </div>
+        </div>
+      </a>
+      {{end}}
+      {{else}}
+      <div class="text-center py-8 opacity-60 w-full">
+        <p class="text-sm">No thoughts yet</p>
+      </div>
+      {{end}}
+    </div>
   </div>
 
   {{template "layout/end"}}
