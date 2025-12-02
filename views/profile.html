@@ -14,20 +14,29 @@
     {{with profile.CurrentProfile}}
     {{$handle := .Handle}}
     {{$profile := .}}
+    {{$user := auth.CurrentUser}}
+    {{$isOwner := and $user (eq $user.ID $profile.UserID)}}
     {{template "profile-info.html" .}}
 
     <div class="w-full md:w-2/3 flex flex-col gap-4">
-      {{with .RecentApps}}
       <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 w-full">
         <div class="card-body">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-xl font-bold">
               Apps
             </h2>
-            <a href="{{host}}/user/{{$handle}}/apps" class="btn btn-ghost btn-sm" hx-boost="true">
-              View all →
-            </a>
+            <div class="flex items-center gap-2">
+              {{if $isOwner}}
+              <a href="{{host}}/repos" class="btn btn-primary btn-sm" hx-boost="true">
+                + New
+              </a>
+              {{end}}
+              <a href="{{host}}/user/{{$handle}}/apps" class="btn btn-ghost btn-sm" hx-boost="true">
+                View all →
+              </a>
+            </div>
           </div>
+          {{with $profile.RecentApps}}
           <ul class="menu gap-2 w-full p-0" hx-boost="true">
             {{range .}}
             <li>
@@ -58,9 +67,11 @@
               </a>
             </li>
             {{end}}
+          {{else}}
+          <p class="text-center text-white/50 py-4">No apps yet</p>
+          {{end}}
         </div>
       </div>
-      {{end}}
 
       <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 w-full">
         <div class="card-body">
@@ -68,11 +79,18 @@
             <h2 class="card-title">
               Repos
             </h2>
-            <a href="{{host}}/user/{{$handle}}/repos" class="btn btn-ghost btn-sm" hx-boost="true">
-              View all →
-            </a>
+            <div class="flex items-center gap-2">
+              {{if $isOwner}}
+              <button _="on click call create_repo_modal.showModal()" class="btn btn-primary btn-sm">
+                + New
+              </button>
+              {{end}}
+              <a href="{{host}}/user/{{$handle}}/repos" class="btn btn-ghost btn-sm" hx-boost="true">
+                View all →
+              </a>
+            </div>
           </div>
-          {{with .RecentRepos}}
+          {{with $profile.RecentRepos}}
           <ul class="menu gap-2 w-full p-0" hx-boost="true">
             {{range .}}
             <li>
@@ -125,9 +143,16 @@
             <h2 class="card-title">
               Thoughts
             </h2>
-            <a href="{{host}}/user/{{$handle}}/thoughts" class="btn btn-ghost btn-sm" hx-boost="true">
-              View all →
-            </a>
+            <div class="flex items-center gap-2">
+              {{if $isOwner}}
+              <a href="{{host}}/thoughts/new" class="btn btn-primary btn-sm" hx-boost="true">
+                + New
+              </a>
+              {{end}}
+              <a href="{{host}}/user/{{$handle}}/thoughts" class="btn btn-ghost btn-sm" hx-boost="true">
+                View all →
+              </a>
+            </div>
           </div>
           {{with $profile.RecentThoughts 3}}
           <ul class="menu gap-2 w-full p-0" hx-boost="true">
