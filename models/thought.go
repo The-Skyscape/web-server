@@ -1,8 +1,15 @@
 package models
 
 import (
+	"bytes"
+	"html/template"
+
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
 )
 
 // Thought represents a long-form blog post by a user
@@ -10,7 +17,7 @@ type Thought struct {
 	application.Model
 	UserID      string
 	Title       string
-	Content     string // Rich text HTML content
+	Content     string // Markdown content
 	Slug        string // URL-friendly slug
 	Published   bool   // Draft vs published
 	ViewsCount  int    // Cached view count
@@ -94,6 +101,26 @@ func (t *Thought) Comments() []*Comment {
 // CommentsCount returns the number of comments
 func (t *Thought) CommentsCount() int {
 	return Comments.Count("WHERE SubjectID = ?", t.ID)
+}
+
+// Markdown parses the content as markdown and returns sanitized HTML
+func (t *Thought) Markdown() template.HTML {
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM, // GitHub Flavored Markdown
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+	)
+
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(t.Content), &buf); err != nil {
+		return template.HTML(template.HTMLEscapeString(t.Content))
+	}
+
+	p := bluemonday.UGCPolicy()
+	return template.HTML(p.Sanitize(buf.String()))
 }
 
 // ThoughtView tracks individual views of a thought

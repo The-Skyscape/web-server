@@ -33,9 +33,9 @@
       </label>
 
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-white/60">Content (HTML supported)</label>
+        <label class="text-sm font-medium text-white/60">Content (Markdown supported)</label>
         <textarea required name="content" class="textarea textarea-bordered w-full min-h-96 font-mono text-sm"
-          placeholder="Write your thought here... HTML is supported for formatting.">{{if $isEdit}}{{$thought.Content}}{{end}}</textarea>
+          placeholder="Write your thought here using Markdown...">{{if $isEdit}}{{$thought.Content}}{{end}}</textarea>
       </div>
 
       <div class="flex items-center gap-2">
