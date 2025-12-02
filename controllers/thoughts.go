@@ -101,8 +101,8 @@ func (c *ThoughtsController) MyThoughts() []*models.Thought {
 
 // view handles viewing a thought and recording the view
 func (c *ThoughtsController) view(w http.ResponseWriter, r *http.Request) {
-	thought := c.CurrentThought()
-	if thought == nil {
+	thought, err := models.Thoughts.Get(r.PathValue("thought"))
+	if err != nil {
 		c.RenderError(w, r, errors.New("thought not found"))
 		return
 	}
