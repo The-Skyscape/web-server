@@ -123,21 +123,6 @@
           </div>
         </div>
 
-        <!-- Author link -->
-        {{with $profile}}
-        <a href="{{host}}/user/{{.Handle}}/thoughts" class="flex items-center justify-between p-4 rounded-lg bg-base-200 hover:bg-base-300 transition" hx-boost="true">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-            </div>
-            <div class="flex flex-col">
-              <span class="text-xs opacity-60">More from</span>
-              <span class="font-medium">@{{.Handle}}</span>
-            </div>
-          </div>
-          {{template "icon-chevron-right.html"}}
-        </a>
-        {{end}}
       </div>
 
       <!-- Right column: Comments -->
