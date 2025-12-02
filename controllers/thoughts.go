@@ -117,7 +117,7 @@ func (c *ThoughtsController) MyThoughts() []*models.Thought {
 func (c *ThoughtsController) view(w http.ResponseWriter, r *http.Request) {
 	thought, err := models.Thoughts.Get(r.PathValue("thought"))
 	if err != nil {
-		c.RenderError(w, r, errors.New("thought not found"))
+		c.RenderError(w, r, application.ErrNotFound)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (c *ThoughtsController) view(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, _ := auth.Authenticate(r)
 	if !thought.Published && (user == nil || user.ID != thought.UserID) {
-		c.RenderError(w, r, errors.New("thought not found"))
+		c.RenderError(w, r, application.ErrNotFound)
 		return
 	}
 

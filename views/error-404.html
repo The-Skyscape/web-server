@@ -1,0 +1,29 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+  <title>Not Found | The Skyscape</title>
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b-2 border-white/40 w-full">
+    <div class="absolute inset-0 bg-black opacity-40"></div>
+    <div class='flex flex-col gap-4 items-center px-4 py-24'>
+      <span class="text-8xl font-bold opacity-20">404</span>
+      <h1 class="text-2xl md:text-3xl font-bold tracking-wide opacity-80">Not Found</h1>
+      <p class="text-lg opacity-60 text-center max-w-md">
+        The page you're looking for doesn't exist or has been moved.
+      </p>
+      <div class="flex gap-3 mt-4">
+        <a href="{{host}}/" class="btn btn-primary" hx-boost="true">Go Home</a>
+        <a href="{{host}}/explore" class="btn btn-ghost" hx-boost="true">Explore</a>
+      </div>
+    </div>
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>
