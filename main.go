@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"html/template"
 	"log"
 	"os"
 	"time"
@@ -42,6 +43,7 @@ func main() {
 		application.WithPublicAccess(auth.Optional),
 		application.WithFunc("format", format),
 		application.WithFunc("now", func() time.Time { return time.Now() }),
+		application.WithFunc("safeHTML", func(s string) template.HTML { return template.HTML(s) }),
 		application.WithController("auth", auth),
 		application.WithController(controllers.Feed()),
 		application.WithController(controllers.Profile()),
