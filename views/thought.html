@@ -4,135 +4,195 @@
   {{template "includes.html"}}
   {{with thoughts.CurrentThought}}
   <title>{{.Title}} | The Skyscape</title>
+  <meta name="description" content="{{.Title}} - A thought by @{{.Profile.Handle}} on The Skyscape.">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://www.theskyscape.com/thought/{{.ID}}">
+  <meta property="og:title" content="{{.Title}} | The Skyscape">
+  <meta property="og:description" content="A thought by @{{.Profile.Handle}} on The Skyscape.">
+  <meta property="og:image" content="https://www.theskyscape.com/public/background.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://www.theskyscape.com/thought/{{.ID}}">
+  <meta property="twitter:title" content="{{.Title}} | The Skyscape">
+  <meta property="twitter:description" content="A thought by @{{.Profile.Handle}} on The Skyscape.">
+  <meta property="twitter:image" content="https://www.theskyscape.com/public/background.png">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://www.theskyscape.com/thought/{{.ID}}">
   {{end}}
 </head>
 
 <body>
   {{template "layout/start"}}
 
-  {{with $thought := thoughts.CurrentThought}}
-  {{$user := auth.CurrentUser}}
-  {{$isOwner := and $user (eq $user.ID $thought.UserID)}}
-  {{$canManage := or $isOwner (and $user $user.IsAdmin)}}
+  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{with $thought := thoughts.CurrentThought}}
+    {{$user := auth.CurrentUser}}
+    {{$profile := $thought.Profile}}
+    {{$isOwner := and $user (eq $user.ID $thought.UserID)}}
+    {{$canManage := or $isOwner (and $user $user.IsAdmin)}}
 
-  <div class="max-w-screen-md w-full mx-auto px-4 py-8 md:py-12">
     <!-- Header -->
-    <header class="flex flex-col gap-4 mb-8">
-      <h1 class="text-3xl md:text-4xl font-bold">{{$thought.Title}}</h1>
-
-      <div class="flex items-center justify-between">
-        {{with $thought.Profile}}
-        <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-3 hover:opacity-80 transition" hx-boost="true">
-          <div class="w-10 h-10 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-          </div>
-          <div class="flex flex-col">
-            <span class="font-medium">{{.Name}}</span>
-            <span class="text-sm text-white/50">@{{.Handle}}</span>
-          </div>
-        </a>
-        {{end}}
-
-        <div class="flex items-center gap-2">
-          {{if $canManage}}
-          <a href="{{host}}/thought/{{$thought.ID}}/edit" class="btn btn-ghost btn-sm" hx-boost="true">Edit</a>
-          {{end}}
-
-          <div class="dropdown dropdown-end">
-            <div tabindex="0" role="button" class="btn btn-ghost btn-sm">
-              {{template "icon-dots.html"}}
-            </div>
-            <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-sm border border-white/20">
-              <li>
-                <a _="on click
-                    call navigator.clipboard.writeText('https://theskyscape.com/thought/{{$thought.ID}}') then
-                    set my textContent to 'Copied!' then
-                    wait 2s then
-                    set my textContent to 'Copy Link'">
-                  Copy Link
-                </a>
-              </li>
-              {{if $canManage}}
-              <li><a hx-delete="{{host}}/thought/{{$thought.ID}}" hx-confirm="Are you sure you want to delete this thought?" class="text-error">Delete</a></li>
-              {{end}}
-            </ul>
+    <div class="flex items-center gap-2">
+      {{with $profile}}
+      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost text-lg px-2">
+        <div class="avatar">
+          <div class="w-8 p-1 rounded-full bg-white/10 border border-white/10 shadow">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
           </div>
         </div>
-      </div>
+        <span class="hidden md:inline">@{{.Handle}}</span>
+      </a>
+      {{end}}
 
-      <div class="flex items-center gap-4 text-sm text-white/50">
-        <span>{{$thought.CreatedAt.Format "January 2, 2006"}}</span>
-        <span class="flex items-center gap-1">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {{$thought.ViewsCount}} views
+      <span class="text-lg font-bold opacity-80">/</span>
+
+      <span class="text-xl font-semibold truncate">{{$thought.Title}}</span>
+
+      {{if not $thought.Published}}
+      <span class="badge badge-warning badge-sm">Draft</span>
+      {{end}}
+
+      <div class="flex items-center gap-2 ml-auto">
+        {{if $user}}
+        {{if $thought.IsStarredBy $user.ID}}
+        <button hx-delete="{{host}}/thought/{{$thought.ID}}/star" class="btn btn-sm btn-ghost gap-1">
+          <span class="text-yellow-400">&#9733;</span>
+          {{$thought.StarsCount}}
+        </button>
+        {{else}}
+        <button hx-post="{{host}}/thought/{{$thought.ID}}/star" class="btn btn-sm btn-ghost gap-1">
+          <span class="text-white/50">&#9734;</span>
+          {{$thought.StarsCount}}
+        </button>
+        {{end}}
+        {{else}}
+        <span class="flex items-center gap-1 text-sm text-white/50 px-2">
+          <span class="text-yellow-400/80">&#9733;</span>
+          {{$thought.StarsCount}}
         </span>
+        {{end}}
       </div>
-    </header>
 
-    <!-- Content -->
-    <article class="prose prose-invert prose-lg max-w-none mb-8">
-      {{$thought.Markdown}}
-    </article>
-
-    <!-- Actions -->
-    <div class="flex items-center gap-4 py-4 border-t border-white/10">
-      {{if $user}}
-      {{if $thought.IsStarredBy $user.ID}}
-      <button hx-delete="{{host}}/thought/{{$thought.ID}}/star" class="btn btn-ghost gap-2">
-        <span class="text-yellow-400">&#9733;</span>
-        {{$thought.StarsCount}}
-      </button>
-      {{else}}
-      <button hx-post="{{host}}/thought/{{$thought.ID}}/star" class="btn btn-ghost gap-2">
-        <span class="text-white/50">&#9734;</span>
-        {{$thought.StarsCount}}
-      </button>
-      {{end}}
-      {{else}}
-      <span class="flex items-center gap-2 text-white/50">
-        <span class="text-yellow-400/80">&#9733;</span>
-        {{$thought.StarsCount}}
-      </span>
-      {{end}}
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost">
+          {{template "icon-dots.html"}}
+        </div>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
+          <li>
+            <a _="on click
+                call navigator.clipboard.writeText('https://theskyscape.com/thought/{{$thought.ID}}') then
+                set my textContent to 'Copied!' then
+                wait 2s then
+                set my textContent to 'Copy Link'">
+              Copy Link
+            </a>
+          </li>
+          {{if $canManage}}
+          <li><a href="{{host}}/thought/{{$thought.ID}}/edit" hx-boost="true">Edit</a></li>
+          <li><a hx-delete="{{host}}/thought/{{$thought.ID}}" hx-confirm="Are you sure you want to delete this thought?" class="text-error">Delete</a></li>
+          {{end}}
+        </ul>
+      </div>
     </div>
 
-    <!-- Comments Section -->
-    <section class="py-8 border-t border-white/10">
-      <h3 class="text-lg font-bold mb-4">Comments ({{$thought.CommentsCount}})</h3>
-
-      <div class="flex flex-col gap-4">
-        {{range $thought.Comments}}
-        <div class="flex gap-3 pl-2 border-l-2 border-white/10">
-          {{with .User}}
-          <div class="w-8 h-8 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <a href="{{host}}/user/{{.Handle}}" class="text-sm font-medium hover:underline" hx-boost="true">@{{.Handle}}</a>
-              <span class="text-xs text-white/40">{{$.CreatedAt.Format "Jan 2, 2006"}}</span>
+    <!-- Two-column layout -->
+    <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
+      <!-- Left column: Article content -->
+      <div class="flex flex-col gap-4 w-full max-w-screen-md">
+        <!-- Article Card -->
+        <div class="card bg-base-100 w-full shadow-lg border border-white/5">
+          <div class="card-body">
+            <h1 class="text-2xl md:text-3xl font-bold mb-2">{{$thought.Title}}</h1>
+            <div class="flex items-center gap-4 text-sm text-white/50 mb-6">
+              <span>{{$thought.CreatedAt.Format "January 2, 2006"}}</span>
+              <span class="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {{$thought.ViewsCount}} views
+              </span>
             </div>
-            <p class="text-white/80 mt-1">{{$.Content}}</p>
+            <article class="prose prose-invert prose-lg max-w-none">
+              {{$thought.Markdown}}
+            </article>
           </div>
-          {{end}}
         </div>
-        {{end}}
 
-        {{if $user}}
-        <form hx-post="{{host}}/comment" hx-swap="none" class="flex gap-3 mt-4">
-          <input type="hidden" name="subject_id" value="{{$thought.ID}}">
-          <input type="hidden" name="subject_type" value="thought">
-          <input type="text" name="content" placeholder="Write a comment..." class="input input-bordered flex-1 bg-white/5">
-          <button type="submit" class="btn btn-primary">Post</button>
-        </form>
+        <!-- Author link -->
+        {{with $profile}}
+        <a href="{{host}}/user/{{.Handle}}/thoughts" class="flex items-center justify-between p-4 rounded-lg bg-base-200 hover:bg-base-300 transition" hx-boost="true">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs opacity-60">More from</span>
+              <span class="font-medium">@{{.Handle}}</span>
+            </div>
+          </div>
+          {{template "icon-chevron-right.html"}}
+        </a>
         {{end}}
       </div>
-    </section>
+
+      <!-- Right column: Comments -->
+      <div class="flex flex-col gap-4 px-2 w-full md:max-w-108">
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-bold opacity-60 tracking-wider">
+            Comments
+          </label>
+
+          {{if $user}}
+          <form class="flex flex-col w-full" hx-post="{{host}}/comment" hx-swap="none">
+            <input type="hidden" name="subject_id" value="{{$thought.ID}}">
+            <input type="hidden" name="subject_type" value="thought">
+            <textarea required name="content" class="textarea w-full" placeholder="Share your thoughts..."></textarea>
+            <div class="flex items-center justify-between px-4 pt-2">
+              <span class="text-sm font-semibold opacity-60">@{{$user.Handle}}</span>
+              <button class="btn btn-sm btn-secondary">Post</button>
+            </div>
+          </form>
+          {{else}}
+          <div class="flex items-center justify-between gap-4 p-3 rounded-box bg-base-200 text-sm" hx-boost="true">
+            <span class="opacity-70">Sign in to comment</span>
+            <a href="{{host}}/signin?next=/thought/{{$thought.ID}}" class="btn btn-sm btn-ghost">Sign In</a>
+          </div>
+          {{end}}
+
+          <div class="flex flex-col gap-3 mt-2">
+            {{range $thought.Comments}}
+            <div class="flex gap-3 p-3 rounded-lg bg-base-100/50">
+              {{with .User}}
+              <div class="w-8 h-8 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+                <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <a href="{{host}}/user/{{.Handle}}" class="text-sm font-medium hover:underline" hx-boost="true">@{{.Handle}}</a>
+                  <span class="text-xs text-white/40">{{timeAgo $.CreatedAt}}</span>
+                </div>
+                <p class="text-sm text-white/80 mt-1">{{$.Content}}</p>
+              </div>
+              {{end}}
+            </div>
+            {{else}}
+            <div class="text-center py-8 text-sm opacity-60">
+              No comments yet. Be the first to share your thoughts!
+            </div>
+            {{end}}
+          </div>
+        </div>
+      </div>
+    </div>
+    {{else}}
+    <h1 class="text-2xl font-semibold">Thought not found</h1>
+    {{end}}
   </div>
-  {{end}}
 
   {{template "layout/end"}}
 </body>
