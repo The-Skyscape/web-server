@@ -63,7 +63,7 @@ func (c *ThoughtsController) CurrentProfile() *models.Profile {
 	if handle == "" {
 		return nil
 	}
-	user, err := models.Auth.Users.Get(handle)
+	user, err := models.Auth.LookupUser(handle)
 	if err != nil {
 		return nil
 	}
