@@ -29,9 +29,45 @@
       </button>
       {{with $user := auth.CurrentUser}}
       {{if eq $profile.UserID $user.ID}}
-      <button class="btn btn-primary shadow-lg" _="on click call create_repo_modal.showModal()">
-        New Repo
-      </button>
+      <div class="dropdown dropdown-end">
+        <button tabindex="0" class="btn btn-primary shadow-lg gap-1">
+          New
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 w-64 p-2 shadow-lg border border-white/20">
+          <li>
+            <a _="on click call create_repo_modal.showModal()" class="flex items-center gap-3 py-3">
+              <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary/20 text-secondary shrink-0">
+                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1.2em" width="1.2em" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path>
+                  <path d="M12 22V12"></path>
+                  <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"></path>
+                  <path d="m7.5 4.27 9 5.15"></path>
+                </svg>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-semibold">Repo</span>
+                <span class="text-xs opacity-60">Create a new code repository</span>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="{{host}}/thoughts/new" hx-boost="true" class="flex items-center gap-3 py-3">
+              <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-accent/20 text-accent shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-semibold">Thought</span>
+                <span class="text-xs opacity-60">Write an article or blog post</span>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
       <div class="dropdown dropdown-end">
         <button tabindex="0" class="btn btn-square shadow-lg">
           {{template "icon-dots.html"}}
