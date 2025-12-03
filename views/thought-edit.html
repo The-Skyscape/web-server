@@ -3,6 +3,19 @@
 <head>
   {{template "includes.html"}}
   <title>{{if thoughts.CurrentThought}}Edit{{else}}New{{end}} Thought | The Skyscape</title>
+  <style>
+    .block-content:empty:before {
+      content: attr(data-placeholder);
+      color: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+    }
+    .block-content:focus {
+      outline: none;
+    }
+    .editor-block:hover .block-handle {
+      opacity: 0.6;
+    }
+  </style>
 </head>
 
 <body>
@@ -13,51 +26,90 @@
   {{$user := auth.CurrentUser}}
 
   <div class="max-w-screen-md w-full mx-auto px-4 py-8 md:py-12">
-    <h1 class="text-2xl font-bold mb-8">{{if $isEdit}}Edit Thought{{else}}New Thought{{end}}</h1>
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-2xl font-bold">{{if $isEdit}}Edit Thought{{else}}New Thought{{end}}</h1>
+      <div id="save-indicator" class="text-xs text-white/40 opacity-0 transition-opacity">Saved</div>
+    </div>
 
     <div class="error-message text-center text-error mb-4" role="alert" aria-live="polite"></div>
 
-    <form
-      {{if $isEdit}}
-      hx-post="{{host}}/thought/{{$thought.ID}}"
-      {{else}}
-      hx-post="{{host}}/thoughts"
-      {{end}}
-      hx-target="previous .error-message" hx-swap="innerHTML"
+    {{if $isEdit}}
+    <!-- Block-based editor for existing thoughts -->
+    <div id="thought-editor" data-thought-id="{{$thought.ID}}" data-host="{{host}}">
+
+      <!-- Title input -->
+      <form hx-post="{{host}}/thought/{{$thought.ID}}" hx-trigger="change delay:1s" hx-swap="none" class="mb-6">
+        <input required name="title" type="text"
+          class="input input-lg input-ghost w-full text-3xl font-bold px-0 focus:outline-none"
+          placeholder="Title" value="{{$thought.Title}}">
+        <input type="hidden" name="published" value="{{if $thought.Published}}true{{else}}false{{end}}">
+      </form>
+
+      <!-- Block editor area -->
+      <div id="editor-blocks" class="flex flex-col gap-2 min-h-96">
+        {{range $thought.Blocks}}
+        {{template "editor-block.html" .}}
+        {{else}}
+        <!-- Empty state - will be populated by JS -->
+        {{end}}
+      </div>
+
+      <!-- Command palette -->
+      <div id="command-palette" class="hidden fixed z-50">
+        {{template "editor-command-palette.html"}}
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/10">
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="publish-toggle" class="checkbox checkbox-primary"
+            {{if $thought.Published}}checked{{end}}
+            _="on change
+               fetch {{host}}/thought/{{$thought.ID}} with method:'POST' and {published: my.checked ? 'true' : 'false', title: document.querySelector('[name=title]').value} as FormData
+               then put 'Saved' into #save-indicator
+               then add .opacity-100 to #save-indicator
+               then wait 1s
+               then remove .opacity-100 from #save-indicator">
+          <label for="publish-toggle" class="text-sm cursor-pointer">Published</label>
+        </div>
+
+        <div class="ml-auto flex items-center gap-4">
+          <a href="{{host}}/thought/{{$thought.ID}}" class="btn btn-ghost" hx-boost="true">View</a>
+          <button type="button" class="btn btn-error btn-outline"
+            hx-delete="{{host}}/thought/{{$thought.ID}}"
+            hx-confirm="Are you sure you want to delete this thought?">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    {{else}}
+    <!-- Simple form for new thoughts (creates thought first, then redirects to editor) -->
+    <form hx-post="{{host}}/thoughts" hx-target="previous .error-message" hx-swap="innerHTML"
       class="flex flex-col gap-6">
 
       <label class="floating-label">
-        <input required name="title" type="text" class="input input-lg w-full" placeholder="Title"
-          value="{{if $isEdit}}{{$thought.Title}}{{end}}">
+        <input required name="title" type="text" class="input input-lg w-full" placeholder="Title">
         <span>Title</span>
       </label>
 
-      <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-white/60">Content (Markdown supported)</label>
-        <textarea required name="content" class="textarea textarea-bordered w-full min-h-96 font-mono text-sm"
-          placeholder="Write your thought here using Markdown...">{{if $isEdit}}{{$thought.Content}}{{end}}</textarea>
-      </div>
+      <p class="text-sm text-white/50">
+        Start with a title. After creating, you'll be taken to the full editor where you can add
+        text, images, code blocks, and more.
+      </p>
 
-      <div class="flex items-center gap-2">
-        <input type="checkbox" name="published" value="true" class="checkbox checkbox-primary"
-          {{if and $isEdit $thought.Published}}checked{{end}}>
-        <span class="text-sm">Publish immediately</span>
-        <span class="text-xs text-white/40 ml-2">(uncheck to save as draft)</span>
-      </div>
+      <input type="hidden" name="content" value="">
+      <input type="hidden" name="published" value="false">
 
       <div class="flex items-center gap-4 mt-4">
-        <button type="submit" class="btn btn-primary">
-          {{if $isEdit}}Save Changes{{else}}Create Thought{{end}}
-        </button>
-        {{if $isEdit}}
-        <a href="{{host}}/thought/{{$thought.ID}}" class="btn btn-ghost" hx-boost="true">Cancel</a>
-        {{else}}
+        <button type="submit" class="btn btn-primary">Create & Edit</button>
         <a href="{{host}}/thoughts" class="btn btn-ghost" hx-boost="true">Cancel</a>
-        {{end}}
       </div>
     </form>
+    {{end}}
   </div>
 
+  <script src="{{host}}/public/editor.js"></script>
   {{template "layout/end"}}
 </body>
 

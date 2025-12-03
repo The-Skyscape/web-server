@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -37,6 +39,12 @@ func (c *ThoughtsController) Setup(app *application.App) {
 	// Social features
 	http.Handle("POST /thought/{thought}/star", c.ProtectFunc(c.star, auth.Required))
 	http.Handle("DELETE /thought/{thought}/star", c.ProtectFunc(c.unstar, auth.Required))
+
+	// Block management endpoints
+	http.Handle("POST /thought/{thought}/blocks", c.ProtectFunc(c.createBlock, auth.Required))
+	http.Handle("PUT /thought/{thought}/block/{block}", c.ProtectFunc(c.updateBlock, auth.Required))
+	http.Handle("DELETE /thought/{thought}/block/{block}", c.ProtectFunc(c.deleteBlock, auth.Required))
+	http.Handle("POST /thought/{thought}/blocks/reorder", c.ProtectFunc(c.reorderBlocks, auth.Required))
 }
 
 func (c ThoughtsController) Handle(r *http.Request) application.Handler {
@@ -194,7 +202,8 @@ func (c *ThoughtsController) create(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	c.Redirect(w, r, "/thought/"+created.ID)
+	// Redirect to edit page for the block editor
+	c.Redirect(w, r, "/thought/"+created.ID+"/edit")
 }
 
 // update handles updating a thought
@@ -356,4 +365,266 @@ func generateSlug(title string) string {
 		slug = slug[:100]
 	}
 	return slug
+}
+
+// Block management handlers
+
+// createBlock creates a new block for a thought
+func (c *ThoughtsController) createBlock(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	thought, err := models.Thoughts.Get(r.PathValue("thought"))
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thought not found"})
+		return
+	}
+
+	if thought.UserID != user.ID && !user.IsAdmin {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized"})
+		return
+	}
+
+	var input struct {
+		Type     string `json:"type"`
+		Content  string `json:"content"`
+		FileID   string `json:"file_id"`
+		Position int    `json:"position"`
+		Metadata string `json:"metadata"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
+		return
+	}
+
+	// Default type to paragraph
+	if input.Type == "" {
+		input.Type = "paragraph"
+	}
+
+	// Validate type
+	validTypes := map[string]bool{
+		"paragraph": true, "heading": true, "quote": true,
+		"code": true, "list": true, "image": true, "file": true,
+	}
+	if !validTypes[input.Type] {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid block type"})
+		return
+	}
+
+	// If position not specified, add at end
+	if input.Position == 0 {
+		input.Position = models.ThoughtBlocks.Count("WHERE ThoughtID = ?", thought.ID) + 1
+	}
+
+	// Shift existing blocks if inserting in middle
+	existingBlocks := thought.Blocks()
+	for _, block := range existingBlocks {
+		if block.Position >= input.Position {
+			block.Position++
+			models.ThoughtBlocks.Update(block)
+		}
+	}
+
+	block := &models.ThoughtBlock{
+		ThoughtID: thought.ID,
+		Type:      input.Type,
+		Content:   input.Content,
+		FileID:    input.FileID,
+		Position:  input.Position,
+		Metadata:  input.Metadata,
+	}
+
+	created, err := models.ThoughtBlocks.Insert(block)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, created)
+}
+
+// updateBlock updates a block's content
+func (c *ThoughtsController) updateBlock(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	thought, err := models.Thoughts.Get(r.PathValue("thought"))
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thought not found"})
+		return
+	}
+
+	if thought.UserID != user.ID && !user.IsAdmin {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized"})
+		return
+	}
+
+	block, err := models.ThoughtBlocks.Get(r.PathValue("block"))
+	if err != nil || block.ThoughtID != thought.ID {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "block not found"})
+		return
+	}
+
+	var input struct {
+		Type     string `json:"type"`
+		Content  string `json:"content"`
+		FileID   string `json:"file_id"`
+		Metadata string `json:"metadata"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
+		return
+	}
+
+	// Update fields if provided
+	if input.Type != "" {
+		block.Type = input.Type
+	}
+	if input.Content != "" || r.ContentLength > 0 {
+		block.Content = input.Content
+	}
+	if input.FileID != "" {
+		block.FileID = input.FileID
+	}
+	if input.Metadata != "" {
+		block.Metadata = input.Metadata
+	}
+
+	if err := models.ThoughtBlocks.Update(block); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, block)
+}
+
+// deleteBlock removes a block from a thought
+func (c *ThoughtsController) deleteBlock(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	thought, err := models.Thoughts.Get(r.PathValue("thought"))
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thought not found"})
+		return
+	}
+
+	if thought.UserID != user.ID && !user.IsAdmin {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized"})
+		return
+	}
+
+	block, err := models.ThoughtBlocks.Get(r.PathValue("block"))
+	if err != nil || block.ThoughtID != thought.ID {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "block not found"})
+		return
+	}
+
+	deletedPosition := block.Position
+
+	if err := models.ThoughtBlocks.Delete(block); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	// Reorder remaining blocks
+	remainingBlocks := thought.Blocks()
+	for _, b := range remainingBlocks {
+		if b.Position > deletedPosition {
+			b.Position--
+			models.ThoughtBlocks.Update(b)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+// reorderBlocks updates the positions of all blocks
+func (c *ThoughtsController) reorderBlocks(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	thought, err := models.Thoughts.Get(r.PathValue("thought"))
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thought not found"})
+		return
+	}
+
+	if thought.UserID != user.ID && !user.IsAdmin {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized"})
+		return
+	}
+
+	var input struct {
+		Order []string `json:"order"` // Block IDs in new order
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
+		return
+	}
+
+	// Update positions
+	for i, blockID := range input.Order {
+		block, err := models.ThoughtBlocks.Get(blockID)
+		if err != nil || block.ThoughtID != thought.ID {
+			continue
+		}
+		block.Position = i + 1
+		models.ThoughtBlocks.Update(block)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "reordered"})
+}
+
+// Helper to write JSON responses
+func writeJSON(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
+
+// Helper to get next position for blocks
+func (c *ThoughtsController) nextBlockPosition(thoughtID string) int {
+	count := models.ThoughtBlocks.Count("WHERE ThoughtID = ?", thoughtID)
+	return count + 1
+}
+
+// CurrentBlock returns the block from path for template use
+func (c *ThoughtsController) CurrentBlock() *models.ThoughtBlock {
+	id := c.PathValue("block")
+	if id == "" {
+		return nil
+	}
+	block, _ := models.ThoughtBlocks.Get(id)
+	return block
+}
+
+// ParsePosition parses position from query string
+func (c *ThoughtsController) ParsePosition() int {
+	pos := c.Request.URL.Query().Get("position")
+	if pos == "" {
+		return 0
+	}
+	p, _ := strconv.Atoi(pos)
+	return p
 }

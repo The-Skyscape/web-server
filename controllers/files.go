@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/pkg/errors"
@@ -111,6 +113,18 @@ func (c *FilesController) uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	// Return JSON if requested (for editor integration)
+	if strings.Contains(r.Header.Get("Accept"), "application/json") {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"id":       fileModel.ID,
+			"url":      c.Host() + "/file/" + fileModel.ID,
+			"filename": fileModel.FilePath,
+			"mimetype": fileModel.MimeType,
+		})
 		return
 	}
 

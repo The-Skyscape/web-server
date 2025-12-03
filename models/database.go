@@ -35,7 +35,8 @@ var (
 
 	AppMetricsManager = database.Manage(DB, new(AppMetrics))
 
-	Thoughts     = database.Manage(DB, new(Thought))
-	ThoughtViews = database.Manage(DB, new(ThoughtView))
-	ThoughtStars = database.Manage(DB, new(ThoughtStar))
+	Thoughts      = database.Manage(DB, new(Thought))
+	ThoughtViews  = database.Manage(DB, new(ThoughtView))
+	ThoughtStars  = database.Manage(DB, new(ThoughtStar))
+	ThoughtBlocks = database.Manage(DB, new(ThoughtBlock))
 )
