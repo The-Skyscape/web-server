@@ -9,34 +9,43 @@
   </div>
 
   <!-- buttons that show up when FAB is open -->
-  <button class="mb-2 md:mb-0 btn btn-error btn-lg btn-circle opacity-90" hx-post="{{host}}/_auth/signout">
-    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
-      stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-      <polyline points="16 17 21 12 16 7"></polyline>
-      <line x1="21" y1="12" x2="9" y2="12"></line>
-    </svg>
-  </button>
+  <div class="flex items-center gap-3 mb-2 md:mb-0">
+    <span class="text-sm font-medium bg-base-100/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">Sign Out</span>
+    <button class="btn btn-error btn-lg btn-circle opacity-90 shrink-0" hx-post="{{host}}/_auth/signout">
+      <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+        stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+    </button>
+  </div>
 
-  <button class="mb-2 md:mb-0 btn btn-primary btn-lg btn-circle" _="on click call verify_modal.showModal()">
-    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
-      stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-      <path d="m9 12 2 2 4-4"></path>
-    </svg>
-  </button>
+  <div class="flex items-center gap-3 mb-2 md:mb-0">
+    <span class="text-sm font-medium bg-base-100/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">Verify Account</span>
+    <button class="btn btn-primary btn-lg btn-circle shrink-0" _="on click call verify_modal.showModal()">
+      <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+        stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        <path d="m9 12 2 2 4-4"></path>
+      </svg>
+    </button>
+  </div>
 
-  <button class="mb-2 md:mb-0 btn btn-neutral btn-lg btn-circle" _="on click call create_repo_modal.showModal()">
-    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
-      stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 16h6"></path>
-      <path d="M19 13v6"></path>
-      <path
-        d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14">
-      </path>
-      <path d="m7.5 4.27 9 5.15"></path>
-      <polyline points="3.29 7 12 12 20.71 7"></polyline>
-      <line x1="12" x2="12" y1="22" y2="12"></line>
-    </svg>
-  </button>
+  <div class="flex items-center gap-3 mb-2 md:mb-0">
+    <span class="text-sm font-medium bg-base-100/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">New Repo</span>
+    <button class="btn btn-neutral btn-lg btn-circle shrink-0" _="on click call create_repo_modal.showModal()">
+      <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+        stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 16h6"></path>
+        <path d="M19 13v6"></path>
+        <path
+          d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14">
+        </path>
+        <path d="m7.5 4.27 9 5.15"></path>
+        <polyline points="3.29 7 12 12 20.71 7"></polyline>
+        <line x1="12" x2="12" y1="22" y2="12"></line>
+      </svg>
+    </button>
+  </div>
 </div>
