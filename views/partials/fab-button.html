@@ -11,7 +11,7 @@
   <!-- buttons that show up when FAB is open -->
   <div class="flex items-center gap-3 mb-2 md:mb-0">
     <span class="text-sm font-medium bg-neutral px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">Sign Out</span>
-    <button class="btn btn-error btn-lg btn-circle opacity-90 shrink-0" hx-post="{{host}}/_auth/signout">
+    <button class="btn btn-error btn-lg btn-circle shrink-0" hx-post="{{host}}/_auth/signout" hx-confirm="Are you sure you want to sign out?">
       <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
         stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -22,7 +22,7 @@
   </div>
 
   <div class="flex items-center gap-3 mb-2 md:mb-0">
-    <span class="text-sm font-medium bg-neutral px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">Verify Account</span>
+    <span class="text-sm font-medium bg-primary px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">Verify Account</span>
     <button class="btn btn-primary btn-lg btn-circle shrink-0" _="on click call verify_modal.showModal()">
       <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
         stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
@@ -33,8 +33,8 @@
   </div>
 
   <div class="flex items-center gap-3 mb-2 md:mb-0">
-    <span class="text-sm font-medium bg-neutral px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">New Thought</span>
-    <a href="{{host}}/thoughts/new" class="btn btn-accent btn-lg btn-circle shrink-0">
+    <span class="text-sm font-medium bg-base-100 px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">New Thought</span>
+    <a href="{{host}}/thoughts/new" class="btn btn-ghost btn-lg btn-circle shrink-0 bg-base-100">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
       </svg>
@@ -42,8 +42,8 @@
   </div>
 
   <div class="flex items-center gap-3 mb-2 md:mb-0">
-    <span class="text-sm font-medium bg-neutral px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">New Repo</span>
-    <button class="btn btn-secondary btn-lg btn-circle shrink-0" _="on click call create_repo_modal.showModal()">
+    <span class="text-sm font-medium bg-base-100 px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">New Repo</span>
+    <button class="btn btn-ghost btn-lg btn-circle shrink-0 bg-base-100" _="on click call create_repo_modal.showModal()">
       <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
         stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
         <path d="M16 16h6"></path>
