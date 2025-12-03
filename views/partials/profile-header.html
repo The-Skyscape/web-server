@@ -38,7 +38,7 @@
         </button>
         <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 w-64 p-2 mt-2 shadow-lg border border-white/20">
           <li>
-            <a _="on click call create_repo_modal.showModal()" class="flex items-center gap-3 py-3">
+            <button type="button" onclick="create_repo_modal.showModal()" class="flex items-center gap-3 py-3 w-full">
               <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary/20 text-secondary shrink-0">
                 <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
                   <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path>
@@ -47,11 +47,11 @@
                   <path d="m7.5 4.27 9 5.15"></path>
                 </svg>
               </div>
-              <div class="flex flex-col">
+              <div class="flex flex-col text-left">
                 <span class="font-semibold">Repo</span>
                 <span class="text-xs opacity-60">Create a new code repository</span>
               </div>
-            </a>
+            </button>
           </li>
           <li>
             <a href="{{host}}/thoughts/new" hx-boost="true" class="flex items-center gap-3 py-3">
