@@ -142,33 +142,43 @@ func (f FeedItem) IsPromotion() bool {
 	return f.Promotion != nil
 }
 
-// FeedWithPromotions returns personalized activities interlaced with promotions every 5 posts
-// Promotions only appear on page 1 to prevent accumulation during infinite scroll
+// FeedWithPromotions returns personalized activities with 1 promotion per page
+// The promotion is positioned in the middle of the activities (at limit/2)
 func (c *FeedController) FeedWithPromotions() []FeedItem {
 	activities := c.PersonalizedActivities()
-	result := make([]FeedItem, 0, len(activities))
+	promotions := c.ActivePromotions()
 
-	page := c.Page()
-
-	// Only show promotions on page 1
-	if page == 1 {
-		promotions := c.ActivePromotions()
-		numPromos := len(promotions)
-		promoIndex := 0
-
-		for i, activity := range activities {
-			result = append(result, FeedItem{Activity: activity})
-			// Insert promotion every 5 posts
-			if (i+1)%5 == 0 && numPromos > 0 {
-				result = append(result, FeedItem{Promotion: promotions[promoIndex%numPromos]})
-				promoIndex++
-			}
-		}
-	} else {
-		// Subsequent pages: just activities, no promotions
+	numPromos := len(promotions)
+	if numPromos == 0 {
+		// No promotions available, return activities only
+		result := make([]FeedItem, 0, len(activities))
 		for _, activity := range activities {
 			result = append(result, FeedItem{Activity: activity})
 		}
+		return result
+	}
+
+	result := make([]FeedItem, 0, len(activities)+1)
+
+	// Rotate through promotions based on page number
+	page := c.Page()
+	promo := promotions[(page-1)%numPromos]
+
+	// Insert promotion in the middle of activities
+	limit := c.Limit()
+	promoPosition := limit / 2
+
+	for i, activity := range activities {
+		// Insert promotion at the middle position
+		if i == promoPosition {
+			result = append(result, FeedItem{Promotion: promo})
+		}
+		result = append(result, FeedItem{Activity: activity})
+	}
+
+	// If fewer activities than promoPosition, add promotion at the end
+	if len(activities) <= promoPosition && len(activities) > 0 {
+		result = append(result, FeedItem{Promotion: promo})
 	}
 
 	return result
