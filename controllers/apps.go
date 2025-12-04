@@ -254,17 +254,12 @@ func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
 	// Handle ID change (admin only)
 	newID := r.FormValue("id")
 	if newID != "" && newID != app.ID && user.IsAdmin {
-		// Check if new ID is already taken
-		if _, err := models.Apps.Get(newID); err == nil {
-			c.Render(w, r, "error-message.html", errors.New("an app with this ID already exists"))
-			return
-		}
-
 		oldID := app.ID
 
-		// Update app ID
+		// Update app ID - database will enforce uniqueness constraint
 		if err := models.DB.Query("UPDATE apps SET ID = ?, Name = ?, Description = ? WHERE ID = ?", newID, name, description, oldID).Exec(); err != nil {
-			c.Render(w, r, "error-message.html", errors.New("failed to update app ID"))
+			// Unique constraint violation means ID is already taken
+			c.Render(w, r, "error-message.html", errors.New("an app with this ID already exists"))
 			return
 		}
 

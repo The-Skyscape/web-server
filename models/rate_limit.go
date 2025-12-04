@@ -20,11 +20,8 @@ func (*RateLimit) Table() string {
 
 // Check checks if the rate limit has been exceeded for the given identifier and action
 func Check(identifier, action string, maxAttempts int, window time.Duration) (bool, int, error) {
-	// Clean up expired rate limits - IMPORTANT: actually delete them to prevent orphan data
-	expired, _ := RateLimits.Search("WHERE ResetAt < ?", time.Now())
-	for _, limit := range expired {
-		RateLimits.Delete(limit)
-	}
+	// Clean up expired rate limits with batch delete
+	DB.Query("DELETE FROM rate_limits WHERE ResetAt < ?", time.Now()).Exec()
 
 	// Get existing rate limit record (don't create if not exists)
 	limit, err := RateLimits.First("WHERE Identifier = ? AND Action = ?", identifier, action)

@@ -148,7 +148,6 @@ func (p *Profile) MessageCount(with *Profile) int {
 	return Messages.Count(`
 		WHERE (SenderID = ? AND RecipientID = ?)
 		   OR (SenderID = ? AND RecipientID = ?)
-		ORDER BY CreatedAt DESC
 	`, p.ID, with.ID, with.ID, p.ID)
 }
 
