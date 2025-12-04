@@ -1,0 +1,12 @@
+<div id="header-image" class="relative mb-6 rounded-xl overflow-hidden group">
+  <img src="{{host}}{{.HeaderImage}}" alt="Header" class="w-full h-48 object-cover">
+  <label class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+    <span class="btn btn-ghost btn-sm text-white">Change header image</span>
+    <input type="file" name="file" accept="image/*" class="hidden"
+      hx-post="{{host}}/thought/{{.ID}}/header"
+      hx-trigger="change"
+      hx-target="#header-image"
+      hx-swap="outerHTML"
+      hx-encoding="multipart/form-data">
+  </label>
+</div>

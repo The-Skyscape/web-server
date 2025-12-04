@@ -36,43 +36,75 @@
 
     {{if $isEdit}}
     <!-- Block-based editor for existing thoughts -->
-    <div id="thought-editor" data-thought-id="{{$thought.ID}}" data-host="{{host}}">
+    <div id="thought-editor">
 
-      <!-- Title input -->
-      <form hx-post="{{host}}/thought/{{$thought.ID}}" hx-trigger="change delay:1s" hx-swap="none" class="mb-6">
-        <input required name="title" type="text"
-          class="input input-lg input-ghost w-full text-3xl font-bold px-0 focus:outline-none"
-          placeholder="Title" value="{{$thought.Title}}">
-        <input type="hidden" name="published" value="{{if $thought.Published}}true{{else}}false{{end}}">
-      </form>
-
-      <!-- Block editor area -->
-      <div id="editor-blocks" class="flex flex-col gap-2 min-h-96">
-        {{range $thought.Blocks}}
-        {{template "editor-block.html" .}}
-        {{else}}
-        <!-- Empty state - will be populated by JS -->
-        {{end}}
+      <!-- Header image -->
+      <div id="header-image" class="relative mb-6 rounded-xl overflow-hidden group">
+        <img src="{{host}}{{$thought.HeaderImage}}" alt="Header" class="w-full h-48 object-cover">
+        <label class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+          <span class="btn btn-ghost btn-sm text-white">Change header image</span>
+          <input type="file" name="file" accept="image/*" class="hidden"
+            hx-post="{{host}}/thought/{{$thought.ID}}/header"
+            hx-trigger="change"
+            hx-target="#header-image"
+            hx-swap="outerHTML"
+            hx-encoding="multipart/form-data">
+        </label>
       </div>
 
-      <!-- Command palette -->
-      <div id="command-palette" class="hidden fixed z-50">
-        {{template "editor-command-palette.html"}}
+      <!-- Title input with auto-save -->
+      <input required name="title" type="text"
+        class="input input-lg input-ghost w-full text-3xl font-bold px-0 focus:outline-none mb-6"
+        placeholder="Title" value="{{$thought.Title}}"
+        hx-post="{{host}}/thought/{{$thought.ID}}"
+        hx-trigger="input changed delay:1s"
+        hx-vals='{"published": "{{$thought.Published}}"}'
+        hx-swap="none"
+        _="on htmx:afterRequest
+           put 'Saved' into #save-indicator
+           add .opacity-100 to #save-indicator
+           wait 1s
+           remove .opacity-100 from #save-indicator">
+
+      <!-- Block editor area -->
+      <div id="editor-blocks" class="flex flex-col gap-1 min-h-96">
+        {{range $thought.Blocks}}
+        {{template "editor-block.html" .}}
+        {{end}}
+
+        <!-- Add block buttons -->
+        <div id="add-block-buttons" class="flex gap-2 mt-4">
+          <button type="button" class="btn btn-ghost btn-sm opacity-40 hover:opacity-100"
+            hx-post="{{host}}/thought/{{$thought.ID}}/blocks"
+            hx-vals='{"type": "paragraph"}'
+            hx-target="#add-block-buttons"
+            hx-swap="beforebegin">
+            + Text
+          </button>
+          <label class="btn btn-ghost btn-sm opacity-40 hover:opacity-100 cursor-pointer">
+            + Image
+            <input type="file" name="file" accept="image/*" class="hidden"
+              hx-post="{{host}}/thought/{{$thought.ID}}/blocks/image"
+              hx-trigger="change"
+              hx-target="#add-block-buttons"
+              hx-swap="beforebegin"
+              hx-encoding="multipart/form-data"
+              _="on htmx:afterRequest set my.value to ''">
+          </label>
+        </div>
       </div>
 
       <!-- Actions -->
       <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/10">
-        <div class="flex items-center gap-2">
-          <input type="checkbox" id="publish-toggle" class="checkbox checkbox-primary"
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="published" class="checkbox checkbox-primary"
             {{if $thought.Published}}checked{{end}}
-            _="on change
-               fetch {{host}}/thought/{{$thought.ID}} with method:'POST' and {published: my.checked ? 'true' : 'false', title: document.querySelector('[name=title]').value} as FormData
-               then put 'Saved' into #save-indicator
-               then add .opacity-100 to #save-indicator
-               then wait 1s
-               then remove .opacity-100 from #save-indicator">
-          <label for="publish-toggle" class="text-sm cursor-pointer">Published</label>
-        </div>
+            hx-post="{{host}}/thought/{{$thought.ID}}"
+            hx-include="[name=title]"
+            hx-vals='js:{"published": event.target.checked ? "true" : "false"}'
+            hx-swap="none">
+          <span class="text-sm">Published</span>
+        </label>
 
         <div class="ml-auto flex items-center gap-4">
           <a href="{{host}}/thought/{{$thought.ID}}" class="btn btn-ghost" hx-boost="true">View</a>
@@ -109,7 +141,6 @@
     {{end}}
   </div>
 
-  <script src="{{host}}/public/editor.js"></script>
   {{template "layout/end"}}
 </body>
 

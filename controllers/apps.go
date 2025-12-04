@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -268,15 +269,29 @@ func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Update related tables with AppID column
-		models.DB.Query("UPDATE images SET AppID = ? WHERE AppID = ?", newID, oldID).Exec()
-		models.DB.Query("UPDATE app_metrics SET AppID = ? WHERE AppID = ?", newID, oldID).Exec()
-		models.DB.Query("UPDATE oauth_authorizations SET AppID = ? WHERE AppID = ?", newID, oldID).Exec()
-		models.DB.Query("UPDATE oauth_authorization_codes SET ClientID = ? WHERE ClientID = ?", newID, oldID).Exec()
+		if err := models.DB.Query("UPDATE images SET AppID = ? WHERE AppID = ?", newID, oldID).Exec(); err != nil {
+			log.Printf("[AppRename] Failed to update images.AppID from %s to %s: %v", oldID, newID, err)
+		}
+		if err := models.DB.Query("UPDATE app_metrics SET AppID = ? WHERE AppID = ?", newID, oldID).Exec(); err != nil {
+			log.Printf("[AppRename] Failed to update app_metrics.AppID from %s to %s: %v", oldID, newID, err)
+		}
+		if err := models.DB.Query("UPDATE oauth_authorizations SET AppID = ? WHERE AppID = ?", newID, oldID).Exec(); err != nil {
+			log.Printf("[AppRename] Failed to update oauth_authorizations.AppID from %s to %s: %v", oldID, newID, err)
+		}
+		if err := models.DB.Query("UPDATE oauth_authorization_codes SET ClientID = ? WHERE ClientID = ?", newID, oldID).Exec(); err != nil {
+			log.Printf("[AppRename] Failed to update oauth_authorization_codes.ClientID from %s to %s: %v", oldID, newID, err)
+		}
 
 		// Update related tables with SubjectID column (for app subjects)
-		models.DB.Query("UPDATE activities SET SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", newID, oldID).Exec()
-		models.DB.Query("UPDATE promotions SET SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", newID, oldID).Exec()
-		models.DB.Query("UPDATE comments SET SubjectID = ? WHERE SubjectID = ?", newID, oldID).Exec()
+		if err := models.DB.Query("UPDATE activities SET SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", newID, oldID).Exec(); err != nil {
+			log.Printf("[AppRename] Failed to update activities.SubjectID from %s to %s: %v", oldID, newID, err)
+		}
+		if err := models.DB.Query("UPDATE promotions SET SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", newID, oldID).Exec(); err != nil {
+			log.Printf("[AppRename] Failed to update promotions.SubjectID from %s to %s: %v", oldID, newID, err)
+		}
+		if err := models.DB.Query("UPDATE comments SET SubjectID = ? WHERE SubjectID = ?", newID, oldID).Exec(); err != nil {
+			log.Printf("[AppRename] Failed to update comments.SubjectID from %s to %s: %v", oldID, newID, err)
+		}
 
 		// Redirect to the new app URL
 		c.Redirect(w, r, "/app/"+newID+"/manage")

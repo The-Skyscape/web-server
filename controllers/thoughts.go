@@ -1,9 +1,11 @@
 package controllers
 
 import (
-	"encoding/json"
+	"bytes"
 	"errors"
+	"io"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -40,11 +42,13 @@ func (c *ThoughtsController) Setup(app *application.App) {
 	http.Handle("POST /thought/{thought}/star", c.ProtectFunc(c.star, auth.Required))
 	http.Handle("DELETE /thought/{thought}/star", c.ProtectFunc(c.unstar, auth.Required))
 
-	// Block management endpoints
+	// Block management endpoints (HTMX)
+	http.Handle("POST /thought/{thought}/header", c.ProtectFunc(c.uploadHeader, auth.Required))
 	http.Handle("POST /thought/{thought}/blocks", c.ProtectFunc(c.createBlock, auth.Required))
-	http.Handle("PUT /thought/{thought}/block/{block}", c.ProtectFunc(c.updateBlock, auth.Required))
-	http.Handle("DELETE /thought/{thought}/block/{block}", c.ProtectFunc(c.deleteBlock, auth.Required))
+	http.Handle("POST /thought/{thought}/blocks/image", c.ProtectFunc(c.createImageBlock, auth.Required))
 	http.Handle("POST /thought/{thought}/blocks/reorder", c.ProtectFunc(c.reorderBlocks, auth.Required))
+	http.Handle("POST /thought/{thought}/block/{block}", c.ProtectFunc(c.updateBlock, auth.Required))
+	http.Handle("DELETE /thought/{thought}/block/{block}", c.ProtectFunc(c.deleteBlock, auth.Required))
 }
 
 func (c ThoughtsController) Handle(r *http.Request) application.Handler {
@@ -157,7 +161,6 @@ func (c *ThoughtsController) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	title := strings.TrimSpace(r.FormValue("title"))
-	content := r.FormValue("content")
 	published := r.FormValue("published") == "true"
 
 	if title == "" {
@@ -170,18 +173,12 @@ func (c *ThoughtsController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(content) > 100000 {
-		c.Render(w, r, "error-message.html", errors.New("content too long"))
-		return
-	}
-
 	// Generate slug from title
 	slug := generateSlug(title)
 
 	thought := &models.Thought{
 		UserID:    user.ID,
 		Title:     title,
-		Content:   content,
 		Slug:      slug,
 		Published: published,
 	}
@@ -227,7 +224,6 @@ func (c *ThoughtsController) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	title := strings.TrimSpace(r.FormValue("title"))
-	content := r.FormValue("content")
 	published := r.FormValue("published") == "true"
 
 	if title == "" {
@@ -237,7 +233,6 @@ func (c *ThoughtsController) update(w http.ResponseWriter, r *http.Request) {
 
 	wasPublished := thought.Published
 	thought.Title = title
-	thought.Content = content
 	thought.Published = published
 	thought.Slug = generateSlug(title)
 
@@ -374,58 +369,49 @@ func (c *ThoughtsController) createBlock(w http.ResponseWriter, r *http.Request)
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		c.RenderError(w, r, err)
 		return
 	}
 
 	thought, err := models.Thoughts.Get(r.PathValue("thought"))
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thought not found"})
+		c.RenderError(w, r, application.ErrNotFound)
 		return
 	}
 
 	if thought.UserID != user.ID && !user.IsAdmin {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized"})
+		c.RenderError(w, r, application.ErrForbidden)
 		return
 	}
 
-	var input struct {
-		Type     string `json:"type"`
-		Content  string `json:"content"`
-		FileID   string `json:"file_id"`
-		Position int    `json:"position"`
-		Metadata string `json:"metadata"`
+	// Parse form data
+	blockType := r.FormValue("type")
+	if blockType == "" {
+		blockType = "paragraph"
 	}
-
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
-		return
-	}
-
-	// Default type to paragraph
-	if input.Type == "" {
-		input.Type = "paragraph"
-	}
+	position, _ := strconv.Atoi(r.FormValue("position"))
+	content := r.FormValue("content")
+	fileID := r.FormValue("file_id")
 
 	// Validate type
 	validTypes := map[string]bool{
 		"paragraph": true, "heading": true, "quote": true,
 		"code": true, "list": true, "image": true, "file": true,
 	}
-	if !validTypes[input.Type] {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid block type"})
+	if !validTypes[blockType] {
+		c.RenderError(w, r, errors.New("invalid block type"))
 		return
 	}
 
 	// If position not specified, add at end
-	if input.Position == 0 {
-		input.Position = models.ThoughtBlocks.Count("WHERE ThoughtID = ?", thought.ID) + 1
+	if position == 0 {
+		position = models.ThoughtBlocks.Count("WHERE ThoughtID = ?", thought.ID) + 1
 	}
 
 	// Shift existing blocks if inserting in middle
 	existingBlocks := thought.Blocks()
 	for _, block := range existingBlocks {
-		if block.Position >= input.Position {
+		if block.Position >= position {
 			block.Position++
 			models.ThoughtBlocks.Update(block)
 		}
@@ -433,20 +419,20 @@ func (c *ThoughtsController) createBlock(w http.ResponseWriter, r *http.Request)
 
 	block := &models.ThoughtBlock{
 		ThoughtID: thought.ID,
-		Type:      input.Type,
-		Content:   input.Content,
-		FileID:    input.FileID,
-		Position:  input.Position,
-		Metadata:  input.Metadata,
+		Type:      blockType,
+		Content:   content,
+		FileID:    fileID,
+		Position:  position,
 	}
 
 	created, err := models.ThoughtBlocks.Insert(block)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		c.RenderError(w, r, err)
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, created)
+	// Return the rendered block HTML
+	c.Render(w, r, "editor-block.html", created)
 }
 
 // updateBlock updates a block's content
@@ -454,59 +440,46 @@ func (c *ThoughtsController) updateBlock(w http.ResponseWriter, r *http.Request)
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		c.RenderError(w, r, err)
 		return
 	}
 
 	thought, err := models.Thoughts.Get(r.PathValue("thought"))
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thought not found"})
+		c.RenderError(w, r, application.ErrNotFound)
 		return
 	}
 
 	if thought.UserID != user.ID && !user.IsAdmin {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized"})
+		c.RenderError(w, r, application.ErrForbidden)
 		return
 	}
 
 	block, err := models.ThoughtBlocks.Get(r.PathValue("block"))
 	if err != nil || block.ThoughtID != thought.ID {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "block not found"})
+		c.RenderError(w, r, application.ErrNotFound)
 		return
 	}
 
-	var input struct {
-		Type     string `json:"type"`
-		Content  string `json:"content"`
-		FileID   string `json:"file_id"`
-		Metadata string `json:"metadata"`
+	// Update from form data - always update content since empty is valid
+	r.ParseForm()
+	if _, hasContent := r.Form["content"]; hasContent {
+		block.Content = r.FormValue("content")
 	}
-
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
-		return
+	if blockType := r.FormValue("type"); blockType != "" {
+		block.Type = blockType
 	}
-
-	// Update fields if provided
-	if input.Type != "" {
-		block.Type = input.Type
-	}
-	if input.Content != "" || r.ContentLength > 0 {
-		block.Content = input.Content
-	}
-	if input.FileID != "" {
-		block.FileID = input.FileID
-	}
-	if input.Metadata != "" {
-		block.Metadata = input.Metadata
+	if fileID := r.FormValue("file_id"); fileID != "" {
+		block.FileID = fileID
 	}
 
 	if err := models.ThoughtBlocks.Update(block); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		c.RenderError(w, r, err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, block)
+	// Return empty response for hx-swap="none"
+	w.WriteHeader(http.StatusOK)
 }
 
 // deleteBlock removes a block from a thought
@@ -514,31 +487,31 @@ func (c *ThoughtsController) deleteBlock(w http.ResponseWriter, r *http.Request)
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		c.RenderError(w, r, err)
 		return
 	}
 
 	thought, err := models.Thoughts.Get(r.PathValue("thought"))
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thought not found"})
+		c.RenderError(w, r, application.ErrNotFound)
 		return
 	}
 
 	if thought.UserID != user.ID && !user.IsAdmin {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized"})
+		c.RenderError(w, r, application.ErrForbidden)
 		return
 	}
 
 	block, err := models.ThoughtBlocks.Get(r.PathValue("block"))
 	if err != nil || block.ThoughtID != thought.ID {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "block not found"})
+		c.RenderError(w, r, application.ErrNotFound)
 		return
 	}
 
 	deletedPosition := block.Position
 
 	if err := models.ThoughtBlocks.Delete(block); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		c.RenderError(w, r, err)
 		return
 	}
 
@@ -551,80 +524,216 @@ func (c *ThoughtsController) deleteBlock(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	// Return empty response - HTMX will remove the element with hx-swap="outerHTML"
+	w.WriteHeader(http.StatusOK)
 }
 
-// reorderBlocks updates the positions of all blocks
-func (c *ThoughtsController) reorderBlocks(w http.ResponseWriter, r *http.Request) {
+// createImageBlock handles image upload and creates an image block in one request
+func (c *ThoughtsController) createImageBlock(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		c.RenderError(w, r, err)
 		return
 	}
 
 	thought, err := models.Thoughts.Get(r.PathValue("thought"))
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thought not found"})
+		c.RenderError(w, r, application.ErrNotFound)
 		return
 	}
 
 	if thought.UserID != user.ID && !user.IsAdmin {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized"})
+		c.RenderError(w, r, application.ErrForbidden)
 		return
 	}
 
-	var input struct {
-		Order []string `json:"order"` // Block IDs in new order
+	// Parse multipart form
+	r.ParseMultipartForm(maxImageSize)
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		c.RenderError(w, r, errors.New("no file uploaded"))
+		return
 	}
+	defer file.Close()
 
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
+	// Validate file size
+	if handler.Size > maxImageSize {
+		c.RenderError(w, r, errors.New("image too large, max 10MB"))
 		return
 	}
 
-	// Update positions
-	for i, blockID := range input.Order {
+	// Validate it's an image
+	mimeType := handler.Header.Get("Content-Type")
+	if !strings.HasPrefix(mimeType, "image/") {
+		c.RenderError(w, r, errors.New("file must be an image"))
+		return
+	}
+
+	// Sanitize filename
+	filename := filepath.Base(filepath.Clean(handler.Filename))
+	if filename == "." || filename == "/" || filename == "" {
+		filename = "image"
+	}
+
+	// Read file content
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, file); err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	// Create file record
+	fileModel, err := models.Files.Insert(&models.File{
+		OwnerID:  user.ID,
+		FilePath: filename,
+		MimeType: mimeType,
+		Content:  buf.Bytes(),
+	})
+	if err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	// Get next position
+	position := models.ThoughtBlocks.Count("WHERE ThoughtID = ?", thought.ID) + 1
+
+	// Create image block
+	block := &models.ThoughtBlock{
+		ThoughtID: thought.ID,
+		Type:      "image",
+		Content:   "", // Caption can be added later
+		FileID:    fileModel.ID,
+		Position:  position,
+	}
+
+	created, err := models.ThoughtBlocks.Insert(block)
+	if err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	// Return the rendered block HTML
+	c.Render(w, r, "editor-block.html", created)
+}
+
+// uploadHeader handles uploading a header image for a thought
+func (c *ThoughtsController) uploadHeader(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	thought, err := models.Thoughts.Get(r.PathValue("thought"))
+	if err != nil {
+		c.RenderError(w, r, application.ErrNotFound)
+		return
+	}
+
+	if thought.UserID != user.ID && !user.IsAdmin {
+		c.RenderError(w, r, application.ErrForbidden)
+		return
+	}
+
+	// Parse multipart form
+	r.ParseMultipartForm(maxImageSize)
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		c.RenderError(w, r, errors.New("no file uploaded"))
+		return
+	}
+	defer file.Close()
+
+	// Validate it's an image
+	mimeType := handler.Header.Get("Content-Type")
+	if !strings.HasPrefix(mimeType, "image/") {
+		c.RenderError(w, r, errors.New("file must be an image"))
+		return
+	}
+
+	// Sanitize filename
+	filename := filepath.Base(filepath.Clean(handler.Filename))
+	if filename == "." || filename == "/" || filename == "" {
+		filename = "header"
+	}
+
+	// Read file content
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, file); err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	// Create file record
+	fileModel, err := models.Files.Insert(&models.File{
+		OwnerID:  user.ID,
+		FilePath: filename,
+		MimeType: mimeType,
+		Content:  buf.Bytes(),
+	})
+	if err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	// Update thought header
+	thought.HeaderImageID = fileModel.ID
+	if err := models.Thoughts.Update(thought); err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	// Return updated header partial
+	c.Render(w, r, "thought-header-image.html", thought)
+}
+
+// reorderBlocks updates block positions after drag-and-drop
+func (c *ThoughtsController) reorderBlocks(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
+
+	thought, err := models.Thoughts.Get(r.PathValue("thought"))
+	if err != nil {
+		c.RenderError(w, r, application.ErrNotFound)
+		return
+	}
+
+	if thought.UserID != user.ID && !user.IsAdmin {
+		c.RenderError(w, r, application.ErrForbidden)
+		return
+	}
+
+	// Get the block IDs in their new order from form data
+	// Format: order[]=id1&order[]=id2&order[]=id3
+	r.ParseForm()
+	blockIDs := r.Form["order[]"]
+	if len(blockIDs) == 0 {
+		// Try alternative format: order=id1,id2,id3
+		if orderStr := r.FormValue("order"); orderStr != "" {
+			blockIDs = strings.Split(orderStr, ",")
+		}
+	}
+
+	if len(blockIDs) == 0 {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Update each block's position
+	for i, blockID := range blockIDs {
 		block, err := models.ThoughtBlocks.Get(blockID)
 		if err != nil || block.ThoughtID != thought.ID {
-			continue
+			continue // Skip invalid blocks
 		}
 		block.Position = i + 1
 		models.ThoughtBlocks.Update(block)
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "reordered"})
-}
-
-// Helper to write JSON responses
-func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-// Helper to get next position for blocks
-func (c *ThoughtsController) nextBlockPosition(thoughtID string) int {
-	count := models.ThoughtBlocks.Count("WHERE ThoughtID = ?", thoughtID)
-	return count + 1
-}
-
-// CurrentBlock returns the block from path for template use
-func (c *ThoughtsController) CurrentBlock() *models.ThoughtBlock {
-	id := c.PathValue("block")
-	if id == "" {
-		return nil
-	}
-	block, _ := models.ThoughtBlocks.Get(id)
-	return block
-}
-
-// ParsePosition parses position from query string
-func (c *ThoughtsController) ParsePosition() int {
-	pos := c.Request.URL.Query().Get("position")
-	if pos == "" {
-		return 0
-	}
-	p, _ := strconv.Atoi(pos)
-	return p
+	w.WriteHeader(http.StatusOK)
 }

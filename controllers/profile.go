@@ -38,7 +38,11 @@ func (c ProfileController) Handle(r *http.Request) application.Handler {
 func (c *ProfileController) CurrentProfile() *models.Profile {
 	if c.PathValue("id") == "" {
 		auth := c.Use("auth").(*AuthController)
-		p, err := models.Profiles.Get(auth.CurrentUser().ID)
+		user := auth.CurrentUser()
+		if user == nil {
+			return nil
+		}
+		p, err := models.Profiles.Get(user.ID)
 		if err != nil {
 			return nil
 		}

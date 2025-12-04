@@ -1,12 +1,39 @@
-{{/* editor-block.html - Renders a single block in the thought editor */}}
+{{/* editor-block.html - Renders a single editable block */}}
 
-<div class="editor-block group flex gap-2 items-start"
+<div id="block-{{.ID}}" class="editor-block group flex gap-2 items-start"
      data-block-id="{{.ID}}"
-     data-type="{{.Type}}"
-     data-position="{{.Position}}">
+     data-position="{{.Position}}"
+     draggable="true"
+     _="on dragstart set event.dataTransfer.effectAllowed to 'move' then call event.dataTransfer.setData('text/plain', '{{.ID}}') then add .opacity-50 to me
+        on dragend remove .opacity-50 from me
+        on dragover halt the event then add .border-t-2 .border-primary to me
+        on dragleave remove .border-t-2 .border-primary from me
+        on drop halt the event then remove .border-t-2 .border-primary from me
+             set draggedId to event.dataTransfer.getData('text/plain')
+             set draggedEl to document.getElementById('block-' + draggedId)
+             if draggedEl and draggedEl != me then
+               call me.parentNode.insertBefore(draggedEl, me)
+               -- Persist new order to server
+               set blocks to document.querySelectorAll('.editor-block')
+               set order to ''
+               for block in blocks
+                 if order != '' then set order to order + ',' end
+                 set order to order + block.dataset.blockId
+               end
+               fetch '{{host}}/thought/{{.ThoughtID}}/blocks/reorder' {method: 'POST', body: 'order=' + order, headers: {'Content-Type': 'application/x-www-form-urlencoded'}}
+             end">
 
-  <!-- Drag handle -->
-  <div class="block-handle cursor-grab opacity-0 group-hover:opacity-60 pt-1 text-white/40 select-none">⋮⋮</div>
+  <!-- Drag handle & delete -->
+  <div class="flex items-center gap-2 opacity-30 group-hover:opacity-70 self-center shrink-0">
+    <span class="text-white text-base select-none cursor-grab">⋮⋮</span>
+    <button class="text-white hover:text-error cursor-pointer text-lg leading-none"
+      hx-delete="{{host}}/thought/{{.ThoughtID}}/block/{{.ID}}"
+      hx-target="#block-{{.ID}}"
+      hx-swap="outerHTML"
+      hx-confirm="Delete this block?">
+      ×
+    </button>
+  </div>
 
   {{if eq .Type "image"}}
   <!-- Image block -->
@@ -16,48 +43,23 @@
     {{end}}
     <input type="text" value="{{.Content}}" placeholder="Add a caption..."
       class="input input-sm input-ghost w-full mt-2 text-white/60"
-      _="on change call thoughtEditor.updateBlock('{{.ID}}', { content: my value })">
+      name="content"
+      hx-post="{{host}}/thought/{{.ThoughtID}}/block/{{.ID}}"
+      hx-trigger="input changed delay:1s"
+      hx-swap="none">
   </div>
 
-  {{else if eq .Type "file"}}
-  <!-- File block -->
-  <a href="{{host}}/file/{{.FileID}}" target="_blank"
-     class="flex items-center gap-2 p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-    </svg>
-    <span>{{if .Content}}{{.Content}}{{else}}Attached file{{end}}</span>
-  </a>
-
-  {{else if eq .Type "heading"}}
-  <!-- Heading block -->
-  <div class="block-content flex-1 outline-none min-h-[1.5em] text-2xl font-bold"
-       contenteditable="true"
-       data-placeholder="Heading">{{.Content}}</div>
-
-  {{else if eq .Type "quote"}}
-  <!-- Quote block -->
-  <div class="block-content flex-1 outline-none min-h-[1.5em] border-l-4 border-white/20 pl-4 italic text-white/80"
-       contenteditable="true"
-       data-placeholder="Quote">{{.Content}}</div>
-
-  {{else if eq .Type "code"}}
-  <!-- Code block -->
-  <div class="block-content flex-1 outline-none min-h-[1.5em] bg-base-200 p-4 rounded font-mono text-sm whitespace-pre-wrap"
-       contenteditable="true"
-       data-placeholder="Code">{{.Content}}</div>
-
-  {{else if eq .Type "list"}}
-  <!-- List block -->
-  <div class="block-content flex-1 outline-none min-h-[1.5em]"
-       contenteditable="true"
-       data-placeholder="List item">{{.Content}}</div>
-
   {{else}}
-  <!-- Paragraph block (default) -->
-  <div class="block-content flex-1 outline-none min-h-[1.5em]"
-       contenteditable="true"
-       data-placeholder="Type '/' for commands...">{{.Content}}</div>
+  <!-- Text block (supports markdown) -->
+  <textarea name="content"
+       class="block-content flex-1 w-full py-2 px-3 outline-none border-none min-h-[2.5em] bg-base-200/50 hover:bg-base-200 focus:bg-base-200 rounded-lg resize-none overflow-hidden text-base leading-relaxed placeholder:text-white/30 transition-colors"
+       placeholder="Write something..."
+       hx-post="{{host}}/thought/{{.ThoughtID}}/block/{{.ID}}"
+       hx-trigger="change, blur changed delay:500ms"
+       hx-swap="none"
+       _="on htmx:afterRequest from me put 'Saved' into #save-indicator then add .opacity-100 to #save-indicator then wait 1s then remove .opacity-100 from #save-indicator
+          on input call me.style.setProperty('height', 'auto') then call me.style.setProperty('height', me.scrollHeight + 'px')
+          on keydown[key=='Backspace' and my.value.trim()===''] halt the event then htmx.ajax('DELETE', '{{host}}/thought/{{.ThoughtID}}/block/{{.ID}}', {target:'#block-{{.ID}}', swap:'outerHTML'})
+          init call me.style.setProperty('height', me.scrollHeight + 'px')">{{.Content}}</textarea>
   {{end}}
 </div>

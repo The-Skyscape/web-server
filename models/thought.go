@@ -15,14 +15,21 @@ import (
 // Thought represents a long-form blog post by a user
 type Thought struct {
 	application.Model
-	UserID      string
-	Title       string
-	Content     string // Legacy markdown content (deprecated, use Blocks)
-	Slug        string // URL-friendly slug
-	Published   bool   // Draft vs published
-	ViewsCount  int    // Cached view count
-	StarsCount  int    // Cached star count
-	HeaderImage string // Optional header image file ID
+	UserID        string
+	Title         string
+	Slug          string // URL-friendly slug
+	Published     bool   // Draft vs published
+	ViewsCount    int    // Cached view count
+	StarsCount    int    // Cached star count
+	HeaderImageID string // Optional header image file ID
+}
+
+// HeaderImage returns the header image URL, or default background
+func (t *Thought) HeaderImage() string {
+	if t.HeaderImageID != "" {
+		return "/file/" + t.HeaderImageID
+	}
+	return "/public/background.png"
 }
 
 func (*Thought) Table() string { return "thoughts" }
@@ -110,83 +117,27 @@ func (t *Thought) Blocks() []*ThoughtBlock {
 	return blocks
 }
 
-// HasBlocks returns true if this thought uses block-based content
-func (t *Thought) HasBlocks() bool {
-	return ThoughtBlocks.Count("WHERE ThoughtID = ?", t.ID) > 0
-}
-
 // BlocksToMarkdown converts blocks to markdown string
 func (t *Thought) BlocksToMarkdown() string {
 	blocks := t.Blocks()
-	if len(blocks) == 0 {
-		return t.Content // Fall back to legacy content
-	}
-
 	var result bytes.Buffer
+
 	for i, block := range blocks {
 		if i > 0 {
 			result.WriteString("\n\n")
 		}
 
 		switch block.Type {
-		case "heading":
-			level := block.HeadingLevel()
-			for j := 0; j < level; j++ {
-				result.WriteString("#")
-			}
-			result.WriteString(" ")
-			result.WriteString(block.Content)
-
-		case "quote":
-			result.WriteString("> ")
-			result.WriteString(block.Content)
-
-		case "code":
-			result.WriteString("```")
-			result.WriteString(block.CodeLanguage())
-			result.WriteString("\n")
-			result.WriteString(block.Content)
-			result.WriteString("\n```")
-
-		case "list":
-			items := block.ListItems()
-			ordered := block.IsOrdered()
-			for j, item := range items {
-				if ordered {
-					result.WriteString(string(rune('1' + j)))
-					result.WriteString(". ")
-				} else {
-					result.WriteString("- ")
-				}
-				result.WriteString(item)
-				if j < len(items)-1 {
-					result.WriteString("\n")
-				}
-			}
-
 		case "image":
-			if file := block.File(); file != nil {
+			if block.FileID != "" {
 				result.WriteString("![")
-				result.WriteString(block.Content) // Alt text
+				result.WriteString(block.Content) // Alt text/caption
 				result.WriteString("](/file/")
 				result.WriteString(block.FileID)
 				result.WriteString(")")
 			}
 
-		case "file":
-			if file := block.File(); file != nil {
-				result.WriteString("[")
-				if block.Content != "" {
-					result.WriteString(block.Content) // Label
-				} else {
-					result.WriteString(file.FilePath)
-				}
-				result.WriteString("](/file/")
-				result.WriteString(block.FileID)
-				result.WriteString(")")
-			}
-
-		default: // paragraph
+		default: // paragraph - supports markdown
 			result.WriteString(block.Content)
 		}
 	}
@@ -196,7 +147,6 @@ func (t *Thought) BlocksToMarkdown() string {
 
 // Markdown parses the content as markdown and returns sanitized HTML
 func (t *Thought) Markdown() template.HTML {
-	// Use blocks if available, otherwise fall back to legacy Content
 	content := t.BlocksToMarkdown()
 
 	md := goldmark.New(
