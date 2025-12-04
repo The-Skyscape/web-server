@@ -97,6 +97,19 @@ func (p *Profile) FollowingCount() int {
 	return Follows.Count("WHERE FollowerID = ?", p.UserID)
 }
 
+// AppsCount returns the count of active apps owned by this profile
+func (p *Profile) AppsCount() int {
+	return Apps.Count(`
+		JOIN repos ON repos.ID = apps.RepoID
+		WHERE repos.OwnerID = ? AND apps.Status != 'shutdown'
+	`, p.UserID)
+}
+
+// ReposCount returns the count of non-archived repos owned by this profile
+func (p *Profile) ReposCount() int {
+	return Repos.Count("WHERE OwnerID = ? AND Archived = false", p.UserID)
+}
+
 // IsFollowedBy checks if a specific user follows this profile
 func (p *Profile) IsFollowedBy(userID string) bool {
 	follow, _ := Follows.First("WHERE FollowerID = ? AND FolloweeID = ?", userID, p.UserID)

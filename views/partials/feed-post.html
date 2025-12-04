@@ -1,246 +1,292 @@
-<article class="card bg-base-100/80 backdrop-blur-sm border border-white/5 w-full">
-  <div class="card-body gap-3">
+{{$post := .}}
+{{$user := auth.CurrentUser}}
+{{$postID := .ID}}
+
+<article id="post-{{$postID}}" class="group relative bg-gradient-to-br from-base-100/90 to-base-100/70 backdrop-blur-md rounded-2xl border border-white/[0.08] hover:border-white/[0.15] shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300">
+
+  <!-- Subtle glow effect on hover -->
+  <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+
+  <div class="relative p-5">
+    <!-- Header -->
     {{with .User}}
-    <header class="flex items-center gap-2">
-      <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-        <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-      </div>
-      <div class="flex items-center gap-2 min-w-0">
-        <span class="text-sm font-medium">@{{.Handle}}</span>
-        <span class="text-sm text-white/50 capitalize">{{$.Action}}</span>
+    <header class="flex items-start gap-3 mb-4">
+      <!-- Avatar -->
+      <a href="{{host}}/user/{{.Handle}}" class="shrink-0" hx-boost="true">
+        <div class="w-10 h-10 rounded-full bg-white/10 border border-white/10 p-0.5">
+          <img src="{{.Avatar}}" alt="{{.Name}}" class="w-full h-full rounded-full object-cover">
+        </div>
+      </a>
+
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <a href="{{host}}/user/{{.Handle}}" class="font-semibold text-white hover:text-primary transition-colors" hx-boost="true">
+            @{{.Handle}}
+          </a>
+          <span class="text-sm text-white/40">{{$post.Action}}</span>
+        </div>
+        <time class="text-xs text-white/30">{{timeAgo $post.CreatedAt}}</time>
       </div>
 
-      {{$user := auth.CurrentUser}}
+      <!-- Actions menu -->
       {{if and $user (eq $user.ID .ID)}}
-      <div class="dropdown dropdown-end ml-auto">
-        <button tabindex="0" class="btn btn-ghost btn-sm btn-square">
-          {{template "icon-dots.html"}}
+      <div class="dropdown dropdown-end">
+        <button tabindex="0" class="btn btn-ghost btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+          </svg>
         </button>
-        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-sm border border-white/20">
-          <li><a hx-confirm="Are you sure you want to delete this post?" hx-delete="{{host}}/feed/{{$.ID}}" class="text-error">Delete</a></li>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-200 rounded-xl z-50 w-48 p-2 shadow-xl border border-white/10">
+          <li>
+            <button hx-delete="{{host}}/feed/{{$postID}}" hx-confirm="Delete this post?" hx-target="#post-{{$postID}}" hx-swap="outerHTML swap:0.3s" class="text-error hover:bg-error/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Delete post
+            </button>
+          </li>
         </ul>
       </div>
       {{end}}
     </header>
     {{end}}
 
-    {{if $.Content}}
-    <p class="text-base {{if or .Repo .Profile .App .File}}text-white/70{{else}}text-white/90 text-lg{{end}}">
-      {{$.Content}}
-    </p>
+    <!-- Content -->
+    {{if $post.Content}}
+    <div class="mb-4">
+      <p class="text-[15px] leading-relaxed {{if or .Repo .Profile .App .Thought .File}}text-white/80{{else}}text-white/90 text-base{{end}}">
+        {{$post.Content}}
+      </p>
+    </div>
     {{end}}
 
-    {{with $.File}}
-    <a href="{{host}}/file/{{.ID}}" target="_blank" class="block rounded-xl overflow-hidden border border-white/10 hover:border-white/20 transition-colors">
-      <img src="{{host}}/file/{{.ID}}" alt="Post image" class="w-full max-h-96 object-cover">
+    <!-- Image attachment -->
+    {{with $post.File}}
+    <a href="{{host}}/file/{{.ID}}" target="_blank" class="block mb-4 rounded-xl overflow-hidden border border-white/10 hover:border-primary/30 transition-all duration-300 group/img">
+      <div class="relative">
+        <img src="{{host}}/file/{{.ID}}" alt="Post image" class="w-full max-h-[400px] object-cover group-hover/img:scale-[1.02] transition-transform duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity"></div>
+      </div>
     </a>
     {{end}}
 
+    <!-- Embedded content cards -->
     {{if or .Repo .Profile .App .Thought}}
-    <div class="rounded-xl border border-white/10 overflow-hidden hover:border-white/20 transition-colors" hx-boost="true">
+    <div class="mb-4" hx-boost="true">
+
       {{with .Thought}}
-      <a href="{{host}}/thought/{{.ID}}" class="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
+      <a href="{{host}}/thought/{{.ID}}" class="flex items-center gap-4 p-4 rounded-xl bg-accent/5 border border-accent/20 hover:border-accent/40 hover:bg-accent/10 transition-all duration-300 group/card">
+        <div class="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+          </svg>
+        </div>
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1">
-            {{with .Profile}}
-            <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-            </div>
-            <span class="text-sm text-white/50">@{{.Handle}}</span>
-            <span class="text-white/30">/</span>
-            {{end}}
-            <span class="font-medium truncate">{{.Title}}</span>
+          <div class="flex items-center gap-2 mb-0.5">
+            {{with .Profile}}<span class="text-xs text-white/40">@{{.Handle}} /</span>{{end}}
+            <span class="font-medium text-white truncate">{{.Title}}</span>
           </div>
-          <div class="flex items-center gap-3 text-sm text-white/50">
+          <div class="flex items-center gap-3 text-xs text-white/40">
             <span class="flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
               {{.ViewsCount}}
             </span>
-            {{if gt .StarsCount 0}}
-            <span class="flex items-center gap-1">
-              <span class="text-yellow-400/80">&#9733;</span>
-              {{.StarsCount}}
-            </span>
-            {{end}}
+            {{if gt .StarsCount 0}}<span class="text-yellow-400">★ {{.StarsCount}}</span>{{end}}
           </div>
         </div>
-        {{template "icon-chevron-right.html"}}
+        <svg class="w-5 h-5 text-white/30 group-hover/card:text-accent group-hover/card:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </a>
       {{end}}
 
       {{with .Repo}}
-      <a href="{{host}}/repo/{{.ID}}" class="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
+      <a href="{{host}}/repo/{{.ID}}" class="flex items-center gap-4 p-4 rounded-xl bg-secondary/5 border border-secondary/20 hover:border-secondary/40 hover:bg-secondary/10 transition-all duration-300 group/card">
+        <div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 21.73a2 2 0 002 0l7-4A2 2 0 0021 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73z M12 22V12 M3.3 7l7.703 4.734a2 2 0 001.994 0L20.7 7"/>
+          </svg>
+        </div>
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1">
-            {{with .Owner}}
-            <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-            </div>
-            <span class="text-sm text-white/50">@{{.Handle}}</span>
-            <span class="text-white/30">/</span>
-            {{end}}
-            <span class="font-medium truncate">{{.Name}}</span>
+          <div class="flex items-center gap-2 mb-0.5">
+            {{with .Owner}}<span class="text-xs text-white/40">@{{.Handle}} /</span>{{end}}
+            <span class="font-medium text-white truncate">{{.Name}}</span>
           </div>
-          <p class="text-sm text-white/50 truncate">{{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}</p>
+          <p class="text-xs text-white/40 truncate">{{with .Description}}{{.}}{{else}}No description{{end}}</p>
         </div>
-        {{template "icon-chevron-right.html"}}
-      </a>
-      {{end}}
-
-      {{with .Profile}}
-      <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
-        <div class="w-10 h-10 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-          <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-        </div>
-        <div class="flex-1 min-w-0">
-          <span class="font-medium block">{{.Name}}</span>
-          <p class="text-sm text-white/50 truncate">{{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}</p>
-        </div>
-        {{template "icon-chevron-right.html"}}
+        <svg class="w-5 h-5 text-white/30 group-hover/card:text-secondary group-hover/card:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </a>
       {{end}}
 
       {{with .App}}
-      <a href="{{host}}/app/{{.ID}}" class="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1">
-            {{with .Owner}}
-            <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-            </div>
-            <span class="text-sm text-white/50">@{{.Handle}}</span>
-            <span class="text-white/30">/</span>
-            {{end}}
-            <span class="font-medium truncate">{{.Name}}</span>
-          </div>
-          <p class="text-sm text-white/50 truncate">{{with .Description}}{{.}}{{else}}<span class="italic">No description</span>{{end}}</p>
+      <a href="{{host}}/app/{{.ID}}" class="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 hover:bg-primary/10 transition-all duration-300 group/card">
+        <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
         </div>
-        {{template "icon-chevron-right.html"}}
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-0.5">
+            {{with .Owner}}<span class="text-xs text-white/40">@{{.Handle}} /</span>{{end}}
+            <span class="font-medium text-white truncate">{{.Name}}</span>
+          </div>
+          <p class="text-xs text-white/40 truncate">{{with .Description}}{{.}}{{else}}No description{{end}}</p>
+        </div>
+        <svg class="w-5 h-5 text-white/30 group-hover/card:text-primary group-hover/card:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </a>
       {{end}}
+
+      {{with .Profile}}
+      <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-4 p-4 rounded-xl bg-info/5 border border-info/20 hover:border-info/40 hover:bg-info/10 transition-all duration-300 group/card">
+        <div class="w-12 h-12 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
+          <img src="{{.Avatar}}" alt="{{.Name}}" class="w-full h-full rounded-full object-cover">
+        </div>
+        <div class="flex-1 min-w-0">
+          <span class="font-medium text-white block">{{.Name}}</span>
+          <p class="text-xs text-white/40 truncate">{{with .Description}}{{.}}{{else}}No description{{end}}</p>
+        </div>
+        <svg class="w-5 h-5 text-white/30 group-hover/card:text-info group-hover/card:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+      {{end}}
+
     </div>
     {{end}}
 
-    <!-- Reactions and Comments Section -->
-    <footer class="flex flex-col gap-3 pt-2 border-t border-white/5">
-      <!-- Reaction Counts Display -->
+    <!-- Engagement bar -->
+    <footer class="pt-3 border-t border-white/[0.06]">
+      <!-- Reaction display -->
       {{$reactions := .ReactionCounts}}
       {{if .HasReactions}}
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap gap-1.5 mb-3">
         {{range $emoji, $count := $reactions}}
-        <span class="badge badge-ghost gap-1 text-xs">
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 text-xs hover:bg-white/10 transition-colors cursor-default">
           {{if eq $emoji "thumbsup"}}👍{{end}}
           {{if eq $emoji "heart"}}❤️{{end}}
           {{if eq $emoji "tada"}}🎉{{end}}
           {{if eq $emoji "smile"}}😄{{end}}
           {{if eq $emoji "confused"}}😕{{end}}
           {{if eq $emoji "rocket"}}🚀{{end}}
-          {{$count}}
+          <span class="text-white/60">{{$count}}</span>
         </span>
         {{end}}
       </div>
       {{end}}
 
-      <!-- Action Bar -->
-      {{$user := auth.CurrentUser}}
+      <!-- Action buttons -->
       {{if $user}}
-      <div class="flex items-center gap-2">
-        <!-- Reaction Picker -->
+      <div class="flex items-center gap-1">
+        <!-- Reaction picker -->
         {{$userReaction := .UserReaction $user.ID}}
         <div class="dropdown dropdown-top">
-          <button tabindex="0" class="btn btn-ghost btn-sm gap-1">
+          <button tabindex="0" class="btn btn-ghost btn-sm gap-2 text-white/50 hover:text-white hover:bg-white/5">
             {{if $userReaction}}
-            {{if eq $userReaction.Emoji "thumbsup"}}👍{{end}}
-            {{if eq $userReaction.Emoji "heart"}}❤️{{end}}
-            {{if eq $userReaction.Emoji "tada"}}🎉{{end}}
-            {{if eq $userReaction.Emoji "smile"}}😄{{end}}
-            {{if eq $userReaction.Emoji "confused"}}😕{{end}}
-            {{if eq $userReaction.Emoji "rocket"}}🚀{{end}}
+              <span class="text-base">
+                {{if eq $userReaction.Emoji "thumbsup"}}👍{{end}}
+                {{if eq $userReaction.Emoji "heart"}}❤️{{end}}
+                {{if eq $userReaction.Emoji "tada"}}🎉{{end}}
+                {{if eq $userReaction.Emoji "smile"}}😄{{end}}
+                {{if eq $userReaction.Emoji "confused"}}😕{{end}}
+                {{if eq $userReaction.Emoji "rocket"}}🚀{{end}}
+              </span>
             {{else}}
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
-            </svg>
-            React
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="text-xs">React</span>
             {{end}}
           </button>
-          <div tabindex="0" class="dropdown-content z-50 p-2 shadow-lg bg-base-200 rounded-box border border-white/10">
-            <div class="flex gap-1">
-              {{$postID := $.ID}}
-              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+          <div tabindex="0" class="dropdown-content z-50 mb-2 p-2 bg-base-200/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/10">
+            <div class="flex gap-0.5">
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-target="#post-{{$postID}}" hx-swap="outerHTML" class="contents">
                 <input type="hidden" name="emoji" value="thumbsup">
-                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">👍</button>
+                <button type="submit" class="btn btn-ghost btn-sm btn-square text-lg hover:scale-125 hover:bg-transparent transition-transform">👍</button>
               </form>
-              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-target="#post-{{$postID}}" hx-swap="outerHTML" class="contents">
                 <input type="hidden" name="emoji" value="heart">
-                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">❤️</button>
+                <button type="submit" class="btn btn-ghost btn-sm btn-square text-lg hover:scale-125 hover:bg-transparent transition-transform">❤️</button>
               </form>
-              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-target="#post-{{$postID}}" hx-swap="outerHTML" class="contents">
                 <input type="hidden" name="emoji" value="tada">
-                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">🎉</button>
+                <button type="submit" class="btn btn-ghost btn-sm btn-square text-lg hover:scale-125 hover:bg-transparent transition-transform">🎉</button>
               </form>
-              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-target="#post-{{$postID}}" hx-swap="outerHTML" class="contents">
                 <input type="hidden" name="emoji" value="smile">
-                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">😄</button>
+                <button type="submit" class="btn btn-ghost btn-sm btn-square text-lg hover:scale-125 hover:bg-transparent transition-transform">😄</button>
               </form>
-              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-target="#post-{{$postID}}" hx-swap="outerHTML" class="contents">
                 <input type="hidden" name="emoji" value="confused">
-                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">😕</button>
+                <button type="submit" class="btn btn-ghost btn-sm btn-square text-lg hover:scale-125 hover:bg-transparent transition-transform">😕</button>
               </form>
-              <form hx-post="{{host}}/post/{{$postID}}/react" hx-swap="none" class="contents">
+              <form hx-post="{{host}}/post/{{$postID}}/react" hx-target="#post-{{$postID}}" hx-swap="outerHTML" class="contents">
                 <input type="hidden" name="emoji" value="rocket">
-                <button type="submit" class="btn btn-ghost btn-sm btn-square hover:bg-white/10">🚀</button>
+                <button type="submit" class="btn btn-ghost btn-sm btn-square text-lg hover:scale-125 hover:bg-transparent transition-transform">🚀</button>
               </form>
             </div>
             {{if $userReaction}}
             <div class="border-t border-white/10 mt-2 pt-2">
-              <form hx-delete="{{host}}/post/{{$postID}}/react" hx-swap="none">
-                <button type="submit" class="btn btn-ghost btn-xs btn-block text-error">Remove reaction</button>
+              <form hx-delete="{{host}}/post/{{$postID}}/react" hx-target="#post-{{$postID}}" hx-swap="outerHTML">
+                <button type="submit" class="btn btn-ghost btn-xs btn-block text-error/70 hover:text-error">Remove</button>
               </form>
             </div>
             {{end}}
           </div>
         </div>
 
-        <!-- Comment Toggle Button -->
-        <button class="btn btn-ghost btn-sm gap-1" onclick="document.getElementById('comments-{{$.ID}}').classList.toggle('hidden')">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
+        <!-- Comment toggle -->
+        <button class="btn btn-ghost btn-sm gap-2 text-white/50 hover:text-white hover:bg-white/5"
+          _="on click toggle .hidden on #comments-{{$postID}} then if #comments-{{$postID}} is not .hidden then focus() the first <input/> in #comments-{{$postID}}">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
           </svg>
-          {{.CommentsCount}}
+          <span class="text-xs">{{.CommentsCount}}</span>
+        </button>
+
+        <!-- Share button -->
+        <button class="btn btn-ghost btn-sm gap-2 text-white/50 hover:text-white hover:bg-white/5 ml-auto"
+          _="on click writeText('{{host}}/post/{{$postID}}') into navigator.clipboard then add .tooltip .tooltip-open .tooltip-success to me set my @data-tip to 'Copied!' wait 1.5s remove .tooltip .tooltip-open .tooltip-success from me">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+          </svg>
         </button>
       </div>
       {{end}}
 
-      <!-- Comments Section (hidden by default) -->
-      <div id="comments-{{$.ID}}" class="hidden space-y-3">
-        <!-- Existing Comments -->
-        {{range .Comments}}
-        {{$comment := .}}
-        <div class="flex gap-2 pl-2 border-l-2 border-white/10">
-          {{with .User}}
-          <div class="w-5 h-5 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
-            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full w-full h-full">
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-medium">@{{.Handle}}</span>
+      <!-- Comments section -->
+      <div id="comments-{{$postID}}" class="hidden mt-4 space-y-3">
+        {{if .Comments}}
+        <div class="space-y-3 max-h-64 overflow-y-auto">
+          {{range .Comments}}
+          {{$comment := .}}
+          <div class="flex gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            {{with .User}}
+            <a href="{{host}}/user/{{.Handle}}" class="shrink-0" hx-boost="true">
+              <div class="w-8 h-8 rounded-full bg-white/10 border border-white/10 p-0.5">
+                <img src="{{.Avatar}}" alt="{{.Name}}" class="w-full h-full rounded-full object-cover">
+              </div>
+            </a>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <a href="{{host}}/user/{{.Handle}}" class="text-sm font-medium hover:text-primary transition-colors" hx-boost="true">@{{.Handle}}</a>
+              </div>
+              <p class="text-sm text-white/70 leading-relaxed">{{$comment.Content}}</p>
             </div>
-            <p class="text-sm text-white/70">{{$comment.Content}}</p>
+            {{end}}
           </div>
           {{end}}
         </div>
         {{end}}
 
-        <!-- Comment Form -->
+        <!-- Comment form -->
         {{if $user}}
-        <form hx-post="{{host}}/comment" hx-swap="none" class="flex gap-2">
-          <input type="hidden" name="subject_id" value="{{$.ID}}">
+        <form hx-post="{{host}}/comment" hx-swap="none" class="flex gap-2"
+          _="on htmx:afterRequest reset() me">
+          <input type="hidden" name="subject_id" value="{{$postID}}">
           <input type="hidden" name="subject_type" value="post">
-          <input type="text" name="content" placeholder="Write a comment..." class="input input-sm input-bordered flex-1 bg-white/5">
-          <button type="submit" class="btn btn-sm btn-primary">Post</button>
+          <input type="text" name="content" placeholder="Write a comment..." required
+            class="input input-sm flex-1 bg-white/5 border-white/10 focus:border-primary/50 focus:bg-white/[0.08] placeholder:text-white/30 transition-all">
+          <button type="submit" class="btn btn-sm btn-primary px-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </button>
         </form>
         {{end}}
       </div>

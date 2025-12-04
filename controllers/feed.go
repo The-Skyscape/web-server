@@ -215,7 +215,12 @@ func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	auth := c.Use("auth").(*AuthController)
-	user := auth.CurrentUser()
+	user, _, err := auth.Authenticate(r)
+
+	if err != nil {
+		c.RenderError(w, r, err)
+		return
+	}
 
 	var activities []*models.Activity
 

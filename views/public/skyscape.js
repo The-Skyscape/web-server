@@ -74,38 +74,12 @@
   // Service Worker Registration
   // ============================================
 
+  // Simple registration - let browser handle updates naturally
+  // With HTMX, full page reloads are rare, so SW updates apply on next visit
   if ('serviceWorker' in navigator) {
-    // Register SW once on initial load
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then((registration) => {
-        console.log('[PWA] Service Worker registered:', registration.scope);
-
-        // Check for updates immediately and every 60 seconds
-        registration.update();
-        setInterval(() => registration.update(), 60000);
-
-        // Listen for new service worker
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          console.log('[PWA] New Service Worker installing...');
-
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[PWA] New version available, reloading...');
-              window.location.reload();
-            }
-          });
-        });
-      })
-      .catch((error) => {
-        console.error('[PWA] Service Worker registration failed:', error);
-      });
-
-    // Reload when new service worker takes control
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.log('[PWA] Controller changed, reloading...');
-      window.location.reload();
-    });
+      .then(() => console.log('[PWA] Service Worker registered'))
+      .catch((err) => console.error('[PWA] SW registration failed:', err));
   }
 
   // ============================================
@@ -115,20 +89,28 @@
   window.Skyscape.deferredPrompt = null;
   window.Skyscape.isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
+  // Safe localStorage helper (can throw in private browsing)
+  function getStorageItem(key) {
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
+  function setStorageItem(key, value) {
+    try { localStorage.setItem(key, value); } catch { /* ignore */ }
+  }
+
   // Capture install prompt event (Chrome/Edge/Android)
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     window.Skyscape.deferredPrompt = e;
-    if (!window.Skyscape.isInstalled && !localStorage.getItem('pwa-dismissed')) {
+    if (!window.Skyscape.isInstalled && !getStorageItem('pwa-dismissed')) {
       showInstallBanner();
     }
   });
 
   // Detect iOS
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   // Show install banner on iOS if not installed (delayed to not interrupt)
-  if (isIOS && !window.Skyscape.isInstalled && !localStorage.getItem('pwa-dismissed')) {
+  if (isIOS && !window.Skyscape.isInstalled && !getStorageItem('pwa-dismissed')) {
     setTimeout(showIOSInstallBanner, 3000);
   }
 
@@ -214,7 +196,7 @@
     if (banner) banner.remove();
     const indicator = document.getElementById('pwa-share-indicator');
     if (indicator) indicator.remove();
-    localStorage.setItem('pwa-dismissed', Date.now());
+    setStorageItem('pwa-dismissed', Date.now());
   };
 
   // ============================================

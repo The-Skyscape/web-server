@@ -9,6 +9,8 @@ import (
 	"www.theskyscape.com/models"
 )
 
+const defaultProfileFeedLimit = 10
+
 func Profile() (string, *ProfileController) {
 	return "profile", &ProfileController{}
 }
@@ -83,6 +85,39 @@ func (p *ProfileController) RecentProfiles() []*models.Profile {
 		LIMIT 4
 	`, "%"+query+"%")
 	return profiles
+}
+
+// Page returns the current page number from query params
+func (c *ProfileController) Page() int {
+	return ParsePage(c.URL.Query(), 1)
+}
+
+// Limit returns the feed limit from query params
+func (c *ProfileController) Limit() int {
+	return ParseLimit(c.URL.Query(), defaultProfileFeedLimit)
+}
+
+// NextPage returns the next page number
+func (c *ProfileController) NextPage() int {
+	return c.Page() + 1
+}
+
+// UserActivities returns paginated activities for the current profile
+func (c *ProfileController) UserActivities() []*models.Activity {
+	profile := c.CurrentProfile()
+	if profile == nil {
+		return nil
+	}
+
+	limit := c.Limit()
+	offset := (c.Page() - 1) * limit
+
+	activities, _ := models.Activities.Search(`
+		WHERE UserID = ?
+		ORDER BY CreatedAt DESC
+		LIMIT ? OFFSET ?
+	`, profile.UserID, limit, offset)
+	return activities
 }
 
 func (c *ProfileController) setup(w http.ResponseWriter, r *http.Request) {

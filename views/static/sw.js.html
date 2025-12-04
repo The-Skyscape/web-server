@@ -3,10 +3,9 @@ const SW_VERSION = '{{seo.Version}}';
 const CACHE_NAME = 'skyscape-' + SW_VERSION;
 const STATIC_ASSETS = [
   '/',
-  '/feed',
   '/explore',
-  '/repos',
   '/apps',
+  '/thoughts',
   '/public/logo.svg',
   '/public/styles/markdown.css',
   '/public/skyscape.js'
@@ -53,8 +52,12 @@ self.addEventListener('fetch', (event) => {
       event.request.url.includes('/signin') ||
       event.request.url.includes('/signup') ||
       event.request.url.includes('/poll') ||
+      event.request.url.includes('/messages') ||
       event.request.url.includes('/app/') ||
-      event.request.url.includes('/repo/')) {
+      event.request.url.includes('/repo/') ||
+      event.request.url.includes('/user/') ||
+      event.request.url.includes('/thought/') ||
+      event.request.url.includes('/file/')) {
     return;
   }
 
@@ -171,18 +174,6 @@ self.addEventListener('notificationclick', (event) => {
       })
   );
 });
-
-// Background sync for offline actions
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-posts') {
-    event.waitUntil(syncPosts());
-  }
-});
-
-async function syncPosts() {
-  // Placeholder for syncing offline posts when back online
-  console.log('[SW] Syncing offline posts');
-}
 
 // Periodic background sync for message checking (Chrome PWA only)
 self.addEventListener('periodicsync', (event) => {

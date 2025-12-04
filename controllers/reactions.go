@@ -81,7 +81,9 @@ func (c *ReactionsController) react(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	c.Refresh(w, r)
+	// Return updated post partial
+	activity, _ := models.Activities.Get(activityID)
+	c.Render(w, r, "feed-post.html", activity)
 }
 
 func (c *ReactionsController) unreact(w http.ResponseWriter, r *http.Request) {
@@ -106,5 +108,7 @@ func (c *ReactionsController) unreact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Refresh(w, r)
+	// Return updated post partial
+	activity, _ := models.Activities.Get(activityID)
+	c.Render(w, r, "feed-post.html", activity)
 }

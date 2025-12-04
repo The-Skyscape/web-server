@@ -151,6 +151,7 @@
 
           <div class="flex flex-col gap-3 mt-2">
             {{range $thought.Comments}}
+            {{$comment := .}}
             <div class="flex gap-3 p-3 rounded-lg bg-base-100/50">
               {{with .User}}
               <div class="w-8 h-8 rounded-full bg-white/10 border border-white/10 p-0.5 shrink-0">
@@ -159,9 +160,9 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <a href="{{host}}/user/{{.Handle}}" class="text-sm font-medium hover:underline" hx-boost="true">@{{.Handle}}</a>
-                  <span class="text-xs text-white/40">{{timeAgo $.CreatedAt}}</span>
+                  <span class="text-xs text-white/40">{{timeAgo $comment.CreatedAt}}</span>
                 </div>
-                <p class="text-sm text-white/80 mt-1">{{$.Content}}</p>
+                <p class="text-sm text-white/80 mt-1">{{$comment.Content}}</p>
               </div>
               {{end}}
             </div>
