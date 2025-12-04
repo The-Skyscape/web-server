@@ -143,31 +143,31 @@ func (f FeedItem) IsPromotion() bool {
 }
 
 // FeedWithPromotions returns personalized activities interlaced with promotions every 5 posts
+// Promotions only appear on page 1 to prevent accumulation during infinite scroll
 func (c *FeedController) FeedWithPromotions() []FeedItem {
 	activities := c.PersonalizedActivities()
-	promotions := c.ActivePromotions()
+	result := make([]FeedItem, 0, len(activities))
 
-	result := make([]FeedItem, 0, len(activities)+len(promotions))
-
-	// Calculate starting promotion index based on page
-	// Each page of 10 activities shows 2 promotions (at positions 5 and 10)
 	page := c.Page()
-	limit := c.Limit()
-	promosPerPage := limit / 5 // Number of promotions inserted per page
-	promoIndex := (page - 1) * promosPerPage
 
-	// Wrap around if we've shown all promotions
-	numPromos := len(promotions)
-	if numPromos > 0 {
-		promoIndex = promoIndex % numPromos
-	}
+	// Only show promotions on page 1
+	if page == 1 {
+		promotions := c.ActivePromotions()
+		numPromos := len(promotions)
+		promoIndex := 0
 
-	for i, activity := range activities {
-		result = append(result, FeedItem{Activity: activity})
-		// Insert promotion every 5 posts
-		if (i+1)%5 == 0 && numPromos > 0 {
-			result = append(result, FeedItem{Promotion: promotions[promoIndex%numPromos]})
-			promoIndex++
+		for i, activity := range activities {
+			result = append(result, FeedItem{Activity: activity})
+			// Insert promotion every 5 posts
+			if (i+1)%5 == 0 && numPromos > 0 {
+				result = append(result, FeedItem{Promotion: promotions[promoIndex%numPromos]})
+				promoIndex++
+			}
+		}
+	} else {
+		// Subsequent pages: just activities, no promotions
+		for _, activity := range activities {
+			result = append(result, FeedItem{Activity: activity})
 		}
 	}
 
