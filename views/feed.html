@@ -119,8 +119,8 @@
       <span class="loading loading-spinner loading-md text-primary"></span>
     </div>
 
-    <!-- Welcome card at the end of feed (only on page 1, outside #feed to prevent infinite scroll duplication) -->
-    {{if eq feed.Page 1}}
+    <!-- Welcome card only shown when we've reached the end of the feed -->
+    {{if feed.IsEndOfFeed}}
     {{template "feed-welcome.html"}}
     {{end}}
   </div>

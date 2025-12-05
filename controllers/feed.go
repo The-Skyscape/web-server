@@ -126,6 +126,11 @@ func (c *FeedController) PersonalizedActivities() []*models.Activity {
 	return activities
 }
 
+// IsEndOfFeed returns true when we've loaded all available activities
+func (c *FeedController) IsEndOfFeed() bool {
+	return len(c.PersonalizedActivities()) < c.Limit()
+}
+
 // ActivePromotions returns all non-expired promotions
 func (c *FeedController) ActivePromotions() []*models.Promotion {
 	return models.ActivePromotions()
