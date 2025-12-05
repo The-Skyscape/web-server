@@ -126,20 +126,16 @@ func (c *FeedController) PersonalizedActivities() []*models.Activity {
 	return activities
 }
 
-// IsEndOfFeed returns true when we've loaded all available activities
-func (c *FeedController) IsEndOfFeed() bool {
-	return len(c.PersonalizedActivities()) < c.Limit()
-}
-
 // ActivePromotions returns all non-expired promotions
 func (c *FeedController) ActivePromotions() []*models.Promotion {
 	return models.ActivePromotions()
 }
 
-// FeedItem represents either an Activity or Promotion in the feed
+// FeedItem represents an Activity, Promotion, or end-of-feed marker
 type FeedItem struct {
 	Activity  *models.Activity
 	Promotion *models.Promotion
+	EndOfFeed bool
 }
 
 // IsPromotion returns true if this is a promotion item
@@ -147,30 +143,40 @@ func (f FeedItem) IsPromotion() bool {
 	return f.Promotion != nil
 }
 
+// IsEndOfFeed returns true if this marks the end of the feed
+func (f FeedItem) IsEndOfFeed() bool {
+	return f.EndOfFeed
+}
+
 // FeedWithPromotions returns personalized activities with 1 promotion per page
 // The promotion is positioned in the middle of the activities (at limit/2)
+// Appends an EndOfFeed marker when there are no more activities to load
 func (c *FeedController) FeedWithPromotions() []FeedItem {
 	activities := c.PersonalizedActivities()
 	promotions := c.ActivePromotions()
+	limit := c.Limit()
+	isEndOfFeed := len(activities) < limit
 
 	numPromos := len(promotions)
 	if numPromos == 0 {
 		// No promotions available, return activities only
-		result := make([]FeedItem, 0, len(activities))
+		result := make([]FeedItem, 0, len(activities)+1)
 		for _, activity := range activities {
 			result = append(result, FeedItem{Activity: activity})
+		}
+		if isEndOfFeed {
+			result = append(result, FeedItem{EndOfFeed: true})
 		}
 		return result
 	}
 
-	result := make([]FeedItem, 0, len(activities)+1)
+	result := make([]FeedItem, 0, len(activities)+2)
 
 	// Rotate through promotions based on page number
 	page := c.Page()
 	promo := promotions[(page-1)%numPromos]
 
 	// Insert promotion in the middle of activities
-	limit := c.Limit()
 	promoPosition := limit / 2
 
 	for i, activity := range activities {
@@ -184,6 +190,11 @@ func (c *FeedController) FeedWithPromotions() []FeedItem {
 	// If fewer activities than promoPosition, add promotion at the end
 	if len(activities) <= promoPosition && len(activities) > 0 {
 		result = append(result, FeedItem{Promotion: promo})
+	}
+
+	// Add end-of-feed marker when no more activities to load
+	if isEndOfFeed {
+		result = append(result, FeedItem{EndOfFeed: true})
 	}
 
 	return result
