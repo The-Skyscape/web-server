@@ -228,7 +228,7 @@ func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
 	user, _, err := auth.Authenticate(r)
 
 	if err != nil {
-		c.RenderError(w, r, err)
+		c.Refresh(w, r)
 		return
 	}
 

@@ -150,6 +150,14 @@ func CreateProfile(userID, description string) (*Profile, error) {
 		return nil, err
 	}
 
+	// Create "joined" activity for the new user
+	Activities.Insert(&Activity{
+		UserID:      userID,
+		Action:      "joined",
+		SubjectType: "profile",
+		SubjectID:   userID,
+	})
+
 	return p, err
 }
 

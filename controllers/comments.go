@@ -130,6 +130,9 @@ func (c *CommentsController) create(w http.ResponseWriter, r *http.Request) {
 				activitySubjectID = parts[1]
 				activitySubjectType = "repo"
 			}
+		} else if subjectType == "thought" {
+			activitySubjectType = "thought"
+			activitySubjectID = subjectID
 		} else if subjectType == "app" || subjectType == "repo" {
 			activitySubjectID = subjectID
 		} else {
