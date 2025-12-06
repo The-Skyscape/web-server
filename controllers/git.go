@@ -107,6 +107,34 @@ func (c *GitController) gitServer() *gitkit.Server {
 					SubjectID:   repoID,
 					Content:     commitMsg,
 				})
+
+				// Auto-deploy: trigger build for any apps linked to this repo
+				apps, err := repo.Apps()
+				if err != nil || len(apps) == 0 {
+					return
+				}
+
+				for _, app := range apps {
+					// Skip shutdown apps
+					if app.Status == "shutdown" {
+						continue
+					}
+
+					log.Printf("[AutoDeploy] Triggering build for app %s after push to %s", app.ID, repoID)
+
+					// Start build in background
+					go func(a *models.App) {
+						a.Status = "launching"
+						a.Error = ""
+						models.Apps.Update(a)
+
+						if _, err := a.Build(); err != nil {
+							a.Error = err.Error()
+							models.Apps.Update(a)
+							log.Printf("[AutoDeploy] Build failed for app %s: %v", a.ID, err)
+						}
+					}(app)
+				}
 			}(repo.ID, user.ID)
 		}
 

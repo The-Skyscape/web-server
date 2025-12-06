@@ -27,6 +27,7 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("/app/{app}", c.Serve("app.html", auth.Optional))
 	http.Handle("/app/{app}/manage", c.Serve("app-manage.html", auth.Required))
 	http.Handle("/app/{app}/history", c.ProtectFunc(c.redirectToManage, auth.Optional))
+	http.Handle("GET /app/{app}/versions", c.ProtectFunc(c.pollVersions, auth.Required))
 	http.Handle("GET /app/{app}/comments", c.Serve("app-comments.html", auth.Optional))
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
 	http.Handle("POST /app/{app}/edit", c.ProtectFunc(c.update, auth.Required))
@@ -485,4 +486,14 @@ func (c *AppsController) shareApp(w http.ResponseWriter, r *http.Request) {
 func (c *AppsController) redirectToManage(w http.ResponseWriter, r *http.Request) {
 	appID := r.PathValue("app")
 	c.Redirect(w, r, "/app/"+appID+"/manage")
+}
+
+func (c *AppsController) pollVersions(w http.ResponseWriter, r *http.Request) {
+	app, err := models.Apps.Get(r.PathValue("app"))
+	if err != nil {
+		c.RenderError(w, r, errors.New("app not found"))
+		return
+	}
+
+	c.Render(w, r, "app-versions.html", app)
 }

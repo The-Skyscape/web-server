@@ -38,7 +38,7 @@
             {{.Status}}
           </span>
           {{else if eq .Status "deploying"}}
-          <span class="badge badge-sm badge-soft badge-info ml-auto capitalize">
+          <span class="badge badge-sm badge-soft badge-info ml-auto capitalize animate-pulse">
             {{.Status}}
           </span>
           {{else if eq .Status "failed"}}
@@ -46,7 +46,7 @@
             {{.Status}}
           </span>
           {{else if or (eq .Status "building") (eq .Status "ready")}}
-          <span class="badge badge-sm badge-soft badge-warning ml-auto capitalize">
+          <span class="badge badge-sm badge-soft badge-warning ml-auto capitalize animate-pulse">
             building
           </span>
           {{else}}

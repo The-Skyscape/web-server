@@ -45,16 +45,21 @@
     <div class="absolute inset-0 bg-black/40"></div>
     <div id="feed"
       class="hero-content max-w-screen-2xl w-full mx-auto flex flex-col justify-around gap-6 p-6 md:p-8 lg:flex-row lg:gap-12 lg:p-12">
-      <div class="flex flex-col gap-3 max-w-screen-sm md:gap-4 lg:order-1">
-        <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white text-center lg:text-left">
+      <div class="flex flex-col gap-3 max-w-screen-sm lg:max-w-lg xl:max-w-screen-sm md:gap-4 lg:order-1">
+        <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-2xl xl:text-4xl font-bold text-white text-center lg:text-left">
           Join the Fastest Growing Network of Developers
         </h1>
 
-        <p class="text-base md:text-lg lg:text-xl font-semibold text-white opacity-90 hidden lg:block">
+        <p class="text-base md:text-lg lg:text-base xl:text-xl font-semibold text-white opacity-90 hidden lg:block">
           The Skyscape is an online network of developers, designers, and entrepreneurs who are passionate about
           technology and innovation. We are dedicated to providing a supportive community for all developers, regardless
           of their background or experience, with features like forums, code hosting, app hosting, and more.
         </p>
+
+        <a href="{{host}}/manifesto"
+          class="btn btn-link text-white w-max hidden lg:inline-flex">
+          Read More on Our Manifesto
+        </a>
       </div>
 
       <div class="flex flex-col max-w-sm w-full mx-auto lg:mx-0 lg:order-2">
@@ -109,7 +114,7 @@
       </div>
 
       <a href="{{host}}/manifesto"
-        class="btn btn-link text-white w-max mx-auto order-last lg:order-3">
+        class="btn btn-link text-white w-max mx-auto order-last lg:hidden">
         Read More on Our Manifesto
       </a>
     </div>
