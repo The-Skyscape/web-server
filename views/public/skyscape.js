@@ -97,11 +97,17 @@
     try { localStorage.setItem(key, value); } catch { /* ignore */ }
   }
 
+  // Check if on auth pages (don't show install banner here)
+  function isAuthPage() {
+    const path = window.location.pathname;
+    return path === '/signin' || path === '/signup' || path === '/' || path.startsWith('/forgot-password');
+  }
+
   // Capture install prompt event (Chrome/Edge/Android)
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     window.Skyscape.deferredPrompt = e;
-    if (!window.Skyscape.isInstalled && !getStorageItem('pwa-dismissed')) {
+    if (!window.Skyscape.isInstalled && !getStorageItem('pwa-dismissed') && !isAuthPage()) {
       showInstallBanner();
     }
   });
@@ -110,7 +116,7 @@
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   // Show install banner on iOS if not installed (delayed to not interrupt)
-  if (isIOS && !window.Skyscape.isInstalled && !getStorageItem('pwa-dismissed')) {
+  if (isIOS && !window.Skyscape.isInstalled && !getStorageItem('pwa-dismissed') && !isAuthPage()) {
     setTimeout(showIOSInstallBanner, 3000);
   }
 
@@ -357,5 +363,37 @@
     const subscription = await registration.pushManager.getSubscription();
     return subscription !== null;
   };
+
+  // ============================================
+  // Cookie Consent Banner
+  // ============================================
+
+  function showCookieBanner() {
+    if (getStorageItem('cookies-accepted') || document.getElementById('cookie-banner')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'cookie-banner';
+    banner.className = 'fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm bg-base-200 border border-base-300 rounded-lg shadow-lg p-4 z-40';
+    banner.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="flex-1 text-sm">
+          <p class="opacity-80">We use cookies for authentication and to improve your experience.</p>
+        </div>
+        <button onclick="window.Skyscape.acceptCookies()" class="btn btn-primary btn-sm">OK</button>
+      </div>
+    `;
+    document.body.appendChild(banner);
+  }
+
+  window.Skyscape.acceptCookies = function() {
+    const banner = document.getElementById('cookie-banner');
+    if (banner) banner.remove();
+    setStorageItem('cookies-accepted', Date.now());
+  };
+
+  // Show cookie banner after a short delay (non-intrusive)
+  if (!getStorageItem('cookies-accepted')) {
+    setTimeout(showCookieBanner, 1500);
+  }
 
 })();
