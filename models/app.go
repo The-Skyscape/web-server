@@ -23,11 +23,12 @@ type App struct {
 	Status            string
 	Error             string
 	OAuthClientSecret string // bcrypt hashed
+	DatabaseEnabled   bool   // Whether app has database provisioned
 }
 
 func (*App) Table() string { return "apps" }
 
-func NewApp(repo *Repo, name, description string) (*App, error) {
+func NewApp(repo *Repo, name, description string, databaseEnabled bool) (*App, error) {
 	// Generate ID from name, sanitizing to only allow safe characters
 	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 
@@ -52,6 +53,7 @@ func NewApp(repo *Repo, name, description string) (*App, error) {
 		Description:       description,
 		RepoID:            repo.ID,
 		OAuthClientSecret: "", // Will be set during deployment
+		DatabaseEnabled:   databaseEnabled,
 	}
 
 	if _, err := Apps.Insert(app); err != nil {

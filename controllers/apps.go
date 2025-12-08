@@ -32,6 +32,7 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("POST /apps", c.ProtectFunc(c.create, auth.Required))
 	http.Handle("POST /app/{app}/edit", c.ProtectFunc(c.update, auth.Required))
 	http.Handle("POST /app/{app}/launch", c.ProtectFunc(c.launch, auth.Required))
+	http.Handle("POST /app/{app}/enable-database", c.ProtectFunc(c.enableDatabase, auth.Required))
 	http.Handle("POST /apps/{app}/promote", c.ProtectFunc(c.promoteApp, auth.Required))
 	http.Handle("DELETE /apps/{app}/promote", c.ProtectFunc(c.cancelPromotion, auth.Required))
 	http.Handle("POST /app/{app}/share", c.ProtectFunc(c.shareApp, auth.Required))
@@ -202,13 +203,14 @@ func (c *AppsController) create(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("name")
 	description := r.FormValue("description")
+	databaseEnabled := r.FormValue("database") == "true"
 
 	if name == "" || description == "" {
 		c.Render(w, r, "error-message.html", errors.New("missing name or desc"))
 		return
 	}
 
-	app, err := models.NewApp(repo, name, description)
+	app, err := models.NewApp(repo, name, description, databaseEnabled)
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
@@ -322,6 +324,52 @@ func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
 		c.Render(w, r, "error-message.html", errors.New("permission denied"))
 		return
 	}
+
+	go func() {
+		app.Status = "launching"
+		app.Error = ""
+		models.Apps.Update(app)
+
+		if _, err := app.Build(); err != nil {
+			app.Error = err.Error()
+			models.Apps.Update(app)
+			return
+		}
+	}()
+
+	time.Sleep(time.Millisecond * 250)
+	c.Refresh(w, r)
+}
+
+func (c *AppsController) enableDatabase(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	app, err := models.Apps.Get(r.PathValue("app"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", errors.New("app not found"))
+		return
+	}
+
+	repo := app.Repo()
+	isOwner := repo != nil && repo.OwnerID == user.ID
+	if !isOwner && !user.IsAdmin {
+		c.Render(w, r, "error-message.html", errors.New("permission denied"))
+		return
+	}
+
+	if app.DatabaseEnabled {
+		c.Render(w, r, "error-message.html", errors.New("database already enabled"))
+		return
+	}
+
+	// Enable database and trigger new build
+	app.DatabaseEnabled = true
+	models.Apps.Update(app)
 
 	go func() {
 		app.Status = "launching"

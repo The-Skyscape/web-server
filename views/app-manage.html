@@ -94,10 +94,12 @@
         <div class="flex flex-col gap-4">
           <div class="flex items-center justify-between py-2">
             <h3 class="font-semibold text-lg">Launch History</h3>
-            <button class="btn btn-sm btn-primary" hx-post="{{host}}/app/{{$app.ID}}/launch">
+            <div class="flex items-center gap-2">
               <span class="htmx-indicator loading loading-spinner loading-xs"></span>
-              Launch New Version
-            </button>
+              <button class="btn btn-sm btn-primary" hx-post="{{host}}/app/{{$app.ID}}/launch">
+                Launch New Version
+              </button>
+            </div>
           </div>
 
           {{template "app-versions.html" $app}}
@@ -210,12 +212,24 @@
               </div>
               <div>
                 <h3 class="font-semibold">Storage</h3>
-                <p class="text-xs opacity-50">Database Volume 1 GB</p>
+                <p class="text-xs opacity-50">LibSQL Database Volume</p>
               </div>
+              {{if $app.DatabaseEnabled}}
               <div class="ml-auto tooltip" data-tip="Coming Soon">
                 <button class="btn btn-xs btn-primary" disabled>Upgrade</button>
               </div>
+              {{else}}
+              <div class="flex items-center gap-2 ml-auto">
+                <span class="htmx-indicator loading loading-spinner loading-xs"></span>
+                <button class="btn btn-xs btn-primary"
+                  hx-post="{{host}}/app/{{$app.ID}}/enable-database"
+                  hx-confirm="Enable database for this app? This will trigger a new build.">
+                  Enable
+                </button>
+              </div>
+              {{end}}
             </div>
+            {{if $app.DatabaseEnabled}}
             {{with $metrics}}
             <div class="mt-3 pt-3 border-t border-white/5">
               <div class="flex justify-between text-sm mb-2">
@@ -237,6 +251,11 @@
               </div>
               <progress class="progress progress-info h-2 w-full" value="0" max="100"></progress>
               <div class="text-right text-xs opacity-40 mt-1">0% used</div>
+            </div>
+            {{end}}
+            {{else}}
+            <div class="mt-3 pt-3 border-t border-white/5 text-sm opacity-50 text-center">
+              Not enabled. Enable to provision a 1 GB LibSQL database volume.
             </div>
             {{end}}
           </div>

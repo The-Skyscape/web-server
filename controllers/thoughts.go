@@ -83,12 +83,20 @@ func (c *ThoughtsController) CurrentProfile() *models.Profile {
 	return profile
 }
 
-// AllThoughts returns all published thoughts
+// AllThoughts returns all published thoughts, with optional search
 func (c *ThoughtsController) AllThoughts() []*models.Thought {
+	query := c.URL.Query().Get("query")
 	thoughts, _ := models.Thoughts.Search(`
+		INNER JOIN users on users.ID = thoughts.UserID
 		WHERE Published = true
-		ORDER BY CreatedAt DESC
-	`)
+			AND (
+				thoughts.Title   LIKE $1 OR
+				thoughts.Content LIKE $1 OR
+				users.Handle     LIKE LOWER($1) OR
+				users.Name       LIKE $1
+			)
+		ORDER BY thoughts.CreatedAt DESC
+	`, "%"+query+"%")
 	return thoughts
 }
 
