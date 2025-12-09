@@ -126,23 +126,38 @@ func (c *AuthController) forward(name string, w http.ResponseWriter, r *http.Req
 	proxy.ServeHTTP(w, r)
 }
 
-func (c *AuthController) Optional(app *application.App, w http.ResponseWriter, r *http.Request) bool {
+// handleHostRedirects redirects apex domain to www and forwards app subdomains.
+// Returns true if the request was handled (redirected or forwarded).
+func (c *AuthController) handleHostRedirects(w http.ResponseWriter, r *http.Request) bool {
+	// Redirect apex domain to www to avoid cookie issues
+	if r.Host == "theskyscape.com" {
+		target := "https://www.theskyscape.com" + r.URL.RequestURI()
+		http.Redirect(w, r, target, http.StatusMovedPermanently)
+		return true
+	}
+
+	// Forward app subdomains to their containers
 	if strings.HasSuffix(r.Host, "skysca.pe") {
 		if parts := strings.Split(r.Host, "."); len(parts) == 3 {
 			c.forward(parts[0], w, r)
-			return false
+			return true
 		}
+	}
+
+	return false
+}
+
+func (c *AuthController) Optional(app *application.App, w http.ResponseWriter, r *http.Request) bool {
+	if c.handleHostRedirects(w, r) {
+		return false
 	}
 
 	return c.Controller.Optional(app, w, r)
 }
 
 func (c *AuthController) Required(app *application.App, w http.ResponseWriter, r *http.Request) bool {
-	if strings.HasSuffix(r.Host, "skysca.pe") {
-		if parts := strings.Split(r.Host, "."); len(parts) == 3 {
-			c.forward(parts[0], w, r)
-			return false
-		}
+	if c.handleHostRedirects(w, r) {
+		return false
 	}
 
 	if ok := c.Controller.Required(app, w, r); !ok {
