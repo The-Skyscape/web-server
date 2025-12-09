@@ -1,0 +1,50 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+  {{$post := feed.CurrentPost}}
+  {{if $post}}
+  {{with $post.User}}
+  <title>@{{.Handle}}'s post | The Skyscape</title>
+  <meta name="description" content="{{$post.Content}}">
+  <meta property="og:title" content="@{{.Handle}}'s post on The Skyscape">
+  <meta property="og:description" content="{{$post.Content}}">
+  {{end}}
+  {{else}}
+  <title>Post Not Found | The Skyscape</title>
+  {{end}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b border-white/10 w-full">
+    <div class="absolute inset-0 bg-gradient-to-b from-black/50 to-black/30"></div>
+    <div class="relative flex flex-col gap-2 items-center px-4 py-12">
+      <h1 class="text-2xl md:text-4xl font-bold tracking-wide text-white/90">Post</h1>
+      <p class="text-lg md:text-xl text-white/60 text-center max-w-lg">View and interact with this post</p>
+    </div>
+  </div>
+
+  <div class="p-4 md:py-8 w-full max-w-screen-md mx-auto flex flex-col gap-4">
+    {{$post := feed.CurrentPost}}
+    {{if $post}}
+    {{template "feed-post.html" $post}}
+    {{else}}
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mb-4">
+        <svg class="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-semibold text-white/90 mb-2">Post Not Found</h2>
+      <p class="text-white/60 mb-6">This post may have been deleted or never existed.</p>
+      <a href="{{host}}/" class="btn btn-primary" hx-boost="true">Back to Feed</a>
+    </div>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

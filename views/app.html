@@ -75,6 +75,63 @@
       </div>
     </div>
 
+    {{$img := apps.CurrentImage}}
+
+    {{if not $img}}
+    <!-- No deployed build yet -->
+    {{if $canManage}}
+    <!-- Owner view: Show launch history -->
+    <div class="flex flex-col gap-6 w-full max-w-screen-lg mx-auto">
+      <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+        <div class="card-body text-center py-8">
+          <div class="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h2 class="text-xl font-semibold mb-2">App Not Yet Deployed</h2>
+          <p class="opacity-60 max-w-md mx-auto">Your app is being built. Once the build completes, it will be automatically deployed.</p>
+        </div>
+      </div>
+
+      <!-- Launch History for owner -->
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center justify-between py-2">
+          <h3 class="font-semibold text-lg">Launch History</h3>
+          <div class="flex items-center gap-2">
+            <span class="htmx-indicator loading loading-spinner loading-xs"></span>
+            <button class="btn btn-sm btn-primary" hx-post="{{host}}/app/{{$app.ID}}/launch">
+              Launch New Version
+            </button>
+          </div>
+        </div>
+        {{template "app-versions.html" $app}}
+      </div>
+    </div>
+    {{else}}
+    <!-- Non-owner view: Under construction -->
+    <div class="flex flex-col items-center justify-center py-16 text-center w-full">
+      <div class="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mb-6">
+        <svg class="w-10 h-10 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-white/90 mb-3">Under Construction</h2>
+      <p class="text-white/60 max-w-md mb-6">This app is currently being set up by the developer. Check back soon!</p>
+      {{with $owner}}
+      <a href="{{host}}/user/{{.Handle}}" class="btn btn-ghost" hx-boost="true">
+        <div class="avatar">
+          <div class="w-6 rounded-full">
+            <img src="{{.Avatar}}" alt="{{.Name}}">
+          </div>
+        </div>
+        View @{{.Handle}}'s profile
+      </a>
+      {{end}}
+    </div>
+    {{end}}
+    {{else}}
+
     <!-- Two-column layout -->
     <div class="flex flex-col md:flex-row justify-between gap-8 w-full">
       <!-- Left column: Preview, About, Repo README -->
@@ -183,8 +240,6 @@
         </div>
 
         <!-- Current Version -->
-        {{$img := apps.CurrentImage}}
-        {{if $img}}
         <div class="flex flex-col gap-2">
           <label class="text-xs font-bold opacity-60 tracking-wider">
             Current Version
@@ -208,7 +263,6 @@
           </div>
           {{end}}
         </div>
-        {{end}}
 
         <!-- Comments Section -->
         <div class="flex flex-col gap-2">
@@ -263,6 +317,7 @@
         </div>
       </div>
     </div>
+    {{end}}
 
     {{template "share-app-modal.html" $app}}
     {{template "promote-app-modal.html" $app}}

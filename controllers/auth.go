@@ -308,6 +308,11 @@ func (c *AuthController) resetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(newPassword) < 8 {
+		c.Render(w, r, "error-message.html", errors.New("password must be at least 8 characters"))
+		return
+	}
+
 	user.PassHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)

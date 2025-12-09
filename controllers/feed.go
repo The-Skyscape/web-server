@@ -37,6 +37,7 @@ func (c *FeedController) Setup(app *application.App) {
 	http.Handle("GET /feed/poll", c.ProtectFunc(c.pollFeed, auth.Optional))
 	http.Handle("POST /feed/post", c.ProtectFunc(c.createPost, auth.Required))
 	http.Handle("DELETE /feed/{post}", c.ProtectFunc(c.deletePost, auth.Required))
+	http.Handle("GET /post/{post}", app.Serve("post.html", auth.Optional))
 }
 
 func (c FeedController) Handle(r *http.Request) application.Handler {
@@ -59,6 +60,11 @@ func (c *FeedController) serveFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Render(w, r, "feed.html", nil)
+}
+
+func (c *FeedController) CurrentPost() *models.Activity {
+	post, _ := models.Activities.Get(c.PathValue("post"))
+	return post
 }
 
 func (c *FeedController) Page() int {
