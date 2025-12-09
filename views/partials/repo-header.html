@@ -34,7 +34,7 @@
     {{end}}
 
     <button class="btn btn-sm btn-primary shadow-xl hidden md:flex" _="on click
-          call navigator.clipboard.writeText('git clone https://theskyscape.com/repo/{{.ID}}') then
+          call navigator.clipboard.writeText('git clone https://www.theskyscape.com/repo/{{.ID}}') then
           set my textContent to 'Copied ✓' then
           remove .btn-primary from me then
           add .btn-success to me then
@@ -83,7 +83,7 @@
       </li>
       <li>
         <a _="on click
-          call navigator.clipboard.writeText('https://theskyscape.com/repo/{{.ID}}') then
+          call navigator.clipboard.writeText('https://www.theskyscape.com/repo/{{.ID}}') then
           set my textContent to 'Copied ✓' then
           wait 2s then
           set my textContent to 'Share'">
