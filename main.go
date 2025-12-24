@@ -30,11 +30,10 @@ func init() {
 }
 
 func main() {
-	go func() {
-		if err := models.Emails.LoadTemplates(emails); err != nil {
-			log.Fatal("Failed to load email templates:", err)
-		}
-	}()
+	// Load email templates synchronously before server starts
+	if err := models.Emails.LoadTemplates(emails); err != nil {
+		log.Fatal("Failed to load email templates:", err)
+	}
 
 	_, auth := controllers.Auth()
 	application.Serve(views,
@@ -62,6 +61,7 @@ func main() {
 		application.WithController(controllers.API()),
 		application.WithController(controllers.Push()),
 		application.WithController(controllers.Thoughts()),
+		application.WithController(controllers.Payments()),
 	)
 }
 

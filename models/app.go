@@ -128,6 +128,7 @@ func (app *App) Build() (*Image, error) {
 		tmpDir = "/tmp/app-" + app.ID + "/" + time.Now().Format("2006-01-02-15-04-05")
 		os.MkdirAll(tmpDir, os.ModePerm)
 	}
+	defer os.RemoveAll(tmpDir)
 
 	repo := app.Repo()
 	if repo == nil {

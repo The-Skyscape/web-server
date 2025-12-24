@@ -11,8 +11,10 @@ import (
 
 type Profile struct {
 	application.Model
-	UserID      string
-	Description string
+	UserID           string
+	Description      string
+	Verified         bool   // User has active Verified subscription
+	StripeCustomerID string // Stripe customer ID for billing
 }
 
 func (*Profile) Table() string { return "profiles" }
@@ -59,20 +61,22 @@ func (p *Profile) RecentRepos() []*Repo {
 	return repos
 }
 
-// Followers returns all users following this profile
+// Followers returns users following this profile (max 1000)
 func (p *Profile) Followers() []*Follow {
 	follows, _ := Follows.Search(`
 		WHERE FolloweeID = ?
 		ORDER BY CreatedAt DESC
+		LIMIT 1000
 	`, p.UserID)
 	return follows
 }
 
-// Following returns all users this profile follows
+// Following returns users this profile follows (max 1000)
 func (p *Profile) Following() []*Follow {
 	follows, _ := Follows.Search(`
 		WHERE FollowerID = ?
 		ORDER BY CreatedAt DESC
+		LIMIT 1000
 	`, p.UserID)
 	return follows
 }
@@ -221,8 +225,7 @@ func (p *Profile) LastMessageAt(with *Profile) time.Time {
 	return message.CreatedAt
 }
 
-// MyConversations returns all profiles this user has exchanged messages with
-// Optimized with SQL JOIN to avoid Go loops
+// MyConversations returns profiles this user has exchanged messages with (max 50)
 func (p *Profile) MyConversations() []*Profile {
 	profiles, _ := Profiles.Search(`
 		JOIN messages ON (
@@ -232,6 +235,7 @@ func (p *Profile) MyConversations() []*Profile {
 		)
 		GROUP BY profiles.ID
 		ORDER BY MAX(messages.CreatedAt) DESC
+		LIMIT 50
 	`, p.ID, p.ID)
 
 	return profiles
@@ -262,20 +266,22 @@ func (p *Profile) RecentActivities(limit int) []*Activity {
 	return activities
 }
 
-// Thoughts returns all published thoughts by this user
+// Thoughts returns published thoughts by this user (max 100)
 func (p *Profile) Thoughts() []*Thought {
 	thoughts, _ := Thoughts.Search(`
 		WHERE UserID = ? AND Published = true
 		ORDER BY CreatedAt DESC
+		LIMIT 100
 	`, p.UserID)
 	return thoughts
 }
 
-// AllThoughts returns all thoughts by this user (including drafts) - for owner view
+// AllThoughts returns thoughts by this user including drafts (max 100)
 func (p *Profile) AllThoughts() []*Thought {
 	thoughts, _ := Thoughts.Search(`
 		WHERE UserID = ?
 		ORDER BY CreatedAt DESC
+		LIMIT 100
 	`, p.UserID)
 	return thoughts
 }

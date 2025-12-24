@@ -20,6 +20,7 @@
           <a href="{{host}}/user/{{.Handle}}" class="font-semibold text-white hover:text-primary transition-colors" hx-boost="true">
             @{{.Handle}}
           </a>
+          {{with $post.UserProfile}}{{if .Verified}}{{template "verified-badge.html"}}{{end}}{{end}}
           <span class="text-sm text-white/40">{{$post.Action}}</span>
         </div>
         <time class="text-xs text-white/30">{{timeAgo $post.CreatedAt}}</time>
@@ -263,6 +264,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <a href="{{host}}/user/{{.Handle}}" class="text-sm font-medium hover:text-primary transition-colors" hx-boost="true">@{{.Handle}}</a>
+                {{with $comment.UserProfile}}{{if .Verified}}{{template "verified-badge.html"}}{{end}}{{end}}
               </div>
               <p class="text-sm text-white/70 leading-relaxed">{{$comment.Content}}</p>
             </div>

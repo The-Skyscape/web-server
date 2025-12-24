@@ -162,8 +162,8 @@
                 <h3 class="font-semibold">Resource Usage</h3>
                 <p class="text-xs opacity-50">CPU 0.2 cores / Memory 512 MB</p>
               </div>
-              <div class="ml-auto tooltip" data-tip="Coming Soon">
-                <button class="btn btn-xs btn-primary" disabled>Upgrade</button>
+              <div class="ml-auto">
+                <button class="btn btn-xs btn-primary" _="on click call upgrade_app_modal.showModal()">Upgrade</button>
               </div>
             </div>
             {{with $metrics}}
@@ -215,8 +215,8 @@
                 <p class="text-xs opacity-50">LibSQL Database Volume</p>
               </div>
               {{if $app.DatabaseEnabled}}
-              <div class="ml-auto tooltip" data-tip="Coming Soon">
-                <button class="btn btn-xs btn-primary" disabled>Upgrade</button>
+              <div class="ml-auto">
+                <button class="btn btn-xs btn-primary" _="on click call upgrade_app_modal.showModal()">Upgrade</button>
               </div>
               {{else}}
               <div class="flex items-center gap-2 ml-auto">
@@ -309,6 +309,7 @@
 
     {{template "edit-app-modal.html" $app}}
     {{template "promote-app-modal.html" $app}}
+    {{template "upgrade-app-modal.html" $app}}
     {{end}}
     {{else}}
     <h1 class="text-2xl font-semibold">App not found</h1>

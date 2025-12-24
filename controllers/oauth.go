@@ -30,7 +30,8 @@ func (c *OAuthController) Setup(app *application.App) {
 	// Authorization flow - use Controller.Required (auth only, no profile check)
 	http.Handle("GET /oauth/authorize", c.ProtectFunc(c.authorizeGet, auth.Required))
 	http.Handle("POST /oauth/authorize", c.ProtectFunc(c.authorize, auth.Required))
-	http.Handle("POST /oauth/token", c.ProtectFunc(c.token, auth.Optional))
+	// Token endpoint uses Basic Auth, no CSRF protection needed (server-to-server)
+	http.Handle("POST /oauth/token", http.HandlerFunc(c.token))
 
 	// OAuth client management for apps
 	http.Handle("GET /app/{app}/users", c.Serve("app-users.html", auth.Required))

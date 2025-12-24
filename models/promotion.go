@@ -17,6 +17,8 @@ type Promotion struct {
 	SubjectID   string
 	Content     string
 	ExpiresAt   time.Time
+	PaymentID   string // Links to Payment record (empty for free promotions)
+	IsPaid      bool   // Whether this was a paid promotion
 }
 
 func (*Promotion) Table() string {

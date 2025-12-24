@@ -1,6 +1,7 @@
 package models
 
 import (
+	"log"
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -21,7 +22,9 @@ func (*RateLimit) Table() string {
 // Check checks if the rate limit has been exceeded for the given identifier and action
 func Check(identifier, action string, maxAttempts int, window time.Duration) (bool, int, error) {
 	// Clean up expired rate limits with batch delete
-	DB.Query("DELETE FROM rate_limits WHERE ResetAt < ?", time.Now()).Exec()
+	if err := DB.Query("DELETE FROM rate_limits WHERE ResetAt < ?", time.Now()).Exec(); err != nil {
+		log.Printf("Failed to clean up expired rate limits: %v", err)
+	}
 
 	// Get existing rate limit record (don't create if not exists)
 	limit, err := RateLimits.First("WHERE Identifier = ? AND Action = ?", identifier, action)

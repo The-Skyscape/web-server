@@ -64,6 +64,7 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
               <span class="text-base font-bold">{{.Name}}</span>
+              {{if .Verified}}{{template "verified-badge.html"}}{{end}}
               <span class="text-sm opacity-60">@{{.Handle}}</span>
               {{$unreadCount := $currentUser.UnreadMessagesFrom .}}
               {{if gt $unreadCount 0}}

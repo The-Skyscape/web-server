@@ -26,6 +26,15 @@ func (a *Activity) User() *authentication.User {
 	return user
 }
 
+// UserProfile returns the profile of the user who created this activity
+func (a *Activity) UserProfile() *Profile {
+	profile, err := Profiles.First("WHERE UserID = ?", a.UserID)
+	if err != nil {
+		return nil
+	}
+	return profile
+}
+
 func (a *Activity) Profile() *Profile {
 	// Only return profile if SubjectType is "profile"
 	if a.SubjectType != "profile" {
@@ -89,11 +98,12 @@ func (a *Activity) File() *File {
 	return file
 }
 
-// Comments returns all comments on this activity/post
+// Comments returns comments on this activity/post (max 100)
 func (a *Activity) Comments() []*Comment {
 	comments, _ := Comments.Search(`
 		WHERE SubjectID = ?
 		ORDER BY CreatedAt ASC
+		LIMIT 100
 	`, a.ID)
 	return comments
 }
@@ -103,10 +113,11 @@ func (a *Activity) CommentsCount() int {
 	return Comments.Count("WHERE SubjectID = ?", a.ID)
 }
 
-// Reactions returns all reactions on this activity/post
+// Reactions returns reactions on this activity/post (max 500)
 func (a *Activity) Reactions() []*Reaction {
 	reactions, _ := Reactions.Search(`
 		WHERE ActivityID = ?
+		LIMIT 500
 	`, a.ID)
 	return reactions
 }

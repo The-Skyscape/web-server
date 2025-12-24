@@ -1,0 +1,226 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+  <title>Billing | The Skyscape</title>
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-lg flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{$user := auth.CurrentUser}}
+    {{if $user}}
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Billing</h1>
+        <p class="text-sm opacity-60 mt-1">Manage your subscriptions and view payment history</p>
+      </div>
+      {{with profile.CurrentProfile}}
+      {{if .StripeCustomerID}}
+      <form method="POST" action="{{host}}/billing/portal">
+        <button type="submit" class="btn btn-outline btn-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+          </svg>
+          Stripe Portal
+        </button>
+      </form>
+      {{end}}
+      {{end}}
+    </div>
+
+    <!-- Active Subscriptions -->
+    <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+      <div class="card-body">
+        <h2 class="card-title text-lg">Active Subscriptions</h2>
+
+        {{$subs := payments.ActiveSubscriptions}}
+        {{if $subs}}
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Status</th>
+                <th>Renews</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range $subs}}
+              <tr>
+                <td>
+                  <div class="flex items-center gap-3">
+                    {{if eq .ProductType "verified"}}
+                    <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="font-bold">Verified Badge</div>
+                      <div class="text-sm opacity-50">$8/month</div>
+                    </div>
+                    {{else if eq .ProductType "app_resources"}}
+                    <div class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="font-bold">Resource Upgrade</div>
+                      {{with .App}}
+                      <div class="text-sm opacity-50">{{.Name}}</div>
+                      {{end}}
+                    </div>
+                    {{end}}
+                  </div>
+                </td>
+                <td>
+                  {{if eq .Status "active"}}
+                  <span class="badge badge-success badge-sm">Active</span>
+                  {{else if eq .Status "trialing"}}
+                  <span class="badge badge-info badge-sm">Trial</span>
+                  {{else if eq .Status "past_due"}}
+                  <span class="badge badge-warning badge-sm">Past Due</span>
+                  {{else}}
+                  <span class="badge badge-ghost badge-sm">{{.Status}}</span>
+                  {{end}}
+                </td>
+                <td class="text-sm opacity-70">
+                  {{.CurrentPeriodEnd.Format "Jan 2, 2006"}}
+                </td>
+                <td>
+                  {{with profile.CurrentProfile}}
+                  {{if .StripeCustomerID}}
+                  <form method="POST" action="{{host}}/billing/portal" class="inline">
+                    <button type="submit" class="btn btn-ghost btn-xs">Manage</button>
+                  </form>
+                  {{end}}
+                  {{end}}
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="text-center py-8">
+          <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 opacity-30">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+            </svg>
+          </div>
+          <p class="text-sm opacity-60">No active subscriptions</p>
+          <button class="btn btn-primary btn-sm mt-4" onclick="verify_modal.showModal()">Get Verified</button>
+        </div>
+        {{end}}
+      </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+      <div class="card-body">
+        <h2 class="card-title text-lg">Payment History</h2>
+
+        {{$payments := payments.UserPayments}}
+        {{if $payments}}
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range $payments}}
+              <tr>
+                <td class="text-sm opacity-70">
+                  {{.CreatedAt.Format "Jan 2, 2006"}}
+                </td>
+                <td>
+                  <div class="flex items-center gap-2">
+                    {{if eq .ProductType "promotion"}}
+                    <span>App Promotion</span>
+                    {{with .App}}
+                    <span class="text-xs opacity-50">{{.Name}}</span>
+                    {{end}}
+                    {{else if eq .ProductType "verified"}}
+                    <span>Verified Badge</span>
+                    {{else if eq .ProductType "resource_upgrade"}}
+                    <span>Resource Upgrade</span>
+                    {{with .App}}
+                    <span class="text-xs opacity-50">{{.Name}}</span>
+                    {{end}}
+                    {{else}}
+                    <span>{{.ProductType}}</span>
+                    {{end}}
+                  </div>
+                </td>
+                <td class="font-medium">{{.FormatAmount}}</td>
+                <td>
+                  {{if eq .Status "completed"}}
+                  <span class="badge badge-success badge-sm">Paid</span>
+                  {{else if eq .Status "pending"}}
+                  <span class="badge badge-warning badge-sm">Pending</span>
+                  {{else if eq .Status "failed"}}
+                  <span class="badge badge-error badge-sm">Failed</span>
+                  {{else if eq .Status "refunded"}}
+                  <span class="badge badge-ghost badge-sm">Refunded</span>
+                  {{else}}
+                  <span class="badge badge-ghost badge-sm">{{.Status}}</span>
+                  {{end}}
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="text-center py-8">
+          <p class="text-sm opacity-60">No payment history</p>
+        </div>
+        {{end}}
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+      <div class="card-body">
+        <h2 class="card-title text-lg">Quick Actions</h2>
+        <div class="flex flex-wrap gap-3 mt-2">
+          {{if not (payments.HasVerifiedSubscription)}}
+          <button class="btn btn-primary" onclick="verify_modal.showModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+            </svg>
+            Get Verified - $8/mo
+          </button>
+          {{end}}
+          <a href="{{host}}/apps" class="btn btn-outline" hx-boost="true">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Manage Apps
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {{else}}
+    <div class="alert alert-warning">
+      <span>Please sign in to view billing information.</span>
+    </div>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

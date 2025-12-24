@@ -35,6 +35,10 @@ var (
 
 	AppMetricsManager = database.Manage(DB, new(AppMetrics))
 
+	// Payment system
+	Subscriptions = database.Manage(DB, new(Subscription))
+	Payments      = database.Manage(DB, new(Payment))
+
 	Thoughts      = database.Manage(DB, new(Thought))
 	ThoughtViews  = database.Manage(DB, new(ThoughtView))
 	ThoughtStars  = database.Manage(DB, new(ThoughtStar))

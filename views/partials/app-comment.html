@@ -17,6 +17,7 @@
       <span class="text-xs font-semibold opacity-70">
         @{{.Handle}}
       </span>
+      {{with $.UserProfile}}{{if .Verified}}{{template "verified-badge.html"}}{{end}}{{end}}
     </a>
 
     <span class="text-xs opacity-50">

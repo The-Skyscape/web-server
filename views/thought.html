@@ -45,6 +45,7 @@
           </div>
         </div>
         <span class="hidden md:inline text-sm">@{{.Handle}}</span>
+        {{if .Verified}}{{template "verified-badge.html"}}{{end}}
       </a>
       {{end}}
 
@@ -160,6 +161,7 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <a href="{{host}}/user/{{.Handle}}" class="text-sm font-medium hover:underline" hx-boost="true">@{{.Handle}}</a>
+                  {{with $comment.UserProfile}}{{if .Verified}}{{template "verified-badge.html"}}{{end}}{{end}}
                   <span class="text-xs text-white/40">{{timeAgo $comment.CreatedAt}}</span>
                 </div>
                 <p class="text-sm text-white/80 mt-1">{{$comment.Content}}</p>

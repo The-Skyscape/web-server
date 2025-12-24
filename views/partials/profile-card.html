@@ -14,7 +14,10 @@
     </div>
 
     <div class="text-center">
-      <h2 class="text-lg font-semibold">{{.Name}}</h2>
+      <div class="flex items-center justify-center gap-1">
+        <h2 class="text-lg font-semibold">{{.Name}}</h2>
+        {{if .Verified}}{{template "verified-badge.html"}}{{end}}
+      </div>
       <div class="flex items-center justify-center gap-2">
         <span class="text-sm text-white/50">@{{.Handle}}</span>
         {{if .User.IsAdmin}}
