@@ -2,11 +2,8 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"strings"
 	"time"
 
@@ -14,6 +11,7 @@ import (
 	"github.com/The-Skyscape/devtools/pkg/authentication"
 	"github.com/The-Skyscape/devtools/pkg/emailing"
 	"golang.org/x/crypto/bcrypt"
+	"www.theskyscape.com/internal/security"
 	"www.theskyscape.com/models"
 )
 
@@ -114,41 +112,8 @@ var WebHostNames = []string{
 	"www.theskyscape.com",
 }
 
-func (c *AuthController) forward(name string, w http.ResponseWriter, r *http.Request) {
-	resource := fmt.Sprintf("http://%s:5000", name)
-	url, err := url.Parse(resource)
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(url)
-	proxy.ServeHTTP(w, r)
-}
-
-// handleHostRedirects redirects apex domain to www and forwards app subdomains.
-// Returns true if the request was handled (redirected or forwarded).
-func (c *AuthController) handleHostRedirects(w http.ResponseWriter, r *http.Request) bool {
-	// Redirect apex domain to www to avoid cookie issues
-	if r.Host == "theskyscape.com" {
-		target := "https://www.theskyscape.com" + r.URL.RequestURI()
-		http.Redirect(w, r, target, http.StatusMovedPermanently)
-		return true
-	}
-
-	// Forward app subdomains to their containers
-	if strings.HasSuffix(r.Host, "skysca.pe") {
-		if parts := strings.Split(r.Host, "."); len(parts) == 3 {
-			c.forward(parts[0], w, r)
-			return true
-		}
-	}
-
-	return false
-}
-
 func (c *AuthController) Optional(app *application.App, w http.ResponseWriter, r *http.Request) bool {
-	if c.handleHostRedirects(w, r) {
+	if security.CheckReverseProxy(app, w, r) {
 		return false
 	}
 
@@ -156,7 +121,7 @@ func (c *AuthController) Optional(app *application.App, w http.ResponseWriter, r
 }
 
 func (c *AuthController) Required(app *application.App, w http.ResponseWriter, r *http.Request) bool {
-	if c.handleHostRedirects(w, r) {
+	if security.CheckReverseProxy(app, w, r) {
 		return false
 	}
 

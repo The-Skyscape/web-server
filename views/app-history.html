@@ -12,7 +12,7 @@
     {{$user := auth.CurrentUser}}
     {{$owner := $app.Owner}}
     {{$isOwner := and $user $owner (eq $user.ID $owner.ID)}}
-    {{$currentImage := apps.CurrentImage}}
+    {{$currentImage := $app.ActiveImage}}
 
     <!-- Header matching repo-header style -->
     <div class="flex items-center gap-2">
@@ -62,7 +62,8 @@
             <a hx-post="{{host}}/app/{{$app.ID}}/launch">Launch New Version</a>
           </li>
           <li><a _="on click call edit_app_modal.showModal()">Edit</a></li>
-          <li><a hx-delete="{{host}}/app/{{$app.ID}}" hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
+          <li><a hx-delete="{{host}}/app/{{$app.ID}}"
+              hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
           {{end}}
         </ul>
       </div>

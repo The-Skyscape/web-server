@@ -370,23 +370,6 @@ func (c *OAuthController) generateAccessToken(userID, clientID, scopes string) (
 	return token.SignedString([]byte(secret))
 }
 
-// AuthorizedUsers returns the list of users who have authorized the current app
-func (c *OAuthController) AuthorizedUsers() []*models.OAuthAuthorization {
-	appID := c.PathValue("app")
-	app, err := models.Apps.Get(appID)
-	if err != nil || app == nil {
-		return nil
-	}
-
-	// Get all non-revoked authorizations (ClientID = AppID)
-	auths, _ := models.OAuthAuthorizations.Search(
-		"WHERE AppID = ? AND Revoked = false ORDER BY CreatedAt DESC",
-		app.ID,
-	)
-
-	return auths
-}
-
 // regenerateSecret regenerates the OAuth client secret
 func (c *OAuthController) regenerateSecret(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)

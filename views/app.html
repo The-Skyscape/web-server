@@ -69,13 +69,14 @@
           {{if $canManage}}
           <li><a href="{{host}}/app/{{$app.ID}}/manage" hx-boost="true">Manage</a></li>
           <li><a _="on click call edit_app_modal.showModal()">Edit</a></li>
-          <li><a hx-delete="{{host}}/app/{{$app.ID}}" hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
+          <li><a hx-delete="{{host}}/app/{{$app.ID}}"
+              hx-confirm="Are you sure you want to shutdown this app?">Shutdown</a></li>
           {{end}}
         </ul>
       </div>
     </div>
 
-    {{$img := apps.CurrentImage}}
+    {{$img := $app.ActiveImage}}
 
     {{if not $img}}
     <!-- No deployed build yet -->
@@ -86,11 +87,13 @@
         <div class="card-body text-center py-8">
           <div class="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-4">
             <svg class="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h2 class="text-xl font-semibold mb-2">App Not Yet Deployed</h2>
-          <p class="opacity-60 max-w-md mx-auto">Your app is being built. Once the build completes, it will be automatically deployed.</p>
+          <p class="opacity-60 max-w-md mx-auto">Your app is being built. Once the build completes, it will be
+            automatically deployed.</p>
         </div>
       </div>
 
@@ -113,7 +116,8 @@
     <div class="flex flex-col items-center justify-center py-16 text-center w-full">
       <div class="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mb-6">
         <svg class="w-10 h-10 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
         </svg>
       </div>
       <h2 class="text-2xl font-bold text-white/90 mb-3">Under Construction</h2>
@@ -137,13 +141,15 @@
       <!-- Left column: Preview, About, Repo README -->
       <div class="flex flex-col gap-4 w-full max-w-screen-md">
         <!-- App Preview -->
-        <div class="card relative w-full aspect-video rounded-box overflow-hidden bg-base-100 shadow-lg border border-white/5">
+        <div
+          class="card relative w-full aspect-video rounded-box overflow-hidden bg-base-100 shadow-lg border border-white/5">
           <img src="https://apps.skysca.pe/{{$app.ID}}" class="absolute inset-0 z-10 w-full h-full object-cover">
-          <a target="_blank" href="https://{{$app.ID}}.skysca.pe" class="bg-black/40 inset-0 absolute z-20 flex opacity-0 hover:opacity-100 transition-opacity">
+          <a target="_blank" href="https://{{$app.ID}}.skysca.pe"
+            class="bg-black/40 inset-0 absolute z-20 flex opacity-0 hover:opacity-100 transition-opacity">
             <div class="btn btn-lg btn-primary opacity-90 m-auto">
               Visit App
-              <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em"
-                xmlns="http://www.w3.org/2000/svg">
+              <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em"
+                width="1em" xmlns="http://www.w3.org/2000/svg">
                 <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"
                   d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72">
                 </path>
@@ -167,11 +173,16 @@
 
         <!-- Source Repo Link -->
         {{if and $owner $repo}}
-        <a href="{{host}}/repo/{{$repo.ID}}" class="flex items-center justify-between p-4 rounded-lg bg-base-200 hover:bg-base-300 transition" hx-boost="true">
+        <a href="{{host}}/repo/{{$repo.ID}}"
+          class="flex items-center justify-between p-4 rounded-lg bg-base-200 hover:bg-base-300 transition"
+          hx-boost="true">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center w-8 h-8 rounded-full bg-secondary/20 text-secondary shrink-0">
-              <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1.2em" width="1.2em" xmlns="http://www.w3.org/2000/svg">
-                <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path>
+              <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+                stroke-linejoin="round" height="1.2em" width="1.2em" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z">
+                </path>
                 <path d="M12 22V12"></path>
                 <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"></path>
                 <path d="m7.5 4.27 9 5.15"></path>
@@ -245,7 +256,9 @@
             Current Version
           </label>
           {{if $isOwner}}
-          <a href="{{host}}/app/{{$app.ID}}/manage" class="flex items-center justify-between p-2 rounded-lg bg-base-200 hover:bg-base-300 transition cursor-pointer" hx-boost="true">
+          <a href="{{host}}/app/{{$app.ID}}/manage"
+            class="flex items-center justify-between p-2 rounded-lg bg-base-200 hover:bg-base-300 transition cursor-pointer"
+            hx-boost="true">
             <div class="flex items-center gap-2">
               <span class="badge badge-success badge-sm">Running</span>
               <span class="font-mono text-sm opacity-80">{{slice $img.GitHash 0 7}}</span>
@@ -300,8 +313,8 @@
             {{if $comments}}
             {{range $index, $comment := $comments}}
             {{if eq (mod (add $index 1) $limit) 0}}
-            <div hx-get="{{host}}/app/{{$app.ID}}/comments?page={{$nextPage}}&limit={{$limit}}" hx-trigger="revealed" hx-swap="afterend"
-              hx-select="#app-comments > *">
+            <div hx-get="{{host}}/app/{{$app.ID}}/comments?page={{$nextPage}}&limit={{$limit}}" hx-trigger="revealed"
+              hx-swap="afterend" hx-select="#app-comments > *">
               {{template "app-comment.html" $comment}}
             </div>
             {{else}}

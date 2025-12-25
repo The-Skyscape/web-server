@@ -44,6 +44,21 @@ func (c AppsController) Handle(r *http.Request) application.Handler {
 	return &c
 }
 
+func (c *AppsController) MyApps() []*models.App {
+	auth := c.Use("auth").(*AuthController)
+	user := auth.CurrentUser()
+	if user == nil {
+		return nil
+	}
+
+	apps, _ := models.Apps.Search(`
+		JOIN repos ON repos.ID = apps.RepoID
+		WHERE repos.OwnerID = ? AND apps.Status != 'shutdown'
+		ORDER BY apps.CreatedAt DESC
+	`, user.ID)
+	return apps
+}
+
 func (c *AppsController) CurrentApp() *models.App {
 	app, err := models.Apps.Get(c.Request.PathValue("app"))
 	if err != nil {
@@ -59,23 +74,11 @@ func (c *AppsController) AuthorizedUsers() []*models.OAuthAuthorization {
 		return nil
 	}
 
-	auths, _ := models.OAuthAuthorizations.Search("WHERE AppID = ? AND Revoked = false", app.ID)
+	auths, _ := models.OAuthAuthorizations.Search(`
+		WHERE AppID = ?
+		AND Revoked = false
+	`, app.ID)
 	return auths
-}
-
-func (c *AppsController) CurrentImage() *models.Image {
-	app := c.CurrentApp()
-	if app == nil {
-		return nil
-	}
-
-	images := app.Images()
-	for _, img := range images {
-		if img.Status == "running" {
-			return img
-		}
-	}
-	return nil
 }
 
 func (c *AppsController) CurrentAppMetrics() *models.AppMetrics {

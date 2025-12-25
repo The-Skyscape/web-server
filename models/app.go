@@ -121,6 +121,15 @@ func (a *App) ActivePromotion() *Promotion {
 	return promo
 }
 
+// ActiveImage returns the current running image for this app, if any
+func (a *App) ActiveImage() *Image {
+	img, _ := Images.First(`
+		WHERE AppID = ? AND Status = 'running'
+		ORDER BY CreatedAt DESC
+	`, a.ID)
+	return img
+}
+
 func (app *App) Build() (*Image, error) {
 	host := containers.Local()
 	tmpDir, err := os.MkdirTemp("", "app-*")

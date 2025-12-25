@@ -220,21 +220,6 @@ func (c *FeedController) MyRepos() []*models.Repo {
 	return repos
 }
 
-// MyApps returns all apps owned by the current user for the promote dropdown
-func (c *FeedController) MyApps() []*models.App {
-	auth := c.Use("auth").(*AuthController)
-	user := auth.CurrentUser()
-	if user == nil {
-		return nil
-	}
-	apps, _ := models.Apps.Search(`
-		JOIN repos ON repos.ID = apps.RepoID
-		WHERE repos.OwnerID = ? AND apps.Status != 'shutdown'
-		ORDER BY apps.CreatedAt DESC
-	`, user.ID)
-	return apps
-}
-
 // pollFeed returns new activities since the given timestamp (filtered by followed users)
 func (c *FeedController) pollFeed(w http.ResponseWriter, r *http.Request) {
 	// Parse the 'after' timestamp (Unix seconds)

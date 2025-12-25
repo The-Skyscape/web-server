@@ -1,8 +1,0 @@
-{{$img := apps.CurrentImage}}
-{{if $img}}
-<a href="{{host}}/app/{{.ID}}/manage" class="flex items-center gap-2 text-sm text-white/60 hover:text-white/80 transition-colors" hx-boost="true">
-  <span class="badge badge-ghost badge-sm font-mono">{{slice $img.GitHash 0 7}}</span>
-  <span>Launched {{timeAgo $img.CreatedAt}}</span>
-  {{template "icon-chevron-right.html"}}
-</a>
-{{end}}
