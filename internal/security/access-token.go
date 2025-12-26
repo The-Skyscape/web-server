@@ -97,9 +97,10 @@ func ParseAccessToken(r *http.Request) (*authentication.User, []string, error) {
 	scopes := strings.Split(scopeStr, " ")
 
 	// Check if authorization still exists and is not revoked
+	// client_id can be either an app ID or project ID
 	auth, err := models.OAuthAuthorizations.First(
-		"WHERE UserID = ? AND AppID = ? AND Revoked = false",
-		userID, appID,
+		"WHERE UserID = ? AND (AppID = ? OR ProjectID = ?) AND Revoked = false",
+		userID, appID, appID,
 	)
 
 	if err != nil || auth == nil {
