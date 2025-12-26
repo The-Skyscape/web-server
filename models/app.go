@@ -209,3 +209,81 @@ func (a *App) Comments(limit, offset int) []*Comment {
 func (a *App) AuthorizedUsersCount() int {
 	return OAuthAuthorizations.Count("WHERE AppID = ? AND Revoked = false", a.ID)
 }
+
+// MigrateToProject converts this app and its repo into a unified Project.
+// It creates a new project, migrates all related data, and cleans up the old records.
+func (a *App) MigrateToProject() (*Project, error) {
+	repo := a.Repo()
+	if repo == nil {
+		return nil, errors.New("repo not found for this app")
+	}
+
+	// Use repo.ID as project ID to keep git path consistent
+	projectID := repo.ID
+
+	// Check if project already exists
+	if _, err := Projects.Get(projectID); err == nil {
+		return nil, errors.New("a project with this ID already exists")
+	}
+
+	// Create the project (don't init git - repo already exists)
+	project := &Project{
+		Model:             application.Model{ID: projectID},
+		OwnerID:           repo.OwnerID,
+		Name:              a.Name,
+		Description:       a.Description,
+		Status:            a.Status,
+		Error:             a.Error,
+		OAuthClientSecret: a.OAuthClientSecret,
+		DatabaseEnabled:   a.DatabaseEnabled,
+	}
+
+	// Map old status to project status
+	if project.Status == "" {
+		project.Status = "draft"
+	}
+
+	if _, err := Projects.Insert(project); err != nil {
+		return nil, errors.Wrap(err, "failed to create project")
+	}
+
+	// Migrate Images: update ProjectID for all images with this AppID
+	DB.Query("UPDATE images SET ProjectID = ? WHERE AppID = ?", projectID, a.ID).Exec()
+
+	// Migrate Stars: copy repo stars to project
+	DB.Query("UPDATE stars SET ProjectID = ? WHERE RepoID = ?", projectID, repo.ID).Exec()
+
+	// Migrate OAuth Authorizations: update ProjectID for all with this AppID
+	DB.Query("UPDATE oauth_authorizations SET ProjectID = ? WHERE AppID = ?", projectID, a.ID).Exec()
+
+	// Migrate Comments: update SubjectID from app.ID to project.ID
+	if a.ID != projectID {
+		DB.Query("UPDATE comments SET SubjectID = ? WHERE SubjectID = ?", projectID, a.ID).Exec()
+	}
+	// Also migrate repo comments
+	if repo.ID != projectID {
+		DB.Query("UPDATE comments SET SubjectID = ? WHERE SubjectID = ?", projectID, repo.ID).Exec()
+	}
+
+	// Migrate Activities: update SubjectType and SubjectID
+	DB.Query("UPDATE activities SET SubjectType = 'project', SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", projectID, a.ID).Exec()
+	DB.Query("UPDATE activities SET SubjectType = 'project', SubjectID = ? WHERE SubjectType = 'repo' AND SubjectID = ?", projectID, repo.ID).Exec()
+
+	// Create migration activity
+	Activities.Insert(&Activity{
+		UserID:      repo.OwnerID,
+		Action:      "migrated",
+		SubjectType: "project",
+		SubjectID:   projectID,
+		Content:     fmt.Sprintf("Migrated from app '%s' and repo '%s'", a.Name, repo.Name),
+	})
+
+	// Delete the old app (keep repo for now until we confirm it works)
+	Apps.Delete(a)
+
+	// Archive the repo instead of deleting (safer)
+	repo.Archived = true
+	Repos.Update(repo)
+
+	return project, nil
+}

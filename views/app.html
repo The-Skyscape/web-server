@@ -76,6 +76,24 @@
       </div>
     </div>
 
+    <!-- Migration to Projects banner (owner only) -->
+    {{if $canManage}}
+    <div class="alert bg-info/10 border border-info/20">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-info shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div class="flex flex-col gap-1">
+        <span class="font-semibold">Migrate to Projects</span>
+        <span class="text-sm opacity-70">Projects combine repos and apps into one. Migrate to get a unified experience with auto-deploy on git push.</span>
+      </div>
+      <button hx-post="{{host}}/app/{{$app.ID}}/migrate"
+        hx-confirm="Migrate this app and its repo to a Project? This will archive the repo and delete the app record."
+        class="btn btn-sm btn-info">
+        Migrate
+      </button>
+    </div>
+    {{end}}
+
     {{$img := $app.ActiveImage}}
 
     {{if not $img}}

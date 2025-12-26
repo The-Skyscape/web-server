@@ -36,6 +36,7 @@ func (c *AppsController) Setup(app *application.App) {
 	http.Handle("POST /apps/{app}/promote", c.ProtectFunc(c.promoteApp, auth.Required))
 	http.Handle("DELETE /apps/{app}/promote", c.ProtectFunc(c.cancelPromotion, auth.Required))
 	http.Handle("POST /app/{app}/share", c.ProtectFunc(c.shareApp, auth.Required))
+	http.Handle("POST /app/{app}/migrate", c.ProtectFunc(c.migrateToProject, auth.Required))
 	http.Handle("DELETE /app/{app}", c.ProtectFunc(c.shutdown, auth.Required))
 }
 
@@ -532,6 +533,37 @@ func (c *AppsController) shareApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Redirect(w, r, "/")
+}
+
+func (c *AppsController) migrateToProject(w http.ResponseWriter, r *http.Request) {
+	auth := c.Use("auth").(*AuthController)
+	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	app, err := models.Apps.Get(r.PathValue("app"))
+	if err != nil {
+		c.Render(w, r, "error-message.html", errors.New("app not found"))
+		return
+	}
+
+	repo := app.Repo()
+	isOwner := repo != nil && repo.OwnerID == user.ID
+	if !isOwner && !user.IsAdmin {
+		c.Render(w, r, "error-message.html", errors.New("permission denied"))
+		return
+	}
+
+	project, err := app.MigrateToProject()
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	log.Printf("Migrated app %s to project %s", app.ID, project.ID)
+	c.Redirect(w, r, "/project/"+project.ID)
 }
 
 func (c *AppsController) redirectToManage(w http.ResponseWriter, r *http.Request) {
