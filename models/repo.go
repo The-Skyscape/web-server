@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
@@ -20,35 +18,8 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"www.theskyscape.com/internal/git"
 )
-
-// sanitizeBranch validates and sanitizes branch names to prevent path traversal
-// and unauthorized access to git refs. Returns "main" as default for invalid branches.
-func sanitizeBranch(branch string) string {
-	if branch == "" {
-		return "main"
-	}
-
-	// Only allow alphanumeric, dash, underscore, and forward slash
-	validBranchRegex := regexp.MustCompile(`^[a-zA-Z0-9/_-]+$`)
-	if !validBranchRegex.MatchString(branch) {
-		return "main"
-	}
-
-	// Disallow dangerous patterns that could access unauthorized refs
-	dangerous := []string{
-		"refs/", "HEAD~", "HEAD^", "@{",
-		"..", "//", "stash",
-	}
-
-	for _, pattern := range dangerous {
-		if strings.Contains(branch, pattern) {
-			return "main"
-		}
-	}
-
-	return branch
-}
 
 type Repo struct {
 	application.Model
@@ -157,41 +128,25 @@ func (r *Repo) IsStarredBy(userID string) bool {
 }
 
 func (r *Repo) Git(args ...string) (stdout, stderr bytes.Buffer, err error) {
-	cmd := exec.Command("git", args...)
-	cmd.Dir = r.Path()
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	return stdout, stderr, cmd.Run()
+	return git.Exec(r.Path(), args...)
 }
 
 func (r *Repo) ListCommits(branch string, limit int) ([]*Commit, error) {
-	branch = sanitizeBranch(branch)
-	stdout, stderr, err := r.Git("log", "--format=format:%h %ae %s", "--reverse", branch, fmt.Sprintf("--max-count=%d", limit))
+	infos, err := git.ListCommits(r.Path(), branch, limit)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list commits: %s", stderr.String())
+		return nil, err
 	}
 
-	commits := strings.Split(stdout.String(), "\n")
-
-	var commitsList []*Commit
-	for _, commit := range commits {
-		if commit == "" {
-			continue
-		}
-		parts := strings.SplitN(commit, " ", 3)
-		if len(parts) < 3 {
-			continue
-		}
-		c := &Commit{
+	var commits []*Commit
+	for _, info := range infos {
+		commits = append(commits, &Commit{
 			Repo:    r,
-			Hash:    parts[0],
-			UserID:  parts[1],
-			Subject: parts[2],
-		}
-		commitsList = append(commitsList, c)
+			Hash:    info.Hash,
+			UserID:  info.Email,
+			Subject: info.Subject,
+		})
 	}
-
-	return commitsList, nil
+	return commits, nil
 }
 
 type Commit struct {
@@ -211,65 +166,34 @@ func (c *Commit) User() *authentication.User {
 }
 
 func (r *Repo) ListFiles(branch, path string) ([]*Blob, error) {
-	branch = sanitizeBranch(branch)
-	stdout, _, err := r.Git("ls-tree", branch, filepath.Join(".", path)+"/")
+	entries, err := git.ListFiles(r.Path(), branch, path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to list files: %s @ %s", branch, path)
+		return nil, err
 	}
 
+	branch = git.SanitizeBranch(branch)
 	var files []*Blob
-	for line := range strings.SplitSeq(strings.TrimSpace(stdout.String()), "\n") {
-		if parts := strings.Fields(line); len(parts) >= 4 {
-			files = append(files, &Blob{
-				Repo:   r,
-				Branch: branch,
-				Path:   parts[3],
-				IsDir:  parts[1] == "tree",
-			})
-		}
+	for _, entry := range entries {
+		files = append(files, &Blob{
+			Repo:   r,
+			Branch: branch,
+			Path:   entry.Path,
+			IsDir:  entry.IsDir,
+		})
 	}
-
-	sort.Slice(files, func(i, j int) bool {
-		if files[i].IsDir && !files[j].IsDir {
-			return true
-		}
-		if !files[i].IsDir && files[j].IsDir {
-			return false
-		}
-		return files[i].Path < files[j].Path
-	})
-
 	return files, nil
 }
 
 func (r *Repo) IsEmpty(branch string) bool {
-	branch = sanitizeBranch(branch)
-	_, err := r.ListCommits(branch, 1)
-	return err != nil
+	return git.IsEmpty(r.Path(), branch)
 }
 
 func (r *Repo) IsDir(branch, path string) (bool, error) {
-	branch = sanitizeBranch(branch)
-	if path == "" || path == "." {
-		return true, nil
-	}
-
-	stdout, _, err := r.Git("ls-tree", branch, filepath.Join(".", path))
-	if err != nil {
-		return false, errors.Wrap(err, "failed to list files")
-	}
-
-	output := strings.TrimSpace(stdout.String())
-	if output == "" {
-		return false, errors.New("no such file or directory")
-	}
-
-	parts := strings.Fields(output)
-	return parts[1] == "tree", nil
+	return git.IsDir(r.Path(), branch, path)
 }
 
 func (r *Repo) Open(branch, path string) (*Blob, error) {
-	branch = sanitizeBranch(branch)
+	branch = git.SanitizeBranch(branch)
 	isDir, err := r.IsDir(branch, path)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read location: "+path)
@@ -311,22 +235,16 @@ func (f *Blob) Comments() ([]*Comment, error) {
 }
 
 func (f *Blob) Read() (*Content, error) {
-	branch := sanitizeBranch(f.Branch)
-	stdout, _, err := f.Repo.Git("show", fmt.Sprintf("%s:%s", branch, f.Path))
+	fc, err := git.ReadFile(f.Repo.Path(), f.Branch, f.Path)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to show file")
+		return nil, err
 	}
 
-	c := &Content{
-		File:    f,
-		Content: stdout.String(),
-	}
-
-	if strings.Contains(c.Content, "\x00") {
-		c.IsBinary = true
-	}
-
-	return c, nil
+	return &Content{
+		File:     f,
+		Content:  fc.Content,
+		IsBinary: fc.IsBinary,
+	}, nil
 }
 
 type Content struct {

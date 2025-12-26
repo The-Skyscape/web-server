@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -22,6 +20,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"golang.org/x/crypto/bcrypt"
+	"www.theskyscape.com/internal/git"
 )
 
 // Project combines code storage (like Repo) with container deployment (like App)
@@ -304,102 +303,56 @@ func (p *Project) Path() string {
 }
 
 func (p *Project) Git(args ...string) (stdout, stderr bytes.Buffer, err error) {
-	cmd := exec.Command("git", args...)
-	cmd.Dir = p.Path()
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	return stdout, stderr, cmd.Run()
+	return git.Exec(p.Path(), args...)
 }
 
 func (p *Project) IsEmpty(branch string) bool {
-	branch = sanitizeBranch(branch)
-	_, err := p.ListCommits(branch, 1)
-	return err != nil
+	return git.IsEmpty(p.Path(), branch)
 }
 
 func (p *Project) ListCommits(branch string, limit int) ([]*ProjectCommit, error) {
-	branch = sanitizeBranch(branch)
-	stdout, stderr, err := p.Git("log", "--format=format:%h %ae %s", "--reverse", branch, fmt.Sprintf("--max-count=%d", limit))
+	infos, err := git.ListCommits(p.Path(), branch, limit)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list commits: %s", stderr.String())
+		return nil, err
 	}
 
-	commits := strings.Split(stdout.String(), "\n")
-	var commitsList []*ProjectCommit
-	for _, commit := range commits {
-		if commit == "" {
-			continue
-		}
-		parts := strings.SplitN(commit, " ", 3)
-		if len(parts) < 3 {
-			continue
-		}
-		c := &ProjectCommit{
+	var commits []*ProjectCommit
+	for _, info := range infos {
+		commits = append(commits, &ProjectCommit{
 			Project: p,
-			Hash:    parts[0],
-			UserID:  parts[1],
-			Subject: parts[2],
-		}
-		commitsList = append(commitsList, c)
+			Hash:    info.Hash,
+			UserID:  info.Email,
+			Subject: info.Subject,
+		})
 	}
-
-	return commitsList, nil
+	return commits, nil
 }
 
 func (p *Project) ListFiles(branch, path string) ([]*ProjectBlob, error) {
-	branch = sanitizeBranch(branch)
-	stdout, _, err := p.Git("ls-tree", branch, filepath.Join(".", path)+"/")
+	entries, err := git.ListFiles(p.Path(), branch, path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list files: %s @ %s", branch, path)
+		return nil, err
 	}
 
+	branch = git.SanitizeBranch(branch)
 	var files []*ProjectBlob
-	for line := range strings.SplitSeq(strings.TrimSpace(stdout.String()), "\n") {
-		if parts := strings.Fields(line); len(parts) >= 4 {
-			files = append(files, &ProjectBlob{
-				Project: p,
-				Branch:  branch,
-				Path:    parts[3],
-				IsDir:   parts[1] == "tree",
-			})
-		}
+	for _, entry := range entries {
+		files = append(files, &ProjectBlob{
+			Project: p,
+			Branch:  branch,
+			Path:    entry.Path,
+			IsDir:   entry.IsDir,
+		})
 	}
-
-	sort.Slice(files, func(i, j int) bool {
-		if files[i].IsDir && !files[j].IsDir {
-			return true
-		}
-		if !files[i].IsDir && files[j].IsDir {
-			return false
-		}
-		return files[i].Path < files[j].Path
-	})
-
 	return files, nil
 }
 
 func (p *Project) IsDir(branch, path string) (bool, error) {
-	branch = sanitizeBranch(branch)
-	if path == "" || path == "." {
-		return true, nil
-	}
-
-	stdout, _, err := p.Git("ls-tree", branch, filepath.Join(".", path))
-	if err != nil {
-		return false, errors.Wrap(err, "failed to list files")
-	}
-
-	output := strings.TrimSpace(stdout.String())
-	if output == "" {
-		return false, errors.New("no such file or directory")
-	}
-
-	parts := strings.Fields(output)
-	return parts[1] == "tree", nil
+	return git.IsDir(p.Path(), branch, path)
 }
 
 func (p *Project) Open(branch, path string) (*ProjectBlob, error) {
-	branch = sanitizeBranch(branch)
+	branch = git.SanitizeBranch(branch)
 	isDir, err := p.IsDir(branch, path)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read location: "+path)
@@ -460,22 +413,16 @@ func (f *ProjectBlob) Comments() ([]*Comment, error) {
 }
 
 func (f *ProjectBlob) Read() (*ProjectContent, error) {
-	branch := sanitizeBranch(f.Branch)
-	stdout, _, err := f.Project.Git("show", fmt.Sprintf("%s:%s", branch, f.Path))
+	fc, err := git.ReadFile(f.Project.Path(), f.Branch, f.Path)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to show file")
+		return nil, err
 	}
 
-	c := &ProjectContent{
-		File:    f,
-		Content: stdout.String(),
-	}
-
-	if strings.Contains(c.Content, "\x00") {
-		c.IsBinary = true
-	}
-
-	return c, nil
+	return &ProjectContent{
+		File:     f,
+		Content:  fc.Content,
+		IsBinary: fc.IsBinary,
+	}, nil
 }
 
 type ProjectContent struct {
