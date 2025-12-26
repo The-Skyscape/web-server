@@ -23,6 +23,43 @@ type OAuthController struct {
 	application.Controller
 }
 
+// OAuthClient interface for both App and Project OAuth support
+type OAuthClient interface {
+	GetID() string
+	GetName() string
+	RedirectURI() string
+	AllowedScopes() string
+	VerifySecret(secret string) bool
+	IsProject() bool
+}
+
+// appClient wraps App to implement OAuthClient
+type appClient struct{ *models.App }
+
+func (a appClient) GetID() string   { return a.ID }
+func (a appClient) GetName() string { return a.Name }
+func (a appClient) IsProject() bool { return false }
+
+// projectClient wraps Project to implement OAuthClient
+type projectClient struct{ *models.Project }
+
+func (p projectClient) GetID() string   { return p.ID }
+func (p projectClient) GetName() string { return p.Name }
+func (p projectClient) IsProject() bool { return true }
+
+// getOAuthClient looks up an OAuth client by ID, checking both apps and projects
+func getOAuthClient(clientID string) (OAuthClient, error) {
+	// Try app first
+	if app, err := models.Apps.Get(clientID); err == nil {
+		return appClient{app}, nil
+	}
+	// Try project
+	if project, err := models.Projects.Get(clientID); err == nil {
+		return projectClient{project}, nil
+	}
+	return nil, errors.New("client not found")
+}
+
 func (c *OAuthController) Setup(app *application.App) {
 	c.Controller.Setup(app)
 	auth := c.Use("auth").(*AuthController)
@@ -50,9 +87,28 @@ func (c *OAuthController) CurrentApp() *models.App {
 	if clientID == "" {
 		return nil
 	}
-
 	app, _ := models.Apps.Get(clientID)
 	return app
+}
+
+// CurrentProject returns the project for the current OAuth request (client_id = project_id)
+func (c *OAuthController) CurrentProject() *models.Project {
+	clientID := c.URL.Query().Get("client_id")
+	if clientID == "" {
+		return nil
+	}
+	project, _ := models.Projects.Get(clientID)
+	return project
+}
+
+// CurrentClient returns the OAuth client (app or project) for the request
+func (c *OAuthController) CurrentClient() OAuthClient {
+	clientID := c.URL.Query().Get("client_id")
+	if clientID == "" {
+		return nil
+	}
+	client, _ := getOAuthClient(clientID)
+	return client
 }
 
 // RequestedScopes returns the scopes being requested
@@ -77,9 +133,10 @@ func (c *OAuthController) ScopesMatch() bool {
 		return false
 	}
 
+	// Check both AppID and ProjectID
 	existing, err := models.OAuthAuthorizations.First(
-		"WHERE UserID = ? AND AppID = ? AND Revoked = false",
-		user.ID, clientID,
+		"WHERE UserID = ? AND (AppID = ? OR ProjectID = ?) AND Revoked = false",
+		user.ID, clientID, clientID,
 	)
 	if err != nil {
 		return false
@@ -123,23 +180,23 @@ func (c *OAuthController) authorizeGet(w http.ResponseWriter, r *http.Request) {
 		scope = "user:read"
 	}
 
-	// Get and validate app
-	app, err := models.Apps.Get(clientID)
+	// Get and validate client (app or project)
+	client, err := getOAuthClient(clientID)
 	if err != nil {
 		http.Error(w, "Invalid client_id", http.StatusBadRequest)
 		return
 	}
 
 	// Validate redirect URI matches opinionated format
-	if redirectURI != app.RedirectURI() {
+	if redirectURI != client.RedirectURI() {
 		http.Error(w, "Invalid redirect_uri", http.StatusBadRequest)
 		return
 	}
 
-	// Check if user has already authorized this app with the same scopes
+	// Check if user has already authorized this client with the same scopes
 	existing, err := models.OAuthAuthorizations.First(
-		"WHERE UserID = ? AND AppID = ? AND Revoked = false",
-		user.ID, clientID,
+		"WHERE UserID = ? AND (AppID = ? OR ProjectID = ?) AND Revoked = false",
+		user.ID, clientID, clientID,
 	)
 
 	// If already authorized with same scopes, skip consent screen
@@ -191,15 +248,15 @@ func (c *OAuthController) authorize(w http.ResponseWriter, r *http.Request) {
 		scope = "user:read"
 	}
 
-	// Get and validate app (client_id = app_id)
-	app, err := models.Apps.Get(clientID)
+	// Get and validate client (app or project)
+	client, err := getOAuthClient(clientID)
 	if err != nil {
 		http.Error(w, "Invalid client_id", http.StatusBadRequest)
 		return
 	}
 
 	// Validate redirect URI matches opinionated format
-	if redirectURI != app.RedirectURI() {
+	if redirectURI != client.RedirectURI() {
 		http.Error(w, "Invalid redirect_uri", http.StatusBadRequest)
 		return
 	}
@@ -212,7 +269,7 @@ func (c *OAuthController) authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create or update authorization
-	authorization, isNew, err := models.CreateOrUpdateAuthorization(user.ID, clientID, scope)
+	authorization, isNew, err := models.CreateOrUpdateAuthorizationForClient(user.ID, clientID, scope, client.IsProject())
 	if err != nil {
 		http.Error(w, "Failed to create authorization", http.StatusInternalServerError)
 		return
@@ -220,11 +277,17 @@ func (c *OAuthController) authorize(w http.ResponseWriter, r *http.Request) {
 
 	// Create activity for first-time authorization
 	if isNew {
+		subjectType := "app"
+		subjectID := authorization.AppID
+		if client.IsProject() {
+			subjectType = "project"
+			subjectID = authorization.ProjectID
+		}
 		models.Activities.Insert(&models.Activity{
 			UserID:      user.ID,
 			Action:      "joined",
-			SubjectType: "app",
-			SubjectID:   authorization.AppID,
+			SubjectType: subjectType,
+			SubjectID:   subjectID,
 		})
 	}
 
@@ -287,15 +350,15 @@ func (c *OAuthController) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate client (client_id = app_id)
-	app, err := models.Apps.Get(req.ClientID)
+	// Validate client (app or project)
+	client, err := getOAuthClient(req.ClientID)
 	if err != nil {
 		JSONError(w, http.StatusUnauthorized, "Invalid client")
 		return
 	}
 
 	// Verify client secret
-	if !app.VerifySecret(req.ClientSecret) {
+	if !client.VerifySecret(req.ClientSecret) {
 		JSONError(w, http.StatusUnauthorized, "Invalid client credentials")
 		return
 	}

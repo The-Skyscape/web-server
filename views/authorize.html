@@ -9,15 +9,35 @@
   {{template "layout/start"}}
 
   <div class="max-w-screen-sm flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12">
-    {{with $app := oauth.CurrentApp}}
+    {{$app := oauth.CurrentApp}}
+    {{$project := oauth.CurrentProject}}
+    {{if or $app $project}}
     <div class="card bg-base-100 shadow-xl border border-white/10">
       <div class="card-body">
-        <h2 class="card-title text-2xl">Authorize Application</h2>
+        <h2 class="card-title text-2xl">Authorize {{if $project}}Project{{else}}Application{{end}}</h2>
 
         <div class="divider"></div>
 
+        {{if $project}}
         <div class="flex items-center gap-4 py-4">
-          {{with .Owner}}
+          {{with $project.Owner}}
+          <div class="avatar">
+            <div class="w-16 p-2 rounded-full bg-white/10 border border-white/10">
+              <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+            </div>
+          </div>
+          <div>
+            <h3 class="text-xl font-semibold">{{$project.Name}}</h3>
+            <p class="text-sm opacity-60">by @{{.Handle}}</p>
+          </div>
+          {{end}}
+        </div>
+        {{with $project.Description}}
+        <p class="text-base opacity-80 py-2">{{.}}</p>
+        {{end}}
+        {{else}}
+        <div class="flex items-center gap-4 py-4">
+          {{with $app.Owner}}
           <div class="avatar">
             <div class="w-16 p-2 rounded-full bg-white/10 border border-white/10">
               <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
@@ -29,9 +49,9 @@
           </div>
           {{end}}
         </div>
-
         {{with $app.Description}}
         <p class="text-base opacity-80 py-2">{{.}}</p>
+        {{end}}
         {{end}}
 
         <div class="divider"></div>
@@ -95,7 +115,7 @@
     <div class="card bg-base-100 shadow-xl border border-white/10">
       <div class="card-body">
         <h2 class="card-title text-2xl text-error">Invalid Request</h2>
-        <p class="opacity-80">The application you're trying to authorize could not be found.</p>
+        <p class="opacity-80">The application or project you're trying to authorize could not be found.</p>
         <a href="{{host}}/" class="btn btn-primary mt-4">Return Home</a>
       </div>
     </div>

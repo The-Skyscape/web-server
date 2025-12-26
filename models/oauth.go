@@ -162,3 +162,45 @@ func CreateOrUpdateAuthorization(userID, clientID, scopes string) (*OAuthAuthori
 	}
 	return created, true, nil
 }
+
+// CreateOrUpdateAuthorizationForClient creates a new authorization for an app or project
+// isProject determines whether to use ProjectID or AppID
+func CreateOrUpdateAuthorizationForClient(userID, clientID, scopes string, isProject bool) (*OAuthAuthorization, bool, error) {
+	// Check if authorization already exists (check both AppID and ProjectID)
+	existing, err := OAuthAuthorizations.First(
+		"WHERE UserID = ? AND (AppID = ? OR ProjectID = ?)",
+		userID, clientID, clientID,
+	)
+	if err == nil {
+		// Update existing authorization
+		existing.Scopes = scopes
+		existing.Revoked = false // Un-revoke if it was revoked
+		// Update the correct ID field based on client type
+		if isProject {
+			existing.ProjectID = clientID
+		} else {
+			existing.AppID = clientID
+		}
+		if err := OAuthAuthorizations.Update(existing); err != nil {
+			return nil, false, err
+		}
+		return existing, false, nil
+	}
+
+	// Create new authorization
+	auth := &OAuthAuthorization{
+		UserID: userID,
+		Scopes: scopes,
+	}
+	if isProject {
+		auth.ProjectID = clientID
+	} else {
+		auth.AppID = clientID
+	}
+
+	created, err := OAuthAuthorizations.Insert(auth)
+	if err != nil {
+		return nil, false, err
+	}
+	return created, true, nil
+}
