@@ -133,7 +133,7 @@ func (c *CommentsController) create(w http.ResponseWriter, r *http.Request) {
 		} else if subjectType == "thought" {
 			activitySubjectType = "thought"
 			activitySubjectID = subjectID
-		} else if subjectType == "app" || subjectType == "repo" {
+		} else if subjectType == "app" || subjectType == "repo" || subjectType == "project" {
 			activitySubjectID = subjectID
 		} else {
 			// Default to repo for backwards compatibility

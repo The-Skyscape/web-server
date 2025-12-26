@@ -69,7 +69,7 @@
     {{end}}
 
     <!-- Embedded content cards -->
-    {{if or .Repo .Profile .App .Thought}}
+    {{if or .Repo .Profile .App .Project .Thought}}
     <div class="mb-4" hx-boost="true">
 
       {{with .Thought}}
@@ -129,6 +129,24 @@
           <p class="text-xs text-white/40 truncate">{{with .Description}}{{.}}{{else}}No description{{end}}</p>
         </div>
         <svg class="w-5 h-5 text-white/30 group-hover/card:text-primary group-hover/card:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+      {{end}}
+
+      {{with .Project}}
+      <a href="{{host}}/project/{{.ID}}" class="flex items-center gap-4 p-4 rounded-xl bg-success/5 border border-success/20 hover:border-success/40 hover:bg-success/10 transition-all duration-300 group/card">
+        <div class="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-0.5">
+            {{with .Owner}}<span class="text-xs text-white/40">@{{.Handle}} /</span>{{end}}
+            <span class="font-medium text-white truncate">{{.Name}}</span>
+          </div>
+          <p class="text-xs text-white/40 truncate">{{with .Description}}{{.}}{{else}}No description{{end}}</p>
+        </div>
+        <svg class="w-5 h-5 text-white/30 group-hover/card:text-success group-hover/card:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </a>
       {{end}}
 

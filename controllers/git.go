@@ -50,8 +50,10 @@ func (c *GitController) repoGitServer() *gitkit.Server {
 			return true, nil
 		}
 
-		isPush := strings.Contains(req.Request.URL.Path, "git-receive-pack") ||
-			strings.Contains(req.Request.URL.Query().Get("service"), "git-receive-pack")
+		// Check if this is a push operation (either refs discovery or actual push)
+		isPushService := strings.Contains(req.Request.URL.Query().Get("service"), "git-receive-pack")
+		isPushPack := strings.Contains(req.Request.URL.Path, "git-receive-pack")
+		isPush := isPushService || isPushPack
 
 		if creds.Username == "" || creds.Password == "" {
 			return false, errors.New("authentication required")
@@ -76,8 +78,8 @@ func (c *GitController) repoGitServer() *gitkit.Server {
 			return false, errors.New("only owner can push to their repos")
 		}
 
-		// Create activity for push after successful authentication
-		if isPush {
+		// Create activity and trigger auto-deploy only on actual pack upload (not refs discovery)
+		if isPushPack {
 			go func(repoID, userID string) {
 				// Wait for push to complete
 				time.Sleep(2 * time.Second)
@@ -167,8 +169,10 @@ func (c *GitController) projectGitServer() *gitkit.Server {
 			return true, nil
 		}
 
-		isPush := strings.Contains(req.Request.URL.Path, "git-receive-pack") ||
-			strings.Contains(req.Request.URL.Query().Get("service"), "git-receive-pack")
+		// Check if this is a push operation (either refs discovery or actual push)
+		isPushService := strings.Contains(req.Request.URL.Query().Get("service"), "git-receive-pack")
+		isPushPack := strings.Contains(req.Request.URL.Path, "git-receive-pack")
+		isPush := isPushService || isPushPack
 
 		if creds.Username == "" || creds.Password == "" {
 			return false, errors.New("authentication required")
@@ -193,8 +197,8 @@ func (c *GitController) projectGitServer() *gitkit.Server {
 			return false, errors.New("only owner can push to their projects")
 		}
 
-		// Create activity and trigger auto-deploy for push
-		if isPush {
+		// Create activity and trigger auto-deploy only on actual pack upload (not refs discovery)
+		if isPushPack {
 			go func(projectID, userID string) {
 				// Wait for push to complete
 				time.Sleep(2 * time.Second)

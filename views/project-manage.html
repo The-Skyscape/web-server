@@ -7,13 +7,16 @@
 <body>
   {{template "layout/start"}}
 
-  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
-    {{with $project := projects.CurrentProject}}
-    {{$user := auth.CurrentUser}}
-    {{$owner := $project.Owner}}
-    {{$isOwner := and $user $owner (eq $user.ID $owner.UserID)}}
-    {{$canManage := or $isOwner (and $user $user.IsAdmin)}}
+  {{with $project := projects.CurrentProject}}
+  {{$user := auth.CurrentUser}}
+  {{$owner := $project.Owner}}
+  {{$isOwner := and $user $owner (eq $user.ID $owner.UserID)}}
+  {{$canManage := or $isOwner (and $user $user.IsAdmin)}}
+  {{$img := $project.ActiveImage}}
 
+  {{template "project-header.html" $project}}
+
+  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 z-20">
     {{if not $canManage}}
     <!-- Access denied -->
     <div class="alert alert-error">
@@ -24,56 +27,6 @@
       <a href="{{host}}/project/{{$project.ID}}" class="btn btn-sm" hx-boost="true">Back to Project</a>
     </div>
     {{else}}
-
-    <!-- Header -->
-    <div class="flex items-center gap-2">
-      {{with $owner}}
-      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost text-lg px-2">
-        <div class="avatar">
-          <div class="w-8 p-1 rounded-full bg-white/10 border border-white/10 shadow">
-            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-          </div>
-        </div>
-        <span class="hidden md:inline">@{{.Handle}}</span>
-      </a>
-      {{end}}
-
-      <span class="text-lg font-bold opacity-80">/</span>
-      <a hx-boost="true" href="{{host}}/project/{{$project.ID}}" class="text-xl font-semibold hover:underline">
-        {{$project.Name}}
-      </a>
-      <span class="text-lg font-bold opacity-80">/</span>
-      <span class="text-xl font-semibold opacity-60">Manage</span>
-
-      <div class="flex items-center gap-2 ml-auto">
-        <button class="btn btn-sm btn-ghost" _="on click call promote_project_modal.showModal()">
-          Promote
-        </button>
-        {{$img := $project.ActiveImage}}
-        {{if $img}}
-        <div class="bg-transparent" data-theme="light">
-          <a target="_blank" href="https://{{$project.ID}}.skysca.pe" class="btn btn-sm btn-primary shadow-xl">
-            Open Project
-            <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-              <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72"></path>
-            </svg>
-          </a>
-        </div>
-        {{end}}
-      </div>
-
-      <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-ghost">
-          {{template "icon-dots.html"}}
-        </div>
-        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
-          <li><a href="{{host}}/project/{{$project.ID}}" hx-boost="true">View Project</a></li>
-          <li><a href="{{host}}/project/{{$project.ID}}/file/." hx-boost="true">Browse Code</a></li>
-          <li><a _="on click call edit_project_modal.showModal()">Edit</a></li>
-          <li class="text-error"><a hx-delete="{{host}}/project/{{$project.ID}}" hx-confirm="Are you sure you want to shutdown this project?">Shutdown</a></li>
-        </ul>
-      </div>
-    </div>
 
     <!-- Two-column layout -->
     <div class="flex flex-col lg:flex-row gap-6 w-full">
@@ -338,11 +291,14 @@
 
     {{template "edit-project-modal.html" $project}}
     {{template "promote-project-modal.html" $project}}
-    {{end}}
-    {{else}}
-    <h1 class="text-2xl font-semibold">Project not found</h1>
+    {{template "share-project-modal.html" $project}}
     {{end}}
   </div>
+  {{else}}
+  <div class="flex-1 flex items-center justify-center">
+    <h1 class="text-2xl font-semibold opacity-60">Project not found</h1>
+  </div>
+  {{end}}
 
   {{template "layout/end"}}
 </body>

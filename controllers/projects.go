@@ -39,8 +39,8 @@ func (c *ProjectsController) Setup(app *application.App) {
 	http.Handle("POST /project/{project}/enable-database", c.ProtectFunc(c.enableDatabase, auth.Required))
 	http.Handle("POST /project/{project}/star", c.ProtectFunc(c.toggleStar, auth.Required))
 	http.Handle("POST /project/{project}/share", c.ProtectFunc(c.shareProject, auth.Required))
-	http.Handle("POST /projects/{project}/promote", c.ProtectFunc(c.promoteProject, auth.Required))
-	http.Handle("DELETE /projects/{project}/promote", c.ProtectFunc(c.cancelPromotion, auth.Required))
+	http.Handle("POST /project/{project}/promote", c.ProtectFunc(c.promoteProject, auth.Required))
+	http.Handle("DELETE /project/{project}/promote", c.ProtectFunc(c.cancelPromotion, auth.Required))
 	http.Handle("DELETE /project/{project}", c.ProtectFunc(c.shutdown, auth.Required))
 }
 
@@ -59,6 +59,10 @@ func (c *ProjectsController) CurrentProject() *models.Project {
 		return nil
 	}
 	return project
+}
+
+func (c *ProjectsController) IsManagePage() bool {
+	return strings.HasSuffix(c.Request.URL.Path, "/manage")
 }
 
 func (c *ProjectsController) MyProjects() []*models.Project {

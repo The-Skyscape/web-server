@@ -7,53 +7,12 @@
 <body>
   {{template "layout/start"}}
 
-  <div class="max-w-screen-xl flex flex-col gap-8 w-full mx-auto px-4 py-8 md:py-12 z-20">
-    {{with $project := projects.CurrentProject}}
-    {{$user := auth.CurrentUser}}
-    {{$owner := $project.Owner}}
+  {{with $project := projects.CurrentProject}}
+  {{$user := auth.CurrentUser}}
 
-    <!-- Project Header -->
-    <div class="flex items-center gap-2">
-      {{with $owner}}
-      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost text-lg px-2">
-        <div class="avatar">
-          <div class="w-8 p-1 rounded-full bg-white/10 border border-white/10 shadow">
-            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
-          </div>
-        </div>
-        <span class="hidden md:inline">@{{.Handle}}</span>
-      </a>
-      {{end}}
+  {{template "project-header.html" $project}}
 
-      <span class="text-lg font-bold opacity-80">/</span>
-
-      <a href="{{host}}/project/{{$project.ID}}" class="text-xl font-semibold hover:underline" hx-boost="true">
-        {{$project.Name}}
-      </a>
-
-      <div class="flex items-center gap-2 ml-auto">
-        <!-- Back to project -->
-        <a href="{{host}}/project/{{$project.ID}}" class="btn btn-sm btn-ghost gap-1" hx-boost="true">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-          </svg>
-          Back to Project
-        </a>
-
-        <!-- Clone URL -->
-        <button class="btn btn-sm btn-outline gap-1"
-          _="on click
-            call navigator.clipboard.writeText('https://www.theskyscape.com/project/{{$project.ID}}') then
-            set my textContent to 'Copied!' then
-            add .btn-success to me then
-            wait 2s then
-            set my textContent to 'Clone' then
-            remove .btn-success from me">
-          Clone
-        </button>
-      </div>
-    </div>
-
+  <div class="max-w-screen-xl flex flex-col gap-8 w-full mx-auto px-4 py-8 z-20">
     <div class="flex flex-col gap-4 grow-2">
       {{$path := req.PathValue "path"}}
 
@@ -198,12 +157,44 @@
             <label class="text-xs font-bold opacity-60 tracking-wider">About</label>
             <p class="text-sm opacity-70">{{$project.Description}}</p>
           </div>
+
+          <!-- Comments -->
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold opacity-60 tracking-wider">Comments</label>
+
+            {{if $user}}
+            <form class="flex flex-col w-full" hx-post="{{host}}/comment" hx-target=".comment-error" hx-swap="innerHTML">
+              <input type="hidden" name="subject_id" value="{{$project.ID}}">
+              <input type="hidden" name="subject_type" value="project">
+              <textarea required name="content" class="textarea textarea-sm w-full"
+                placeholder="Leave a comment..."></textarea>
+              <div class="flex items-center justify-between px-2 pt-2">
+                <span class="text-xs font-semibold opacity-60">@{{$user.Handle}}</span>
+                <button class="btn btn-xs btn-secondary">Post</button>
+              </div>
+              <div class="comment-error"></div>
+            </form>
+            {{else}}
+            <div class="flex items-center justify-between gap-4 p-3 rounded-box bg-base-200 text-sm" hx-boost="true">
+              <span class="opacity-70">Sign in to comment</span>
+              <a href="{{host}}/signin?next=/project/{{$project.ID}}/file/." class="btn btn-xs btn-ghost">Sign In</a>
+            </div>
+            {{end}}
+
+            <div id="project-comments" class="flex flex-col">
+              {{template "project-comments.html"}}
+            </div>
+          </div>
         </div>
         {{end}}
       </div>
-
-    {{end}}
+    </div>
   </div>
+  {{else}}
+  <div class="flex-1 flex items-center justify-center">
+    <h1 class="text-2xl font-semibold opacity-60">Project not found</h1>
+  </div>
+  {{end}}
 
   {{template "layout/end"}}
 </body>
