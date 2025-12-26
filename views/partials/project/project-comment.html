@@ -1,0 +1,56 @@
+{{$user := auth.CurrentUser}}
+<div class="flex flex-col gap-2 w-full py-2">
+  <div class="chat chat-start">
+    <div class="chat-bubble w-full shadow max-w-none bg-neutral/60 min-h-16 p-4">
+      {{.Content}}
+    </div>
+  </div>
+
+  {{with .User}}
+  <div class="flex items-center gap-2 px-2">
+    <a href="{{host}}/user/{{.Handle}}" hx-boost="true" class="flex items-center gap-2">
+      <div class="avatar">
+        <div class="w-5 p-0.5 bg-base-100 shadow-xl rounded-full">
+          <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+        </div>
+      </div>
+      <span class="text-xs font-semibold opacity-70">
+        @{{.Handle}}
+      </span>
+      {{with $.UserProfile}}{{if .Verified}}{{template "verified-badge.html"}}{{end}}{{end}}
+    </a>
+
+    <span class="text-xs opacity-50">
+      {{timeAgo $.CreatedAt}}
+    </span>
+
+    {{with $user}}
+    {{if or (eq .ID $.UserID) .IsAdmin}}
+    <div class="dropdown dropdown-end ml-auto">
+      <div tabindex="0" role="button" class="btn btn-sm btn-ghost">
+        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="1em"
+          width="1em" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z">
+          </path>
+        </svg>
+      </div>
+
+      <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-sm border border-white/20">
+        <li>
+          <a hx-put="{{host}}/comment/{{$.ID}}" hx-prompt="Enter new content:">
+            Edit
+          </a>
+        </li>
+        <li>
+          <a hx-delete="{{host}}/comment/{{$.ID}}" hx-confirm="Are you sure you want to delete this comment?">
+            Delete
+          </a>
+        </li>
+      </ul>
+    </div>
+    {{end}}
+    {{end}}
+  </div>
+  {{end}}
+</div>

@@ -1,0 +1,268 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+  <style>
+    body { overflow: hidden; }
+    /* Override layout for full-screen iframe view */
+    .drawer-content { min-height: 100vh !important; height: 100vh !important; padding-bottom: 0 !important; overflow: hidden !important; }
+  </style>
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  {{with $project := projects.CurrentProject}}
+  {{$user := auth.CurrentUser}}
+  {{$owner := $project.Owner}}
+  {{$isOwner := and $user $owner (eq $user.ID $owner.UserID)}}
+  {{$canManage := or $isOwner (and $user $user.IsAdmin)}}
+  {{$img := $project.ActiveImage}}
+
+  <!-- Project Navbar -->
+  <div class="w-full border-b border-white/10 bg-base-100/80 backdrop-blur-sm">
+    <div class="max-w-screen-xl mx-auto px-4 py-2 flex items-center gap-2">
+      {{with $owner}}
+      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost btn-sm px-2">
+        <div class="avatar">
+          <div class="w-6 p-0.5 rounded-full bg-white/10 border border-white/10">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <span class="hidden sm:inline text-sm">@{{.Handle}}</span>
+      </a>
+      {{end}}
+
+      <span class="text-sm font-bold opacity-60">/</span>
+      <span class="font-semibold">{{$project.Name}}</span>
+
+      {{if eq $project.Status "online"}}
+      <span class="badge badge-success badge-xs gap-1">
+        <span class="w-1 h-1 rounded-full bg-current animate-pulse"></span>
+        Online
+      </span>
+      {{else if eq $project.Status "launching"}}
+      <span class="badge badge-warning badge-xs gap-1">
+        <span class="loading loading-spinner loading-xs"></span>
+        Launching
+      </span>
+      {{else if eq $project.Status "draft"}}
+      <span class="badge badge-ghost badge-xs">Draft</span>
+      {{end}}
+
+      <div class="flex items-center gap-1 ml-auto">
+        <!-- Star count -->
+        {{if $user}}
+        <form hx-post="{{host}}/project/{{$project.ID}}/star" hx-swap="none" class="contents">
+          <button class="btn btn-ghost btn-sm gap-1 {{if $project.IsStarredBy $user.ID}}text-warning{{end}}">
+            <svg class="w-4 h-4" fill="{{if $project.IsStarredBy $user.ID}}currentColor{{else}}none{{end}}" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span class="text-xs">{{$project.StarsCount}}</span>
+          </button>
+        </form>
+        {{else}}
+        <div class="btn btn-ghost btn-sm gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          <span class="text-xs">{{$project.StarsCount}}</span>
+        </div>
+        {{end}}
+
+        <!-- Code button -->
+        <a href="{{host}}/project/{{$project.ID}}/file/." class="btn btn-ghost btn-sm gap-1" hx-boost="true">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+          </svg>
+          <span class="hidden sm:inline text-xs">Code</span>
+        </a>
+
+        <!-- Open in new tab -->
+        {{if $img}}
+        <a target="_blank" href="https://{{$project.ID}}.skysca.pe" class="btn btn-ghost btn-sm gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+          <span class="hidden sm:inline text-xs">Open</span>
+        </a>
+        {{end}}
+
+        <!-- More options -->
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm">
+            {{template "icon-dots.html"}}
+          </div>
+          <ul tabindex="-1"
+            class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-lg border border-white/20">
+            <li>
+              <a _="on click
+                call navigator.clipboard.writeText('https://www.theskyscape.com/project/{{$project.ID}}') then
+                set my textContent to 'Copied!' then
+                wait 2s then
+                set my textContent to 'Copy Link'">
+                Copy Link
+              </a>
+            </li>
+            <li>
+              <a _="on click
+                call navigator.clipboard.writeText('https://www.theskyscape.com/project/{{$project.ID}}') then
+                set my textContent to 'Copied!' then
+                wait 2s then
+                set my textContent to 'Copy Git URL'">
+                Copy Git URL
+              </a>
+            </li>
+            {{if $user}}
+            <li><a _="on click call share_project_modal.showModal()">Share to Feed</a></li>
+            {{end}}
+            {{if $canManage}}
+            <div class="divider my-1"></div>
+            <li><a hx-post="{{host}}/project/{{$project.ID}}/launch">{{if $img}}Relaunch{{else}}Launch{{end}}</a></li>
+            <li><a href="{{host}}/project/{{$project.ID}}/manage" hx-boost="true">Manage</a></li>
+            <li><a _="on click call edit_project_modal.showModal()">Edit</a></li>
+            <li class="text-error"><a hx-delete="{{host}}/project/{{$project.ID}}"
+                hx-confirm="Are you sure you want to shutdown this project?">Shutdown</a></li>
+            {{end}}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div id="project-content" class="w-full flex flex-col flex-1" {{if eq $project.Status "launching"}}hx-get="{{host}}/project/{{$project.ID}}" hx-trigger="every 3s" hx-select="#project-content" hx-target="#project-content" hx-swap="outerHTML"{{end}}>
+  {{if eq $project.Status "launching"}}
+  <!-- Launching state -->
+  <div class="flex-1 flex items-center justify-center" style="height: calc(100vh - 120px);">
+    <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg max-w-lg mx-4">
+      <div class="card-body items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mb-4">
+          <span class="loading loading-spinner loading-lg text-warning"></span>
+        </div>
+        <h2 class="text-xl font-semibold">Launching Project</h2>
+        <p class="opacity-60">Building and deploying your project. This may take a minute...</p>
+
+        {{if $canManage}}
+        <div class="mt-4">
+          <a href="{{host}}/project/{{$project.ID}}/manage" class="btn btn-ghost btn-sm" hx-boost="true">
+            View Build Logs
+          </a>
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+  {{else if $img}}
+  <!-- Iframe showing the deployed project -->
+  <iframe
+    src="https://{{$project.ID}}.skysca.pe"
+    class="w-full flex-1 border-0 min-h-0"
+    allow="accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; payment; usb; xr-spatial-tracking"
+    sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts allow-downloads">
+  </iframe>
+  {{else if $project.Error}}
+  <!-- Build failed state -->
+  <div class="flex-1 flex items-center justify-center" style="height: calc(100vh - 120px);">
+    <div class="card bg-base-100/80 backdrop-blur-sm border border-error/20 shadow-lg max-w-lg mx-4">
+      <div class="card-body items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-semibold">Build Failed</h2>
+        <p class="opacity-60 text-sm mb-4">There was an error deploying your project.</p>
+
+        {{if $canManage}}
+        <div class="flex gap-2">
+          <button hx-post="{{host}}/project/{{$project.ID}}/launch" class="btn btn-primary btn-sm">
+            Retry Build
+          </button>
+          <a href="{{host}}/project/{{$project.ID}}/manage" class="btn btn-ghost btn-sm" hx-boost="true">
+            View Logs
+          </a>
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+  {{else}}
+  <!-- Not deployed yet -->
+  <div class="flex-1 flex items-center justify-center" style="height: calc(100vh - 120px);">
+    {{if $canManage}}
+    <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg max-w-lg mx-4">
+      <div class="card-body">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold">Get Started</h2>
+            <p class="opacity-60 text-sm">Push your first commit to deploy</p>
+          </div>
+        </div>
+
+        <div class="bg-base-200/50 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+          <div class="mb-2 opacity-60"># Clone and push your code</div>
+          <div class="flex flex-col gap-1">
+            <div>git clone https://www.theskyscape.com/project/{{$project.ID}}</div>
+            <div>cd {{$project.ID}}</div>
+            <div>git add .</div>
+            <div>git commit -m "Initial commit"</div>
+            <div>git push origin main</div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between mt-4">
+          <span class="opacity-60 text-sm">Or launch now with starter app</span>
+          <button hx-post="{{host}}/project/{{$project.ID}}/launch" class="btn btn-primary btn-sm">
+            Launch
+          </button>
+        </div>
+      </div>
+    </div>
+    {{else}}
+    <div class="flex flex-col items-center text-center px-4">
+      <div class="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mb-6">
+        <svg class="w-10 h-10 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-white/90 mb-3">Under Construction</h2>
+      <p class="text-white/60 max-w-md mb-6">This project is currently being set up. Check back soon!</p>
+      {{with $owner}}
+      <a href="{{host}}/user/{{.Handle}}" class="btn btn-ghost" hx-boost="true">
+        <div class="avatar">
+          <div class="w-6 rounded-full">
+            <img src="{{.Avatar}}" alt="{{.Name}}">
+          </div>
+        </div>
+        View @{{.Handle}}'s profile
+      </a>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+  </div><!-- end #project-content -->
+
+  {{template "share-project-modal.html" $project}}
+  {{template "edit-project-modal.html" $project}}
+  {{else}}
+  <div class="flex-1 flex items-center justify-center">
+    <h1 class="text-2xl font-semibold opacity-60">Project not found</h1>
+  </div>
+  {{end}}
+
+  {{template "layout/end"}}
+</body>
+
+</html>

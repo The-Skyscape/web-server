@@ -74,6 +74,19 @@ func (a *Activity) App() *App {
 	return app
 }
 
+func (a *Activity) Project() *Project {
+	// Only return project if SubjectType is "project"
+	if a.SubjectType != "project" {
+		return nil
+	}
+	project, err := Projects.Get(a.SubjectID)
+	if err != nil {
+		return nil
+	}
+
+	return project
+}
+
 func (a *Activity) Thought() *Thought {
 	// Only return thought if SubjectType is "thought"
 	if a.SubjectType != "thought" {

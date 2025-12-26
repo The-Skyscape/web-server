@@ -1,0 +1,72 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+
+  <title>Discover Projects | The Skyscape</title>
+  <meta name="description"
+    content="Explore projects built and deployed by The Skyscape community. See what developers are building, get inspiration, and discover innovative projects with integrated code hosting and deployment.">
+  <meta name="keywords"
+    content="projects, code hosting, app deployment, web applications, developer projects, cloud hosting, community projects">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.theskyscape.com/projects">
+  <meta property="og:title" content="Discover Projects | The Skyscape">
+  <meta property="og:description"
+    content="Explore projects built and deployed by The Skyscape community. Code hosting and deployment in one.">
+  <meta property="og:image" content="https://www.theskyscape.com/public/background.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://www.theskyscape.com/projects">
+  <meta property="twitter:title" content="Discover Projects | The Skyscape">
+  <meta property="twitter:description"
+    content="Explore projects built and deployed by The Skyscape community. Code hosting and deployment in one.">
+  <meta property="twitter:image" content="https://www.theskyscape.com/public/background.png">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://www.theskyscape.com/projects">
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="relative bg-[url('{{host}}/public/background.png')] bg-cover bg-center border-b border-white/10 w-full">
+    <div class="absolute inset-0 bg-gradient-to-b from-black/50 to-black/30"></div>
+    <div class="relative flex flex-col gap-2 items-center px-4 py-16">
+      <h1 class="text-2xl md:text-4xl font-bold tracking-wide text-white/90">The Skyscape Projects</h1>
+      <p class="text-lg md:text-xl text-white/60 text-center max-w-lg">Code hosting and deployment in one. Explore projects built by the community.</p>
+    </div>
+  </div>
+
+  <div class="w-full max-w-screen-sm px-4 -mt-6">
+    <label class="input input-lg w-full bg-base-100/90 backdrop-blur-sm border border-white/20 shadow-xl focus-within:border-primary/50 transition-colors">
+      <svg class="h-5 w-5 text-white/40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.3-4.3"></path>
+      </svg>
+      <input name="query" type="search" class="grow" placeholder="Search projects..."
+        hx-trigger="input changed delay:200ms, search" hx-get="{{host}}/projects" hx-target="#project-cards"
+        hx-select="#project-cards" hx-swap="outerHTML" hx-replace-url="true" value='{{req.URL.Query.Get "query"}}'>
+    </label>
+  </div>
+
+  <div id="project-cards" class="max-w-screen-xl flex flex-wrap gap-6 md:gap-x-9 w-full mx-auto relative z-20 px-7 py-12"
+    hx-boost="true">
+    {{$projects := projects.AllProjects}}
+    {{if $projects}}
+    {{range $projects}}
+    {{template "project-card.html" .}}
+    {{end}}
+    {{else}}
+    <div class="w-full text-center py-12 opacity-60">
+      <p class="text-lg">No projects found. Try a different search term.</p>
+    </div>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

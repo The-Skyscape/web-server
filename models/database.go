@@ -15,6 +15,7 @@ var (
 	Profiles   = database.Manage(DB, new(Profile))
 	Repos      = database.Manage(DB, new(Repo))
 	Apps       = database.Manage(DB, new(App))
+	Projects   = database.Manage(DB, new(Project))
 	Activities = database.Manage(DB, new(Activity))
 	Comments   = database.Manage(DB, new(Comment))
 	Follows    = database.Manage(DB, new(Follow))

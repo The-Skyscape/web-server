@@ -62,6 +62,7 @@ func main() {
 		application.WithController(controllers.Push()),
 		application.WithController(controllers.Thoughts()),
 		application.WithController(controllers.Payments()),
+		application.WithController(controllers.Projects()),
 	)
 }
 

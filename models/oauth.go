@@ -11,13 +11,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// OAuthAuthorization represents a user's consent to allow an app to access their data
+// OAuthAuthorization represents a user's consent to allow an app/project to access their data
 type OAuthAuthorization struct {
 	application.Model
-	UserID  string
-	AppID   string
-	Scopes  string // space-separated granted scopes
-	Revoked bool
+	UserID    string
+	AppID     string // legacy - for App authorizations
+	ProjectID string // new - for Project authorizations
+	Scopes    string // space-separated granted scopes
+	Revoked   bool
 }
 
 func (*OAuthAuthorization) Table() string { return "oauth_authorizations" }
@@ -28,10 +29,22 @@ func (a *OAuthAuthorization) User() *authentication.User {
 	return user
 }
 
-// App returns the app this authorization is for
+// App returns the app this authorization is for (legacy)
 func (a *OAuthAuthorization) App() *App {
+	if a.AppID == "" {
+		return nil
+	}
 	app, _ := Apps.Get(a.AppID)
 	return app
+}
+
+// Project returns the project this authorization is for
+func (a *OAuthAuthorization) Project() *Project {
+	if a.ProjectID == "" {
+		return nil
+	}
+	project, _ := Projects.Get(a.ProjectID)
+	return project
 }
 
 // Revoke marks this authorization as revoked

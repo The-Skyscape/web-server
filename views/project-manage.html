@@ -1,0 +1,350 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-xl flex flex-col gap-6 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{with $project := projects.CurrentProject}}
+    {{$user := auth.CurrentUser}}
+    {{$owner := $project.Owner}}
+    {{$isOwner := and $user $owner (eq $user.ID $owner.UserID)}}
+    {{$canManage := or $isOwner (and $user $user.IsAdmin)}}
+
+    {{if not $canManage}}
+    <!-- Access denied -->
+    <div class="alert alert-error">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>You don't have permission to manage this project.</span>
+      <a href="{{host}}/project/{{$project.ID}}" class="btn btn-sm" hx-boost="true">Back to Project</a>
+    </div>
+    {{else}}
+
+    <!-- Header -->
+    <div class="flex items-center gap-2">
+      {{with $owner}}
+      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost text-lg px-2">
+        <div class="avatar">
+          <div class="w-8 p-1 rounded-full bg-white/10 border border-white/10 shadow">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <span class="hidden md:inline">@{{.Handle}}</span>
+      </a>
+      {{end}}
+
+      <span class="text-lg font-bold opacity-80">/</span>
+      <a hx-boost="true" href="{{host}}/project/{{$project.ID}}" class="text-xl font-semibold hover:underline">
+        {{$project.Name}}
+      </a>
+      <span class="text-lg font-bold opacity-80">/</span>
+      <span class="text-xl font-semibold opacity-60">Manage</span>
+
+      <div class="flex items-center gap-2 ml-auto">
+        <button class="btn btn-sm btn-ghost" _="on click call promote_project_modal.showModal()">
+          Promote
+        </button>
+        {{$img := $project.ActiveImage}}
+        {{if $img}}
+        <div class="bg-transparent" data-theme="light">
+          <a target="_blank" href="https://{{$project.ID}}.skysca.pe" class="btn btn-sm btn-primary shadow-xl">
+            Open Project
+            <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+              <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72"></path>
+            </svg>
+          </a>
+        </div>
+        {{end}}
+      </div>
+
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost">
+          {{template "icon-dots.html"}}
+        </div>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 p-2 shadow-sm border border-white/20">
+          <li><a href="{{host}}/project/{{$project.ID}}" hx-boost="true">View Project</a></li>
+          <li><a href="{{host}}/project/{{$project.ID}}/file/." hx-boost="true">Browse Code</a></li>
+          <li><a _="on click call edit_project_modal.showModal()">Edit</a></li>
+          <li class="text-error"><a hx-delete="{{host}}/project/{{$project.ID}}" hx-confirm="Are you sure you want to shutdown this project?">Shutdown</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Two-column layout -->
+    <div class="flex flex-col lg:flex-row gap-6 w-full">
+
+      <!-- Left Column: Preview + Launch History -->
+      <div class="flex flex-col gap-6 w-full lg:w-2/3">
+        <!-- Project Preview -->
+        {{if $img}}
+        <div class="card relative w-full aspect-video rounded-box overflow-hidden bg-base-100 shadow-lg border border-white/5">
+          <img src="https://apps.skysca.pe/{{$project.ID}}" class="absolute inset-0 z-10 w-full h-full object-cover">
+          <a target="_blank" href="https://{{$project.ID}}.skysca.pe" class="bg-black/40 inset-0 absolute z-20 flex">
+            <div class="btn btn-lg btn-primary opacity-90 m-auto">
+              Visit Project
+              <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                <path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M384 224v184a40 40 0 0 1-40 40H104a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40h167.48M336 64h112v112M224 288 440 72"></path>
+              </svg>
+            </div>
+          </a>
+        </div>
+        {{end}}
+
+        <!-- Launch History -->
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center justify-between py-2">
+            <h3 class="font-semibold text-lg">Launch History</h3>
+            <div class="flex items-center gap-2">
+              <span class="htmx-indicator loading loading-spinner loading-xs"></span>
+              <button class="btn btn-sm btn-primary" hx-post="{{host}}/project/{{$project.ID}}/launch">
+                Launch New Version
+              </button>
+            </div>
+          </div>
+
+          {{template "project-versions.html" $project}}
+        </div>
+
+        <!-- Git Clone Instructions -->
+        <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+          <div class="card-body">
+            <h3 class="font-semibold text-lg mb-2">Git Repository</h3>
+            <div class="bg-base-200/50 rounded-lg p-4 font-mono text-sm">
+              <div class="flex items-center justify-between">
+                <span class="opacity-80">https://www.theskyscape.com/project/{{$project.ID}}</span>
+                <button class="btn btn-sm btn-ghost"
+                  _="on click
+                    call navigator.clipboard.writeText('https://www.theskyscape.com/project/{{$project.ID}}') then
+                    set my innerHTML to 'Copied!' then
+                    wait 2s then
+                    set my innerHTML to 'Copy'">
+                  Copy
+                </button>
+              </div>
+            </div>
+            <p class="text-sm opacity-60 mt-2">Push to deploy automatically. Use your Skyscape credentials for authentication.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Widgets -->
+      <div class="flex flex-col gap-4 w-full lg:w-1/3">
+        {{$metrics := projects.CurrentProjectMetrics}}
+
+        <!-- Container Status Widget -->
+        <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+          <div class="card-body p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-base-100 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold">Container Status</h3>
+                  <p class="text-xs opacity-50">Docker Swarm Service</p>
+                </div>
+              </div>
+              {{with $metrics}}
+              {{if eq .ContainerStatus "running"}}
+              <span class="badge badge-soft badge-success">Running</span>
+              {{else if eq .ContainerStatus "stopped"}}
+              <span class="badge badge-soft badge-error">Stopped</span>
+              {{else}}
+              <span class="badge badge-soft badge-warning">{{.ContainerStatus}}</span>
+              {{end}}
+              {{else}}
+              <span class="badge badge-soft badge-ghost">Unknown</span>
+              {{end}}
+            </div>
+            {{with $metrics}}
+            <div class="mt-3 pt-3 border-t border-white/5">
+              <div class="flex justify-between text-sm">
+                <span class="opacity-50">Replicas</span>
+                <span class="text-base font-bold opacity-90 mx-2">{{.ReplicaCount}}</span>
+              </div>
+              <div class="text-xs opacity-40 mt-2">Last checked {{timeAgo .LastCheckAt}}</div>
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <!-- Resource Usage Widget -->
+        <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+          <div class="card-body p-4">
+            <div class="flex items-center gap-3">
+              <div class="p-2.5 bg-base-100 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold">Resource Usage</h3>
+                <p class="text-xs opacity-50">CPU 0.2 cores / Memory 512 MB</p>
+              </div>
+            </div>
+            {{with $metrics}}
+            <div class="mt-3 pt-3 border-t border-white/5 flex flex-col gap-3">
+              <!-- CPU -->
+              <div class="flex flex-col gap-1">
+                <div class="flex justify-between text-sm">
+                  <span class="opacity-50">CPU</span>
+                  <span class="font-medium">{{printf "%.1f" .CPUUsagePercent}}%</span>
+                </div>
+                <progress class="progress progress-primary h-2 w-full" value="{{printf "%.0f" .CPUUsagePercent}}" max="100"></progress>
+              </div>
+              <!-- Memory -->
+              <div class="flex flex-col gap-1">
+                <div class="flex justify-between text-sm">
+                  <span class="opacity-50">Memory</span>
+                  {{if gt .MemoryLimitMB 0}}
+                  <span class="font-medium">{{.MemoryUsedMB}} MB <span class="opacity-50">/ 512 MB</span></span>
+                  {{else}}
+                  <span class="font-medium opacity-50">N/A</span>
+                  {{end}}
+                </div>
+                {{if gt .MemoryLimitMB 0}}
+                <progress class="progress progress-secondary h-2 w-full" value="{{.MemoryUsedMB}}" max="512"></progress>
+                {{else}}
+                <progress class="progress h-2 w-full" value="0" max="100"></progress>
+                {{end}}
+              </div>
+            </div>
+            {{else}}
+            <div class="mt-3 pt-3 border-t border-white/5 text-sm opacity-50">
+              Resource data not available
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <!-- Storage Widget -->
+        <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+          <div class="card-body p-4">
+            <div class="flex items-center gap-3">
+              <div class="p-2.5 bg-base-100 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold">Storage</h3>
+                <p class="text-xs opacity-50">LibSQL Database Volume</p>
+              </div>
+              {{if $project.DatabaseEnabled}}
+              {{else}}
+              <div class="flex items-center gap-2 ml-auto">
+                <span class="htmx-indicator loading loading-spinner loading-xs"></span>
+                <button class="btn btn-xs btn-primary"
+                  hx-post="{{host}}/project/{{$project.ID}}/enable-database"
+                  hx-confirm="Enable database for this project? This will trigger a new build.">
+                  Enable
+                </button>
+              </div>
+              {{end}}
+            </div>
+            {{if $project.DatabaseEnabled}}
+            {{with $metrics}}
+            <div class="mt-3 pt-3 border-t border-white/5">
+              <div class="flex justify-between text-sm mb-2">
+                <span class="opacity-50">Volume Usage</span>
+                {{if gt .VolumeTotalGB 0.0}}
+                <span class="font-medium">{{printf "%.1f" .VolumeUsedGB}} GB <span class="opacity-50">/ {{printf "%.0f" .VolumeTotalGB}} GB</span></span>
+                {{else}}
+                <span class="font-medium">0 GB <span class="opacity-50">/ 1 GB</span></span>
+                {{end}}
+              </div>
+              <progress class="progress progress-info h-2 w-full" value="{{.VolumeUsedPct}}" max="100"></progress>
+              <div class="text-right text-xs opacity-40 mt-1">{{.VolumeUsedPct}}% used</div>
+            </div>
+            {{else}}
+            <div class="mt-3 pt-3 border-t border-white/5">
+              <div class="flex justify-between text-sm mb-2">
+                <span class="opacity-50">Volume Usage</span>
+                <span class="font-medium">0 GB <span class="opacity-50">/ 1 GB</span></span>
+              </div>
+              <progress class="progress progress-info h-2 w-full" value="0" max="100"></progress>
+              <div class="text-right text-xs opacity-40 mt-1">0% used</div>
+            </div>
+            {{end}}
+            {{else}}
+            <div class="mt-3 pt-3 border-t border-white/5 text-sm opacity-50 text-center">
+              Not enabled. Enable to provision a 1 GB LibSQL database volume.
+            </div>
+            {{end}}
+          </div>
+        </div>
+
+        <!-- Stars -->
+        <div class="card bg-base-100/80 backdrop-blur-sm border border-white/5 shadow-lg">
+          <div class="card-body p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-base-100 rounded-xl">
+                  <svg class="h-5 w-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold">Stars</h3>
+                  <p class="text-xs opacity-50">Community engagement</p>
+                </div>
+              </div>
+              <span class="text-2xl font-bold">{{$project.StarsCount}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- OAuth Users -->
+        {{if gt $project.AuthorizedUsersCount 0}}
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">OAuth Users</h3>
+          </div>
+          {{$auths := projects.AuthorizedUsers}}
+          <div class="flex flex-col gap-2">
+            {{range $auths}}
+            <div class="flex items-center justify-between p-2 bg-base-100/80 backdrop-blur-sm border border-white/5 rounded-lg">
+              {{with .User}}
+              <div class="flex items-center gap-2">
+                <div class="avatar">
+                  <div class="w-8 p-0.5 rounded-full bg-white/10 border border-white/10">
+                    <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+                  </div>
+                </div>
+                <div>
+                  <div class="text-sm font-medium">{{.Name}}</div>
+                  <div class="text-xs opacity-50">@{{.Handle}}</div>
+                </div>
+              </div>
+              <a href="{{host}}/user/{{.Handle}}" target="_blank" class="btn btn-xs btn-ghost">
+                Profile
+              </a>
+              {{end}}
+            </div>
+            {{end}}
+          </div>
+        </div>
+        {{end}}
+      </div>
+    </div>
+
+    {{template "edit-project-modal.html" $project}}
+    {{template "promote-project-modal.html" $project}}
+    {{end}}
+    {{else}}
+    <h1 class="text-2xl font-semibold">Project not found</h1>
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

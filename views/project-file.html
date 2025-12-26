@@ -1,0 +1,211 @@
+<html data-theme="{{theme}}">
+
+<head>
+  {{template "includes.html"}}
+</head>
+
+<body>
+  {{template "layout/start"}}
+
+  <div class="max-w-screen-xl flex flex-col gap-8 w-full mx-auto px-4 py-8 md:py-12 z-20">
+    {{with $project := projects.CurrentProject}}
+    {{$user := auth.CurrentUser}}
+    {{$owner := $project.Owner}}
+
+    <!-- Project Header -->
+    <div class="flex items-center gap-2">
+      {{with $owner}}
+      <a hx-boost="true" href="{{host}}/user/{{.Handle}}" class="btn btn-ghost text-lg px-2">
+        <div class="avatar">
+          <div class="w-8 p-1 rounded-full bg-white/10 border border-white/10 shadow">
+            <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+          </div>
+        </div>
+        <span class="hidden md:inline">@{{.Handle}}</span>
+      </a>
+      {{end}}
+
+      <span class="text-lg font-bold opacity-80">/</span>
+
+      <a href="{{host}}/project/{{$project.ID}}" class="text-xl font-semibold hover:underline" hx-boost="true">
+        {{$project.Name}}
+      </a>
+
+      <div class="flex items-center gap-2 ml-auto">
+        <!-- Back to project -->
+        <a href="{{host}}/project/{{$project.ID}}" class="btn btn-sm btn-ghost gap-1" hx-boost="true">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back to Project
+        </a>
+
+        <!-- Clone URL -->
+        <button class="btn btn-sm btn-outline gap-1"
+          _="on click
+            call navigator.clipboard.writeText('https://www.theskyscape.com/project/{{$project.ID}}') then
+            set my textContent to 'Copied!' then
+            add .btn-success to me then
+            wait 2s then
+            set my textContent to 'Clone' then
+            remove .btn-success from me">
+          Clone
+        </button>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 grow-2">
+      {{$path := req.PathValue "path"}}
+
+      <!-- Breadcrumbs -->
+      <div class="breadcrumbs breadcrumbs-sm text-sm px-4 py-1">
+        <ul>
+          {{range projects.FilePath}}
+          <li>
+            <a href="{{host}}/project/{{$project.ID}}/file/{{.Href}}" hx-boost="true">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-4 w-4 stroke-current">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+              </svg>
+              {{.Label}}
+            </a>
+          </li>
+          {{end}}
+        </ul>
+      </div>
+
+      <div class="flex flex-col md:flex-row justify-between gap-4 w-full">
+        {{with $file := projects.CurrentFile}}
+        <div class="flex flex-col gap-4 w-full max-w-screen-md">
+          {{if $file.IsDir}}
+          <!-- Directory listing -->
+          <div class="card bg-base-100 w-full max-w-screen-md shadow-lg">
+            <div class="menu gap-2 w-full">
+              {{range .ListFiles "main" (req.PathValue "path")}}
+              <li>
+                <a href="{{host}}/project/{{$project.ID}}/file/{{.Path}}" hx-boost="true">
+                  {{if .IsDir}}
+                  <svg class="size-[0.9em]" stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512"
+                    height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M464 128H272l-54.63-54.63c-6-6-14.14-9.37-22.63-9.37H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V176c0-26.51-21.49-48-48-48zm0 272H48V112h140.12l54.63 54.63c6 6 14.14 9.37 22.63 9.37H464v224z">
+                    </path>
+                  </svg>
+                  {{else}}
+                  <svg class="size-[0.9em]" stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 384 512"
+                    height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M369.9 97.9L286 14C277 5 264.8-.1 252.1-.1H48C21.5 0 0 21.5 0 48v416c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48V131.9c0-12.7-5.1-25-14.1-34zM332.1 128H256V51.9l76.1 76.1zM48 464V48h160v104c0 13.3 10.7 24 24 24h104v288H48z">
+                    </path>
+                  </svg>
+                  {{end}}
+
+                  <span>{{.Name}}</span>
+                </a>
+              </li>
+              {{end}}
+            </div>
+          </div>
+          {{else}}
+          <!-- File content -->
+          {{with .Read}}
+          {{if .IsBinary}}
+          <div class="card bg-base-100 w-full max-w-screen-md shadow-lg">
+            <div class="card-body text-center">
+              <p class="opacity-60">Binary file - cannot display</p>
+            </div>
+          </div>
+          {{else if eq $file.FileType "md"}}
+          <!-- Markdown rendering -->
+          <div class="card bg-base-100 w-full max-w-screen-md shadow-lg">
+            <div class="card-body">
+              <div class="markdown">{{.Markdown}}</div>
+            </div>
+          </div>
+          {{else}}
+          <!-- Code display -->
+          <div class="card bg-base-100 w-full max-w-screen-md shadow-lg">
+            <div class="flex items-center justify-between">
+              <div class="text-lg font-semibold tracking-wide px-4 py-2">{{$file.Name}}</div>
+              <div class="mr-2 px-4 badge badge-neutral/60 badge-sm">{{$file.FileType}}</div>
+            </div>
+
+            <div class="mockup-code w-full before:hidden border-none!">
+              {{range $i, $line := .Lines}}
+              <pre data-prefix="{{$i}}"><code>{{$line}}</code></pre>
+              {{end}}
+            </div>
+          </div>
+          {{end}}
+          {{end}}
+          {{end}}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="flex flex-col gap-4 px-2 w-full max-w-108">
+          <!-- Latest Commit -->
+          {{with projects.LatestCommit}}
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold opacity-60 tracking-wider">Latest Commit</label>
+            <div class="flex flex-col gap-2 p-3 rounded-lg bg-base-200">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-sm opacity-80">{{slice .Hash 0 7}}</span>
+              </div>
+              <p class="text-sm opacity-70 line-clamp-2">{{.Subject}}</p>
+              {{with .User}}
+              <div class="flex items-center gap-2 text-xs opacity-60">
+                <div class="avatar">
+                  <div class="w-4 rounded-full">
+                    <img src="{{.Avatar}}" alt="{{.Name}}">
+                  </div>
+                </div>
+                <span>@{{.Handle}}</span>
+              </div>
+              {{end}}
+            </div>
+          </div>
+          {{end}}
+
+          <!-- Stars -->
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold opacity-60 tracking-wider">Stars</label>
+            {{if $user}}
+            <form hx-post="{{host}}/project/{{$project.ID}}/star" hx-swap="none">
+              <button class="btn btn-outline btn-block btn-sm gap-2 {{if $project.IsStarredBy $user.ID}}btn-warning{{end}}">
+                <svg class="w-4 h-4" fill="{{if $project.IsStarredBy $user.ID}}currentColor{{else}}none{{end}}" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                {{if $project.IsStarredBy $user.ID}}Starred{{else}}Star{{end}}
+                <span class="badge badge-xs">{{$project.StarsCount}}</span>
+              </button>
+            </form>
+            {{else}}
+            <div class="flex items-center justify-between p-2 rounded-lg bg-base-200 text-sm">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span class="opacity-60">{{$project.StarsCount}} stars</span>
+              </div>
+            </div>
+            {{end}}
+          </div>
+
+          <!-- About -->
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold opacity-60 tracking-wider">About</label>
+            <p class="text-sm opacity-70">{{$project.Description}}</p>
+          </div>
+        </div>
+        {{end}}
+      </div>
+
+    {{end}}
+  </div>
+
+  {{template "layout/end"}}
+</body>
+
+</html>

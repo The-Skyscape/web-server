@@ -300,3 +300,29 @@ func (p *Profile) RecentThoughts(limit int) []*Thought {
 func (p *Profile) ThoughtsCount() int {
 	return Thoughts.Count("WHERE UserID = ? AND Published = true", p.UserID)
 }
+
+// Projects returns all non-shutdown projects owned by this profile
+func (p *Profile) Projects() []*Project {
+	projects, _ := Projects.Search(`
+		WHERE OwnerID = ?
+		 AND Status != 'shutdown'
+		ORDER BY CreatedAt DESC
+	`, p.UserID)
+	return projects
+}
+
+// RecentProjects returns the most recent non-shutdown projects
+func (p *Profile) RecentProjects() []*Project {
+	projects, _ := Projects.Search(`
+		WHERE OwnerID = ?
+		 AND Status != 'shutdown'
+		ORDER BY CreatedAt DESC
+		LIMIT 3
+	`, p.UserID)
+	return projects
+}
+
+// ProjectsCount returns the count of non-shutdown projects owned by this profile
+func (p *Profile) ProjectsCount() int {
+	return Projects.Count("WHERE OwnerID = ? AND Status != 'shutdown'", p.UserID)
+}

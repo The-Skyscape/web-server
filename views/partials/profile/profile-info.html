@@ -107,6 +107,40 @@
   </div>
   {{end}}
 
+  <!-- Projects Section -->
+  {{$projectsCount := .ProjectsCount}}
+  {{with .RecentProjects}}
+  <div class="flex flex-col gap-3 pt-4 border-t border-white/10">
+    <h3 class="text-sm font-bold opacity-60 uppercase tracking-wider">Projects</h3>
+    <div class="flex flex-col gap-3" hx-boost="true">
+      {{range .}}
+      <a href="{{host}}/project/{{.ID}}" class="flex items-center gap-2 hover:opacity-80 transition">
+        <div class="flex items-center justify-center w-7 h-7 mr-1 rounded bg-info/20 text-info shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" />
+          </svg>
+        </div>
+        <div class="flex flex-col flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium truncate">{{.Name}}</span>
+            {{with .StarsCount}}<span class="text-xs opacity-50 shrink-0">★ {{.}}</span>{{end}}
+          </div>
+          <span class="text-xs opacity-60 truncate">{{with .Description}}{{.}}{{else}}No description{{end}}</span>
+        </div>
+      </a>
+      {{end}}
+      {{if gt $projectsCount 3}}
+      <a href="{{host}}/user/{{$handle}}/projects" class="flex items-center gap-2 hover:opacity-80 transition">
+        <div class="flex items-center justify-center w-7 h-7 rounded bg-base-100 border border-white/10 shrink-0">
+          <span class="text-xs text-white/60">+{{sub $projectsCount 3}}</span>
+        </div>
+        <span class="text-sm font-medium text-white/60">View all</span>
+      </a>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+
   <!-- Thoughts Section -->
   {{$thoughtsCount := .ThoughtsCount}}
   {{with .RecentThoughts 3}}

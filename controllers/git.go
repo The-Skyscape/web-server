@@ -24,7 +24,8 @@ type GitController struct {
 func (c *GitController) Setup(app *application.App) {
 	c.Controller.Setup(app)
 
-	http.Handle("/repo/", http.StripPrefix("/repo/", c.gitServer()))
+	http.Handle("/repo/", http.StripPrefix("/repo/", c.repoGitServer()))
+	http.Handle("/project/", http.StripPrefix("/project/", c.projectGitServer()))
 }
 
 func (c GitController) Handle(r *http.Request) application.Handler {
@@ -32,9 +33,9 @@ func (c GitController) Handle(r *http.Request) application.Handler {
 	return &c
 }
 
-// gitServer initializes the gitkit server with authentication
-// This handles git clone, push, pull operations via HTTP
-func (c *GitController) gitServer() *gitkit.Server {
+// repoGitServer initializes the gitkit server for repos with authentication
+// This handles git clone, push, pull operations via HTTP for legacy repos
+func (c *GitController) repoGitServer() *gitkit.Server {
 	git := gitkit.New(gitkit.Config{
 		Dir:        "/mnt/git-repos",
 		AutoCreate: true,
@@ -143,6 +144,112 @@ func (c *GitController) gitServer() *gitkit.Server {
 
 	if err := git.Setup(); err != nil {
 		log.Fatal("Failed to setup git server: ", err)
+	}
+
+	return git
+}
+
+// projectGitServer initializes the gitkit server for projects with authentication
+// This handles git clone, push, pull operations via HTTP for projects
+// Push triggers auto-deploy directly (no apps indirection)
+func (c *GitController) projectGitServer() *gitkit.Server {
+	git := gitkit.New(gitkit.Config{
+		Dir:        "/mnt/git-repos",
+		AutoCreate: true,
+		Auth:       true,
+	})
+
+	git.AuthFunc = func(creds gitkit.Credential, req *gitkit.Request) (ok bool, err error) {
+		isPull := strings.Contains(req.Request.URL.Path, "git-upload-pack") ||
+			strings.Contains(req.Request.URL.Query().Get("service"), "git-upload-pack")
+
+		if isPull {
+			return true, nil
+		}
+
+		isPush := strings.Contains(req.Request.URL.Path, "git-receive-pack") ||
+			strings.Contains(req.Request.URL.Query().Get("service"), "git-receive-pack")
+
+		if creds.Username == "" || creds.Password == "" {
+			return false, errors.New("authentication required")
+		}
+
+		var user *authentication.User
+		if user, err = models.Auth.Users.First(`WHERE handle = ?`, creds.Username); err != nil {
+			return false, errors.New("invalid username or password")
+		} else if !user.VerifyPassword(creds.Password) {
+			return false, errors.New("invalid username or password")
+		} else {
+			log.Printf("User auth successful for %s (project)", creds.Username)
+		}
+
+		project, err := models.Projects.Get(req.RepoName)
+		if err != nil {
+			log.Printf("Project not found: %s", req.RepoName)
+			return false, errors.New("project not found")
+		}
+
+		if isPush && (project.OwnerID != user.ID && !user.IsAdmin) {
+			return false, errors.New("only owner can push to their projects")
+		}
+
+		// Create activity and trigger auto-deploy for push
+		if isPush {
+			go func(projectID, userID string) {
+				// Wait for push to complete
+				time.Sleep(2 * time.Second)
+
+				// Re-fetch project to ensure we have latest data
+				project, err := models.Projects.Get(projectID)
+				if err != nil {
+					return
+				}
+
+				// Get latest commit message from the project
+				stdout, _, err := project.Git("log", "-1", "--pretty=format:%s")
+				if err != nil {
+					log.Printf("Failed to get commit message: %v", err)
+					return
+				}
+
+				commitMsg := strings.TrimSpace(stdout.String())
+				if commitMsg == "" {
+					return
+				}
+
+				// Create activity
+				models.Activities.Insert(&models.Activity{
+					UserID:      userID,
+					Action:      "pushed",
+					SubjectType: "project",
+					SubjectID:   projectID,
+					Content:     commitMsg,
+				})
+
+				// Auto-deploy: trigger build for the project directly
+				if project.Status == "shutdown" {
+					return
+				}
+
+				log.Printf("[AutoDeploy] Triggering build for project %s after push", projectID)
+
+				project.Status = "launching"
+				project.Error = ""
+				models.Projects.Update(project)
+
+				if _, err := project.Build(); err != nil {
+					project.Error = err.Error()
+					models.Projects.Update(project)
+					log.Printf("[AutoDeploy] Build failed for project %s: %v", projectID, err)
+				}
+			}(project.ID, user.ID)
+		}
+
+		return true, nil
+	}
+
+	if err := git.Setup(); err != nil {
+		log.Fatal("Failed to setup project git server: ", err)
 	}
 
 	return git

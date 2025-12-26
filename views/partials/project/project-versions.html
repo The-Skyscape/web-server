@@ -1,0 +1,79 @@
+{{$project := .}}
+{{$images := $project.Images}}
+{{$owner := $project.Owner}}
+
+<!-- Check if any version is building -->
+{{$isBuilding := false}}
+{{range $images}}
+{{if or (eq .Status "building") (eq .Status "ready") (eq .Status "deploying")}}
+{{$isBuilding = true}}
+{{end}}
+{{end}}
+
+<!-- Poll for updates when building -->
+<div id="project-versions"
+  {{if $isBuilding}}
+  hx-get="{{host}}/project/{{$project.ID}}/versions"
+  hx-trigger="every 3s"
+  hx-swap="outerHTML"
+  {{end}}>
+  <div class="flex flex-col gap-2 w-full">
+    {{range $images}}
+    <div id="version-{{.ID}}" class="collapse collapse-arrow bg-base-300/50 border border-white/5 rounded-box">
+      <input type="radio" name="launch-history-items">
+      <div class="collapse-title flex justify-between">
+        <div class="text-sm font-bold opacity-80 flex gap-2 flex-wrap items-center">
+          <span class="font-mono">{{.GitHash}}</span>
+          <span class="opacity-60">{{timeAgo .CreatedAt}}</span>
+        </div>
+
+        {{if eq .Status "running"}}
+        <span class="badge badge-sm badge-soft badge-success ml-auto capitalize">{{.Status}}</span>
+        {{else if eq .Status "deploying"}}
+        <span class="badge badge-sm badge-soft badge-info ml-auto capitalize animate-pulse">{{.Status}}</span>
+        {{else if eq .Status "failed"}}
+        <span class="badge badge-sm badge-soft badge-error ml-auto capitalize">{{.Status}}</span>
+        {{else if or (eq .Status "building") (eq .Status "ready")}}
+        <span class="badge badge-sm badge-soft badge-warning ml-auto capitalize animate-pulse">building</span>
+        {{else}}
+        <span class="badge badge-sm badge-soft badge-ghost ml-auto capitalize">{{.Status}}</span>
+        {{end}}
+      </div>
+
+      <div class="collapse-content">
+        <div class="flex flex-col gap-4 w-full p-4 bg-base-100/50 rounded-box border border-white/5">
+          {{with .Error}}
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold opacity-60 tracking-wider">Launch Error</label>
+            <span class="text-error text-sm">{{.}}</span>
+          </div>
+          {{end}}
+
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold opacity-60 tracking-wider">Launched by</label>
+            {{with $owner}}
+            <a href="{{host}}/user/{{.Handle}}" class="flex items-center gap-2 w-max" hx-boost="true">
+              <div class="avatar">
+                <div class="w-6 p-0.5 rounded-full bg-white/10 border border-white/10">
+                  <img src="{{.Avatar}}" alt="{{.Name}}" class="rounded-full">
+                </div>
+              </div>
+              <span class="text-sm font-medium">@{{.Handle}}</span>
+            </a>
+            {{end}}
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold opacity-60 tracking-wider">Launch Time</label>
+            <span class="text-sm opacity-80">{{format .CreatedAt "Jan 02, 2006 15:04:05"}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{else}}
+    <div class="text-center py-8 text-sm opacity-60">
+      No versions have been launched yet.
+    </div>
+    {{end}}
+  </div>
+</div>
