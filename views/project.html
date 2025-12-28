@@ -3,13 +3,14 @@
 <head>
   {{template "includes.html"}}
   <style>
-    body { overflow: hidden; }
-    /* Override layout for full-screen iframe view */
-    .drawer-content { min-height: 100vh !important; height: 100vh !important; padding-bottom: 0 !important; overflow: hidden !important; }
+    /* Project page full-screen iframe layout */
+    .project-view { overflow: hidden; }
+    .project-view .drawer-content { min-height: 100vh !important; height: 100vh !important; padding-bottom: 0 !important; overflow: hidden !important; }
   </style>
 </head>
 
 <body>
+  <div class="project-view">
   {{template "layout/start"}}
 
   {{with $project := projects.CurrentProject}}
@@ -151,6 +152,7 @@
   {{end}}
 
   {{template "layout/end"}}
+  </div><!-- end .project-view -->
 </body>
 
 </html>
