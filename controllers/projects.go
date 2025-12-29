@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"www.theskyscape.com/internal/starter"
 	"www.theskyscape.com/models"
 )
 
@@ -279,6 +280,28 @@ func (c *ProjectsController) create(w http.ResponseWriter, r *http.Request) {
 		project.DatabaseEnabled = true
 		models.Projects.Update(project)
 	}
+
+	// Initialize with starter Skykit app and trigger build
+	go func() {
+		if err := starter.CreateStarterFiles(project.Path(), project, user); err != nil {
+			log.Printf("warning: failed to init starter files for project %s: %v", project.ID, err)
+			return
+		}
+
+		// Trigger initial build
+		project.Status = "launching"
+		models.Projects.Update(project)
+
+		if _, err := project.Build(); err != nil {
+			log.Printf("warning: initial build failed for project %s: %v", project.ID, err)
+			project.Status = "draft"
+			project.Error = err.Error()
+		} else {
+			project.Status = "online"
+			project.Error = ""
+		}
+		models.Projects.Update(project)
+	}()
 
 	c.Redirect(w, r, "/project/"+project.ID)
 }
