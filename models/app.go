@@ -29,14 +29,12 @@ type App struct {
 func (*App) Table() string { return "apps" }
 
 func NewApp(repo *Repo, name, description string, databaseEnabled bool) (*App, error) {
-	// Generate ID from name, sanitizing to only allow safe characters
+	// Sanitize ID - remove dangerous characters to prevent command injection
 	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-
-	// Remove any characters that aren't alphanumeric, hyphens, or underscores
-	// This prevents command injection and path traversal attacks
 	id = regexp.MustCompile(`[^a-z0-9_-]+`).ReplaceAllString(id, "")
+	id = regexp.MustCompile(`-+`).ReplaceAllString(id, "-")
+	id = strings.Trim(id, "-")
 
-	// Ensure ID isn't empty after sanitization
 	if id == "" {
 		return nil, errors.New("app name must contain at least one alphanumeric character")
 	}
@@ -131,6 +129,11 @@ func (a *App) ActiveImage() *Image {
 }
 
 func (app *App) Build() (*Image, error) {
+	repo := app.Repo()
+	if repo == nil {
+		return nil, errors.New("repo not found")
+	}
+
 	host := containers.Local()
 	tmpDir, err := os.MkdirTemp("", "app-*")
 	if err != nil {
@@ -138,11 +141,6 @@ func (app *App) Build() (*Image, error) {
 		os.MkdirAll(tmpDir, os.ModePerm)
 	}
 	defer os.RemoveAll(tmpDir)
-
-	repo := app.Repo()
-	if repo == nil {
-		return nil, errors.New("repo not found")
-	}
 
 	var stdout, stderr bytes.Buffer
 	host.SetStdout(&stdout)
@@ -160,23 +158,24 @@ func (app *App) Build() (*Image, error) {
 		Status:  "building",
 		GitHash: strings.TrimSpace(stdout.String()),
 	})
-
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create image")
 	}
 
+	stdout.Reset()
+	stderr.Reset()
+
 	if err = host.Exec("bash", "-c", fmt.Sprintf(`
-			mkdir -p %[1]s
-			git clone -b main %[2]s %[1]s
-			cd %[1]s
-			docker build -t %[3]s:5000/%[4]s:%[5]s .
-			docker push %[3]s:5000/%[4]s:%[5]s
-		`, tmpDir, repo.Path(), os.Getenv("HQ_ADDR"), app.ID, img.GitHash)); err != nil {
+		mkdir -p %[1]s
+		git clone -b main %[2]s %[1]s
+		cd %[1]s
+		docker build -t %[3]s:5000/%[4]s:%[5]s .
+		docker push %[3]s:5000/%[4]s:%[5]s
+	`, tmpDir, repo.Path(), os.Getenv("HQ_ADDR"), app.ID, img.GitHash)); err != nil {
 		img.Status = "failed"
 		img.Error = stderr.String()
 		Images.Update(img)
-		err = errors.Wrap(err, stdout.String())
-		return nil, errors.Wrap(err, "failed to build image")
+		return nil, errors.Wrap(err, "failed to build image: "+stdout.String())
 	}
 
 	img.Status = "ready"

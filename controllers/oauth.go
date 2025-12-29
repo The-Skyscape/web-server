@@ -12,6 +12,7 @@ import (
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"www.theskyscape.com/internal/oauth"
 	"www.theskyscape.com/models"
 )
 
@@ -202,7 +203,7 @@ func (c *OAuthController) authorizeGet(w http.ResponseWriter, r *http.Request) {
 	// If already authorized with same scopes, skip consent screen
 	if err == nil && existing != nil && existing.Scopes == scope {
 		// Generate authorization code
-		code, err := models.CreateAuthorizationCode(clientID, user.ID, redirectURI, scope)
+		code, err := oauth.CreateAuthorizationCode(clientID, user.ID, redirectURI, scope)
 		if err != nil {
 			http.Error(w, "Failed to generate authorization code", http.StatusInternalServerError)
 			return
@@ -269,7 +270,7 @@ func (c *OAuthController) authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create or update authorization
-	authorization, isNew, err := models.CreateOrUpdateAuthorizationForClient(user.ID, clientID, scope, client.IsProject())
+	authorization, isNew, err := oauth.CreateOrUpdateAuthorizationForClient(user.ID, clientID, scope, client.IsProject())
 	if err != nil {
 		http.Error(w, "Failed to create authorization", http.StatusInternalServerError)
 		return
@@ -292,7 +293,7 @@ func (c *OAuthController) authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate authorization code
-	code, err := models.CreateAuthorizationCode(clientID, user.ID, redirectURI, scope)
+	code, err := oauth.CreateAuthorizationCode(clientID, user.ID, redirectURI, scope)
 	if err != nil {
 		http.Error(w, "Failed to generate authorization code", http.StatusInternalServerError)
 		return
@@ -367,7 +368,7 @@ func (c *OAuthController) token(w http.ResponseWriter, r *http.Request) {
 	models.DB.Sync()
 
 	// Find authorization code
-	hashedCode := models.HashToken(req.Code)
+	hashedCode := oauth.HashToken(req.Code)
 	authCode, err := models.OAuthAuthorizationCodes.First(
 		"WHERE ClientID = ? AND Code = ?",
 		req.ClientID, hashedCode,
@@ -455,7 +456,7 @@ func (c *OAuthController) regenerateSecret(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Generate new secret
-	secret, err := models.GenerateRandomToken(32)
+	secret, err := oauth.GenerateToken(32)
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return

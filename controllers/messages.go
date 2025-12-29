@@ -9,6 +9,7 @@ import (
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/emailing"
+	"www.theskyscape.com/internal/push"
 	"www.theskyscape.com/models"
 )
 
@@ -193,7 +194,7 @@ func (c MessagesController) sendMessage(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Send push notification to recipient
-	go models.SendPushNotification(
+	go push.SendNotification(
 		profile.ID,
 		user.ID, // source = sender
 		"New message from @"+user.Handle(),

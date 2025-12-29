@@ -39,7 +39,7 @@ func (*Project) Table() string { return "projects" }
 
 // NewProject creates a new project with initialized git repo
 func NewProject(ownerID, name, description string) (*Project, error) {
-	// Generate ID from name, sanitizing to only allow safe characters
+	// Sanitize ID - remove dangerous characters to prevent command injection
 	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 	id = regexp.MustCompile(`[^a-z0-9_-]+`).ReplaceAllString(id, "")
 	id = regexp.MustCompile(`-+`).ReplaceAllString(id, "-")

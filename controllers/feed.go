@@ -10,6 +10,7 @@ import (
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/emailing"
+	"www.theskyscape.com/internal/push"
 	"www.theskyscape.com/models"
 )
 
@@ -390,7 +391,7 @@ func (c *FeedController) createPost(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Send push notification
-			models.SendPushNotification(
+			push.SendNotification(
 				follower.ID,
 				poster.ID, // source = poster
 				"New post from @"+poster.Handle(),

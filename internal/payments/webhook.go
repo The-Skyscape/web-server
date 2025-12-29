@@ -1,4 +1,4 @@
-package stripe
+package payments
 
 import (
 	"crypto/hmac"

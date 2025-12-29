@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
-	"www.theskyscape.com/internal/stripe"
+	"www.theskyscape.com/internal/payments"
 	"www.theskyscape.com/models"
 )
 
@@ -21,12 +21,12 @@ func Payments() (string, *PaymentsController) {
 
 type PaymentsController struct {
 	application.Controller
-	stripe *stripe.Client
+	stripe *payments.Client
 }
 
 func (c *PaymentsController) Setup(app *application.App) {
 	c.Controller.Setup(app)
-	c.stripe = stripe.New()
+	c.stripe = payments.New()
 
 	// Initialize Stripe products idempotently
 	if err := c.stripe.InitProducts(); err != nil {
@@ -156,12 +156,12 @@ func (c *PaymentsController) checkoutVerified(w http.ResponseWriter, r *http.Req
 		c.RenderError(w, r, fmt.Errorf("payment system not configured: %w", err))
 		return
 	}
-	session, err := c.stripe.CreateCheckoutSession(stripe.CheckoutOptions{
-		Mode:       stripe.ModeSubscription,
+	session, err := c.stripe.CreateCheckoutSession(payments.CheckoutOptions{
+		Mode:       payments.ModeSubscription,
 		CustomerID: customerID,
 		SuccessURL: baseURL + "/checkout/success?session_id={CHECKOUT_SESSION_ID}",
 		CancelURL:  baseURL + "/checkout/cancel",
-		LineItems: []stripe.LineItem{{
+		LineItems: []payments.LineItem{{
 			PriceID:  catalog.VerifiedPriceID,
 			Quantity: 1,
 		}},
@@ -242,11 +242,11 @@ func (c *PaymentsController) checkoutPromotion(w http.ResponseWriter, r *http.Re
 		c.RenderError(w, r, fmt.Errorf("payment system not configured: %w", err))
 		return
 	}
-	opts := stripe.CheckoutOptions{
-		Mode:       stripe.ModePayment,
+	opts := payments.CheckoutOptions{
+		Mode:       payments.ModePayment,
 		SuccessURL: baseURL + "/checkout/success?session_id={CHECKOUT_SESSION_ID}",
 		CancelURL:  baseURL + "/app/" + appID + "/manage",
-		LineItems: []stripe.LineItem{{
+		LineItems: []payments.LineItem{{
 			PriceID:  catalog.PromotionPriceID,
 			Quantity: int64(days),
 		}},
@@ -335,24 +335,24 @@ func (c *PaymentsController) checkoutUpgrade(w http.ResponseWriter, r *http.Requ
 		c.RenderError(w, r, fmt.Errorf("payment system not configured: %w", err))
 		return
 	}
-	var lineItems []stripe.LineItem
+	var lineItems []payments.LineItem
 	if cpuCores > 0 {
 		// Use half-cores as unit ($2.50 per 0.5 cores = $5/core)
 		halfCores := int64(cpuCores * 2)
-		lineItems = append(lineItems, stripe.LineItem{
+		lineItems = append(lineItems, payments.LineItem{
 			PriceID:  catalog.CPUPriceID,
 			Quantity: halfCores,
 		})
 	}
 	if storageGB > 0 {
-		lineItems = append(lineItems, stripe.LineItem{
+		lineItems = append(lineItems, payments.LineItem{
 			PriceID:  catalog.StoragePriceID,
 			Quantity: int64(storageGB),
 		})
 	}
 
-	opts := stripe.CheckoutOptions{
-		Mode:       stripe.ModeSubscription,
+	opts := payments.CheckoutOptions{
+		Mode:       payments.ModeSubscription,
 		SuccessURL: baseURL + "/checkout/success?session_id={CHECKOUT_SESSION_ID}",
 		CancelURL:  baseURL + "/app/" + appID + "/manage",
 		LineItems:  lineItems,
@@ -412,18 +412,18 @@ func (c *PaymentsController) handleWebhook(w http.ResponseWriter, r *http.Reques
 	log.Printf("[Stripe Webhook] Received event: %s", event.Type)
 
 	switch event.Type {
-	case stripe.EventCheckoutCompleted:
+	case payments.EventCheckoutCompleted:
 		c.handleCheckoutCompleted(event)
-	case stripe.EventSubscriptionUpdated:
+	case payments.EventSubscriptionUpdated:
 		c.handleSubscriptionUpdated(event)
-	case stripe.EventSubscriptionDeleted:
+	case payments.EventSubscriptionDeleted:
 		c.handleSubscriptionDeleted(event)
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *PaymentsController) handleCheckoutCompleted(event *stripe.Event) {
+func (c *PaymentsController) handleCheckoutCompleted(event *payments.Event) {
 	metadata, err := event.Metadata()
 	if err != nil {
 		log.Printf("[Stripe Webhook] Failed to get metadata: %v", err)
@@ -467,7 +467,7 @@ func (c *PaymentsController) handleCheckoutCompleted(event *stripe.Event) {
 	}
 }
 
-func (c *PaymentsController) activateVerified(userID string, session *stripe.CheckoutSession) {
+func (c *PaymentsController) activateVerified(userID string, session *payments.CheckoutSession) {
 	profile, err := models.Profiles.First("WHERE UserID = ?", userID)
 	if err != nil {
 		log.Printf("[Stripe Webhook] Profile not found for user %s", userID)
@@ -518,7 +518,7 @@ func (c *PaymentsController) createPromotion(userID, appID, content string, days
 	log.Printf("[Stripe Webhook] Created %d-day promotion for app %s", days, appID)
 }
 
-func (c *PaymentsController) activateResourceUpgrade(userID, appID string, session *stripe.CheckoutSession, cpuCores float64, storageGB int) {
+func (c *PaymentsController) activateResourceUpgrade(userID, appID string, session *payments.CheckoutSession, cpuCores float64, storageGB int) {
 	// Create subscription record
 	if session.SubscriptionID != "" {
 		sub, err := c.stripe.GetSubscription(session.SubscriptionID)
@@ -540,7 +540,7 @@ func (c *PaymentsController) activateResourceUpgrade(userID, appID string, sessi
 	log.Printf("[Stripe Webhook] Resource upgrade for app %s: CPU=%.1f, Storage=%dGB", appID, cpuCores, storageGB)
 }
 
-func (c *PaymentsController) handleSubscriptionUpdated(event *stripe.Event) {
+func (c *PaymentsController) handleSubscriptionUpdated(event *payments.Event) {
 	sub, err := event.SubscriptionEvent()
 	if err != nil {
 		log.Printf("[Stripe Webhook] Failed to parse subscription: %v", err)
@@ -566,7 +566,7 @@ func (c *PaymentsController) handleSubscriptionUpdated(event *stripe.Event) {
 	log.Printf("[Stripe Webhook] Updated subscription %s: status=%s", sub.ID, sub.Status)
 }
 
-func (c *PaymentsController) handleSubscriptionDeleted(event *stripe.Event) {
+func (c *PaymentsController) handleSubscriptionDeleted(event *payments.Event) {
 	sub, err := event.SubscriptionEvent()
 	if err != nil {
 		log.Printf("[Stripe Webhook] Failed to parse subscription: %v", err)

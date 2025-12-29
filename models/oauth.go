@@ -1,14 +1,12 @@
 package models
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
-	"github.com/pkg/errors"
 )
 
 // OAuthAuthorization represents a user's consent to allow an app/project to access their data
@@ -86,121 +84,6 @@ func (c *OAuthAuthorizationCode) MarkAsUsed() error {
 // VerifyCode checks if the provided code matches the stored hash
 func (c *OAuthAuthorizationCode) VerifyCode(code string) bool {
 	hash := sha256.Sum256([]byte(code))
-	storedHash := c.Code
-	computedHash := base64.StdEncoding.EncodeToString(hash[:])
-	return storedHash == computedHash
-}
-
-// GenerateRandomToken generates a cryptographically secure random token
-func GenerateRandomToken(length int) (string, error) {
-	bytes := make([]byte, length)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", errors.Wrap(err, "failed to generate random token")
-	}
-	return base64.URLEncoding.EncodeToString(bytes), nil
-}
-
-// HashToken hashes a token using SHA-256
-func HashToken(token string) string {
-	hash := sha256.Sum256([]byte(token))
-	return base64.StdEncoding.EncodeToString(hash[:])
-}
-
-// CreateAuthorizationCode creates a new authorization code
-func CreateAuthorizationCode(clientID, userID, redirectURI, scopes string) (string, error) {
-	// Generate code
-	code, err := GenerateRandomToken(32)
-	if err != nil {
-		return "", err
-	}
-
-	// Hash the code
-	hashedCode := HashToken(code)
-
-	authCode := &OAuthAuthorizationCode{
-		ClientID:    clientID,
-		UserID:      userID,
-		Code:        hashedCode,
-		RedirectURI: redirectURI,
-		Scopes:      scopes,
-		ExpiresAt:   time.Now().Add(10 * time.Minute),
-		Used:        false,
-	}
-
-	if _, err := OAuthAuthorizationCodes.Insert(authCode); err != nil {
-		return "", err
-	}
-
-	return code, nil
-}
-
-// CreateOrUpdateAuthorization creates a new authorization or updates existing one
-// Returns the authorization and a boolean indicating if it was newly created (true) or updated (false)
-func CreateOrUpdateAuthorization(userID, clientID, scopes string) (*OAuthAuthorization, bool, error) {
-	// Check if authorization already exists
-	existing, err := OAuthAuthorizations.First("WHERE UserID = ? AND AppID = ?", userID, clientID)
-	if err == nil {
-		// Update existing authorization
-		existing.Scopes = scopes
-		existing.Revoked = false // Un-revoke if it was revoked
-		if err := OAuthAuthorizations.Update(existing); err != nil {
-			return nil, false, err
-		}
-		return existing, false, nil
-	}
-
-	// Create new authorization
-	auth := &OAuthAuthorization{
-		UserID: userID,
-		AppID:  clientID,
-		Scopes: scopes,
-	}
-
-	created, err := OAuthAuthorizations.Insert(auth)
-	if err != nil {
-		return nil, false, err
-	}
-	return created, true, nil
-}
-
-// CreateOrUpdateAuthorizationForClient creates a new authorization for an app or project
-// isProject determines whether to use ProjectID or AppID
-func CreateOrUpdateAuthorizationForClient(userID, clientID, scopes string, isProject bool) (*OAuthAuthorization, bool, error) {
-	// Check if authorization already exists (check both AppID and ProjectID)
-	existing, err := OAuthAuthorizations.First(
-		"WHERE UserID = ? AND (AppID = ? OR ProjectID = ?)",
-		userID, clientID, clientID,
-	)
-	if err == nil {
-		// Update existing authorization
-		existing.Scopes = scopes
-		existing.Revoked = false // Un-revoke if it was revoked
-		// Update the correct ID field based on client type
-		if isProject {
-			existing.ProjectID = clientID
-		} else {
-			existing.AppID = clientID
-		}
-		if err := OAuthAuthorizations.Update(existing); err != nil {
-			return nil, false, err
-		}
-		return existing, false, nil
-	}
-
-	// Create new authorization
-	auth := &OAuthAuthorization{
-		UserID: userID,
-		Scopes: scopes,
-	}
-	if isProject {
-		auth.ProjectID = clientID
-	} else {
-		auth.AppID = clientID
-	}
-
-	created, err := OAuthAuthorizations.Insert(auth)
-	if err != nil {
-		return nil, false, err
-	}
-	return created, true, nil
+	computed := base64.StdEncoding.EncodeToString(hash[:])
+	return computed == c.Code
 }

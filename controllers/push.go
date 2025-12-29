@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"www.theskyscape.com/internal/push"
 	"www.theskyscape.com/models"
 )
 
@@ -35,7 +36,7 @@ func (c PushController) Handle(r *http.Request) application.Handler {
 // getVAPIDKey returns the public VAPID key for client-side subscription
 func (c *PushController) getVAPIDKey(w http.ResponseWriter, r *http.Request) {
 	log.Println("[Push] VAPID key requested")
-	publicKey := models.GetVAPIDPublicKey()
+	publicKey := push.GetPublicKey()
 	if publicKey == "" {
 		log.Println("[Push] VAPID public key not configured")
 		JSONError(w, http.StatusServiceUnavailable, "push notifications not configured")
