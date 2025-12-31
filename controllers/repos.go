@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"www.theskyscape.com/internal/hosting"
 	"www.theskyscape.com/models"
 )
 
@@ -163,13 +164,58 @@ func (c *ReposController) ReadmeFile() *models.Blob {
 func (c *ReposController) createRepo(w http.ResponseWriter, r *http.Request) {
 	auth := c.Use("auth").(*AuthController)
 	user, _, err := auth.Authenticate(r)
+	if err != nil {
+		c.Render(w, r, "error-message.html", errors.New("unauthorized"))
+		return
+	}
 
-	name, desc := r.FormValue("name"), r.FormValue("description")
-	repo, err := models.NewRepo(user.ID, name, desc)
+	name := strings.TrimSpace(r.FormValue("name"))
+	desc := strings.TrimSpace(r.FormValue("description"))
+
+	if name == "" {
+		c.Render(w, r, "error-message.html", errors.New("name is required"))
+		return
+	}
+
+	// Sanitize ID
+	id, err := hosting.SanitizeID(name)
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
+
+	// Check if repo already exists
+	if _, err := models.Repos.Get(id); err == nil {
+		c.Render(w, r, "error-message.html", errors.New("a repo with this ID already exists"))
+		return
+	}
+
+	// Check if git repo path exists
+	if hosting.RepoExists(id) {
+		c.Render(w, r, "error-message.html", errors.New("repo directory already exists"))
+		return
+	}
+
+	// Initialize git repo
+	if err := hosting.InitGitRepo(id); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	// Create repo record
+	repo, err := models.NewRepo(id, user.ID, name, desc)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	// Create activity
+	models.Activities.Insert(&models.Activity{
+		UserID:      user.ID,
+		Action:      "created",
+		SubjectType: "repo",
+		SubjectID:   repo.ID,
+	})
 
 	c.Redirect(w, r, "/repo/"+repo.ID)
 }

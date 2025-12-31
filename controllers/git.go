@@ -10,6 +10,7 @@ import (
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
 	"github.com/sosedoff/gitkit"
+	"www.theskyscape.com/internal/hosting"
 	"www.theskyscape.com/models"
 )
 
@@ -131,7 +132,7 @@ func (c *GitController) repoGitServer() *gitkit.Server {
 						a.Error = ""
 						models.Apps.Update(a)
 
-						if _, err := a.Build(); err != nil {
+						if _, err := hosting.BuildApp(a); err != nil {
 							a.Error = err.Error()
 							models.Apps.Update(a)
 							log.Printf("[AutoDeploy] Build failed for app %s: %v", a.ID, err)
@@ -241,7 +242,7 @@ func (c *GitController) projectGitServer() *gitkit.Server {
 				project.Error = ""
 				models.Projects.Update(project)
 
-				if _, err := project.Build(); err != nil {
+				if _, err := hosting.BuildProject(project); err != nil {
 					project.Error = err.Error()
 					models.Projects.Update(project)
 					log.Printf("[AutoDeploy] Build failed for project %s: %v", projectID, err)

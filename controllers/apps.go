@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"www.theskyscape.com/internal/hosting"
+	"www.theskyscape.com/internal/migration"
+	"www.theskyscape.com/internal/social"
 	"www.theskyscape.com/models"
 )
 
@@ -214,11 +217,44 @@ func (c *AppsController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app, err := models.NewApp(repo, name, description, databaseEnabled)
+	// Sanitize ID
+	id, err := hosting.SanitizeID(name)
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
+
+	// Check if app already exists
+	if _, err := models.Apps.Get(id); err == nil {
+		c.Render(w, r, "error-message.html", errors.New("an app with this ID already exists"))
+		return
+	}
+
+	// Create app record
+	app, err := models.NewApp(id, repo.ID, name, description, databaseEnabled)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	// Create activity
+	models.Activities.Insert(&models.Activity{
+		UserID:      repo.OwnerID,
+		Action:      "launched",
+		SubjectType: "app",
+		SubjectID:   app.ID,
+	})
+
+	// Trigger build in background
+	go func() {
+		app.Status = "launching"
+		models.Apps.Update(app)
+
+		if _, err := hosting.BuildApp(app); err != nil {
+			app.Error = err.Error()
+			models.Apps.Update(app)
+		}
+	}()
 
 	c.Redirect(w, r, "/app/"+app.ID)
 }
@@ -261,41 +297,10 @@ func (c *AppsController) update(w http.ResponseWriter, r *http.Request) {
 	// Handle ID change (admin only)
 	newID := r.FormValue("id")
 	if newID != "" && newID != app.ID && user.IsAdmin {
-		oldID := app.ID
-
-		// Update app ID - database will enforce uniqueness constraint
-		if err := models.DB.Query("UPDATE apps SET ID = ?, Name = ?, Description = ? WHERE ID = ?", newID, name, description, oldID).Exec(); err != nil {
-			// Unique constraint violation means ID is already taken
-			c.Render(w, r, "error-message.html", errors.New("an app with this ID already exists"))
+		if err := hosting.RenameApp(app.ID, newID, name, description); err != nil {
+			c.Render(w, r, "error-message.html", err)
 			return
 		}
-
-		// Update related tables with AppID column
-		if err := models.DB.Query("UPDATE images SET AppID = ? WHERE AppID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[AppRename] Failed to update images.AppID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE app_metrics SET AppID = ? WHERE AppID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[AppRename] Failed to update app_metrics.AppID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE oauth_authorizations SET AppID = ? WHERE AppID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[AppRename] Failed to update oauth_authorizations.AppID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE oauth_authorization_codes SET ClientID = ? WHERE ClientID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[AppRename] Failed to update oauth_authorization_codes.ClientID from %s to %s: %v", oldID, newID, err)
-		}
-
-		// Update related tables with SubjectID column (for app subjects)
-		if err := models.DB.Query("UPDATE activities SET SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[AppRename] Failed to update activities.SubjectID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE promotions SET SubjectID = ? WHERE SubjectType = 'app' AND SubjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[AppRename] Failed to update promotions.SubjectID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE comments SET SubjectID = ? WHERE SubjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[AppRename] Failed to update comments.SubjectID from %s to %s: %v", oldID, newID, err)
-		}
-
-		// Redirect to the new app URL
 		c.Redirect(w, r, "/app/"+newID+"/manage")
 		return
 	}
@@ -334,7 +339,7 @@ func (c *AppsController) launch(w http.ResponseWriter, r *http.Request) {
 		app.Error = ""
 		models.Apps.Update(app)
 
-		if _, err := app.Build(); err != nil {
+		if _, err := hosting.BuildApp(app); err != nil {
 			app.Error = err.Error()
 			models.Apps.Update(app)
 			return
@@ -380,7 +385,7 @@ func (c *AppsController) enableDatabase(w http.ResponseWriter, r *http.Request) 
 		app.Error = ""
 		models.Apps.Update(app)
 
-		if _, err := app.Build(); err != nil {
+		if _, err := hosting.BuildApp(app); err != nil {
 			app.Error = err.Error()
 			models.Apps.Update(app)
 			return
@@ -435,31 +440,8 @@ func (c *AppsController) promoteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repo := app.Repo()
-	if repo == nil || repo.OwnerID != user.ID {
-		c.Render(w, r, "error-message.html", errors.New("you can only promote your own apps"))
-		return
-	}
-
-	// Check if app already has an active promotion
-	if existing := app.ActivePromotion(); existing != nil {
-		c.Render(w, r, "error-message.html", errors.New("this app already has an active promotion"))
-		return
-	}
-
 	content := r.FormValue("content")
-	if len(content) > MaxContentLength {
-		c.Render(w, r, "error-message.html", errors.New("promotion content too long"))
-		return
-	}
-
-	if _, err = models.Promotions.Insert(&models.Promotion{
-		UserID:      user.ID,
-		SubjectType: "app",
-		SubjectID:   app.ID,
-		Content:     content,
-		ExpiresAt:   time.Now().Add(models.DefaultPromotionDuration),
-	}); err != nil {
+	if _, err := social.CreatePromotion(user.ID, social.WrapApp(app), content); err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
@@ -481,19 +463,7 @@ func (c *AppsController) cancelPromotion(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	repo := app.Repo()
-	if repo == nil || repo.OwnerID != user.ID {
-		c.Render(w, r, "error-message.html", errors.New("you can only cancel your own promotions"))
-		return
-	}
-
-	promo := app.ActivePromotion()
-	if promo == nil {
-		c.Render(w, r, "error-message.html", errors.New("no active promotion found"))
-		return
-	}
-
-	if err = models.Promotions.Delete(promo); err != nil {
+	if err := social.CancelPromotion(user.ID, social.WrapApp(app)); err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
@@ -556,8 +526,24 @@ func (c *AppsController) migrateToProject(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	project, err := app.MigrateToProject()
+	// Get custom ID from form (empty on first attempt)
+	customID := r.FormValue("project_id")
+
+	project, err := migration.MigrateAppToProject(app, customID)
 	if err != nil {
+		// Check if it's an ID conflict - show modal for alternative ID
+		if errors.Is(err, migration.ErrIDConflict) {
+			suggestedID := app.ID + "-project"
+			if customID != "" {
+				suggestedID = customID + "-2"
+			}
+			c.Render(w, r, "migrate-modal.html", map[string]any{
+				"App":         app,
+				"Error":       err.Error(),
+				"SuggestedID": suggestedID,
+			})
+			return
+		}
 		c.Render(w, r, "error-message.html", err)
 		return
 	}

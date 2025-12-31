@@ -4,23 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
-	"github.com/The-Skyscape/devtools/pkg/containers"
 	"github.com/The-Skyscape/devtools/pkg/database"
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/pkg/errors"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
 	"golang.org/x/crypto/bcrypt"
 	"www.theskyscape.com/internal/git"
+	"www.theskyscape.com/internal/markup"
 )
 
 // Project combines code storage (like Repo) with container deployment (like App)
@@ -37,23 +31,12 @@ type Project struct {
 
 func (*Project) Table() string { return "projects" }
 
-// NewProject creates a new project with initialized git repo
-func NewProject(ownerID, name, description string) (*Project, error) {
-	// Sanitize ID - remove dangerous characters to prevent command injection
-	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-	id = regexp.MustCompile(`[^a-z0-9_-]+`).ReplaceAllString(id, "")
-	id = regexp.MustCompile(`-+`).ReplaceAllString(id, "-")
-	id = strings.Trim(id, "-")
-
-	if id == "" {
-		return nil, errors.New("project name must contain at least one alphanumeric character")
-	}
-
-	// Check if a project with this ID already exists
-	if _, err := Projects.Get(id); err == nil {
-		return nil, errors.New("a project with this ID already exists")
-	}
-
+// NewProject creates a new project record. Caller is responsible for:
+// - Sanitizing the ID (use hosting.SanitizeID)
+// - Initializing git repo (use hosting.InitGitRepo)
+// - Creating the activity
+// - Triggering starter files and build
+func NewProject(id, ownerID, name, description string) (*Project, error) {
 	p := &Project{
 		Model:       database.Model{ID: id},
 		OwnerID:     ownerID,
@@ -61,31 +44,7 @@ func NewProject(ownerID, name, description string) (*Project, error) {
 		Description: description,
 		Status:      "draft",
 	}
-
-	// Check if git repo path already exists
-	if _, err := os.Stat(p.Path()); err == nil {
-		return nil, errors.New("project directory already exists")
-	}
-
-	// Initialize bare git repo with main as default branch
-	host := containers.Local()
-	if err := host.Exec("git", "init", "--bare", "--initial-branch=main", p.Path()); err != nil {
-		return nil, errors.Wrap(err, "failed to initialize git repo")
-	}
-
-	p, err := Projects.Insert(p)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to insert project")
-	}
-
-	Activities.Insert(&Activity{
-		UserID:      ownerID,
-		Action:      "created",
-		SubjectType: "project",
-		SubjectID:   p.ID,
-	})
-
-	return p, nil
+	return Projects.Insert(p)
 }
 
 // =============================================================================
@@ -239,18 +198,7 @@ func (c *ProjectContent) Lines() []string {
 }
 
 func (c *ProjectContent) Markdown() template.HTML {
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
-		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
-	)
-
-	var buf bytes.Buffer
-	if err := md.Convert([]byte(c.Content), &buf); err != nil {
-		return template.HTML(template.HTMLEscapeString(c.Content))
-	}
-
-	policy := bluemonday.UGCPolicy()
-	return template.HTML(policy.Sanitize(buf.String()))
+	return markup.RenderMarkdown(c.Content)
 }
 
 // =============================================================================
@@ -301,57 +249,6 @@ func (p *Project) ActiveImage() *Image {
 		ORDER BY CreatedAt DESC
 	`, p.ID)
 	return img
-}
-
-func (p *Project) Build() (*Image, error) {
-	host := containers.Local()
-	tmpDir, err := os.MkdirTemp("", "project-*")
-	if err != nil {
-		tmpDir = "/tmp/project-" + p.ID + "/" + time.Now().Format("2006-01-02-15-04-05")
-		os.MkdirAll(tmpDir, os.ModePerm)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	var stdout, stderr bytes.Buffer
-	host.SetStdout(&stdout)
-	host.SetStderr(&stderr)
-
-	// Get git hash
-	if err = host.Exec("bash", "-c", fmt.Sprintf(`
-		cd %[1]s
-		git rev-parse --short refs/heads/main
-	`, p.Path())); err != nil {
-		return nil, errors.Wrap(err, "failed to get git hash")
-	}
-
-	img, err := Images.Insert(&Image{
-		ProjectID: p.ID,
-		Status:    "building",
-		GitHash:   strings.TrimSpace(stdout.String()),
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create image")
-	}
-
-	stdout.Reset()
-	stderr.Reset()
-
-	// Clone, build, and push
-	if err = host.Exec("bash", "-c", fmt.Sprintf(`
-		mkdir -p %[1]s
-		git clone -b main %[2]s %[1]s
-		cd %[1]s
-		docker build -t %[3]s:5000/%[4]s:%[5]s .
-		docker push %[3]s:5000/%[4]s:%[5]s
-	`, tmpDir, p.Path(), os.Getenv("HQ_ADDR"), p.ID, img.GitHash)); err != nil {
-		img.Status = "failed"
-		img.Error = stderr.String()
-		Images.Update(img)
-		return nil, errors.Wrap(err, "failed to build image: "+stdout.String())
-	}
-
-	img.Status = "ready"
-	return img, Images.Update(img)
 }
 
 // =============================================================================

@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
+	"www.theskyscape.com/internal/hosting"
+	"www.theskyscape.com/internal/social"
 	"www.theskyscape.com/internal/starter"
 	"www.theskyscape.com/models"
 )
@@ -269,7 +271,33 @@ func (c *ProjectsController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := models.NewProject(user.ID, name, description)
+	// Sanitize ID
+	id, err := hosting.SanitizeID(name)
+	if err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	// Check if project already exists
+	if _, err := models.Projects.Get(id); err == nil {
+		c.Render(w, r, "error-message.html", errors.New("a project with this ID already exists"))
+		return
+	}
+
+	// Check if git repo path exists
+	if hosting.RepoExists(id) {
+		c.Render(w, r, "error-message.html", errors.New("project directory already exists"))
+		return
+	}
+
+	// Initialize git repo
+	if err := hosting.InitGitRepo(id); err != nil {
+		c.Render(w, r, "error-message.html", err)
+		return
+	}
+
+	// Create project record
+	project, err := models.NewProject(id, user.ID, name, description)
 	if err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
@@ -280,6 +308,14 @@ func (c *ProjectsController) create(w http.ResponseWriter, r *http.Request) {
 		project.DatabaseEnabled = true
 		models.Projects.Update(project)
 	}
+
+	// Create activity
+	models.Activities.Insert(&models.Activity{
+		UserID:      user.ID,
+		Action:      "created",
+		SubjectType: "project",
+		SubjectID:   project.ID,
+	})
 
 	// Initialize with starter Skykit app and trigger build
 	go func() {
@@ -292,7 +328,7 @@ func (c *ProjectsController) create(w http.ResponseWriter, r *http.Request) {
 		project.Status = "launching"
 		models.Projects.Update(project)
 
-		if _, err := project.Build(); err != nil {
+		if _, err := hosting.BuildProject(project); err != nil {
 			log.Printf("warning: initial build failed for project %s: %v", project.ID, err)
 			project.Status = "draft"
 			project.Error = err.Error()
@@ -339,39 +375,10 @@ func (c *ProjectsController) update(w http.ResponseWriter, r *http.Request) {
 	// Handle ID change (admin only)
 	newID := r.FormValue("id")
 	if newID != "" && newID != project.ID && user.IsAdmin {
-		oldID := project.ID
-
-		// Update project ID - database will enforce uniqueness constraint
-		if err := models.DB.Query("UPDATE projects SET ID = ?, Name = ?, Description = ? WHERE ID = ?", newID, name, description, oldID).Exec(); err != nil {
-			c.Render(w, r, "error-message.html", errors.New("a project with this ID already exists"))
+		if err := hosting.RenameProject(project.ID, newID, name, description); err != nil {
+			c.Render(w, r, "error-message.html", err)
 			return
 		}
-
-		// Update related tables with ProjectID column
-		if err := models.DB.Query("UPDATE images SET ProjectID = ? WHERE ProjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[ProjectRename] Failed to update images.ProjectID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE app_metrics SET ProjectID = ? WHERE ProjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[ProjectRename] Failed to update app_metrics.ProjectID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE oauth_authorizations SET ProjectID = ? WHERE ProjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[ProjectRename] Failed to update oauth_authorizations.ProjectID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE stars SET ProjectID = ? WHERE ProjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[ProjectRename] Failed to update stars.ProjectID from %s to %s: %v", oldID, newID, err)
-		}
-
-		// Update related tables with SubjectID column (for project subjects)
-		if err := models.DB.Query("UPDATE activities SET SubjectID = ? WHERE SubjectType = 'project' AND SubjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[ProjectRename] Failed to update activities.SubjectID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE promotions SET SubjectID = ? WHERE SubjectType = 'project' AND SubjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[ProjectRename] Failed to update promotions.SubjectID from %s to %s: %v", oldID, newID, err)
-		}
-		if err := models.DB.Query("UPDATE comments SET SubjectID = ? WHERE SubjectID = ?", newID, oldID).Exec(); err != nil {
-			log.Printf("[ProjectRename] Failed to update comments.SubjectID from %s to %s: %v", oldID, newID, err)
-		}
-
 		c.Redirect(w, r, "/project/"+newID+"/manage")
 		return
 	}
@@ -408,7 +415,7 @@ func (c *ProjectsController) launch(w http.ResponseWriter, r *http.Request) {
 		project.Error = ""
 		models.Projects.Update(project)
 
-		if _, err := project.Build(); err != nil {
+		if _, err := hosting.BuildProject(project); err != nil {
 			project.Status = "draft"
 			project.Error = err.Error()
 			models.Projects.Update(project)
@@ -456,7 +463,7 @@ func (c *ProjectsController) enableDatabase(w http.ResponseWriter, r *http.Reque
 		project.Error = ""
 		models.Projects.Update(project)
 
-		if _, err := project.Build(); err != nil {
+		if _, err := hosting.BuildProject(project); err != nil {
 			project.Error = err.Error()
 			models.Projects.Update(project)
 			return
@@ -551,29 +558,8 @@ func (c *ProjectsController) promoteProject(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if project.OwnerID != user.ID {
-		c.Render(w, r, "error-message.html", errors.New("you can only promote your own projects"))
-		return
-	}
-
-	if existing := project.ActivePromotion(); existing != nil {
-		c.Render(w, r, "error-message.html", errors.New("this project already has an active promotion"))
-		return
-	}
-
 	content := r.FormValue("content")
-	if len(content) > MaxContentLength {
-		c.Render(w, r, "error-message.html", errors.New("promotion content too long"))
-		return
-	}
-
-	if _, err = models.Promotions.Insert(&models.Promotion{
-		UserID:      user.ID,
-		SubjectType: "project",
-		SubjectID:   project.ID,
-		Content:     content,
-		ExpiresAt:   time.Now().Add(models.DefaultPromotionDuration),
-	}); err != nil {
+	if _, err := social.CreatePromotion(user.ID, social.WrapProject(project), content); err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}
@@ -595,18 +581,7 @@ func (c *ProjectsController) cancelPromotion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if project.OwnerID != user.ID {
-		c.Render(w, r, "error-message.html", errors.New("you can only cancel your own promotions"))
-		return
-	}
-
-	promo := project.ActivePromotion()
-	if promo == nil {
-		c.Render(w, r, "error-message.html", errors.New("no active promotion found"))
-		return
-	}
-
-	if err = models.Promotions.Delete(promo); err != nil {
+	if err := social.CancelPromotion(user.ID, social.WrapProject(project)); err != nil {
 		c.Render(w, r, "error-message.html", err)
 		return
 	}

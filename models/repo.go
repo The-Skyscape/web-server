@@ -4,21 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
-	"github.com/The-Skyscape/devtools/pkg/containers"
 	"github.com/The-Skyscape/devtools/pkg/database"
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/pkg/errors"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
 	"www.theskyscape.com/internal/git"
+	"www.theskyscape.com/internal/markup"
 )
 
 type Repo struct {
@@ -31,12 +25,11 @@ type Repo struct {
 
 func (*Repo) Table() string { return "repos" }
 
-func NewRepo(ownerID, name, description string) (*Repo, error) {
-	id := strings.ToLower(name)
-	id = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(id, "-")
-	id = regexp.MustCompile(`-+`).ReplaceAllString(id, "-")
-	id = strings.Trim(id, "-")
-
+// NewRepo creates a new repo record. Caller is responsible for:
+// - Sanitizing the ID (use hosting.SanitizeID)
+// - Initializing git repo (use hosting.InitGitRepo)
+// - Creating the activity
+func NewRepo(id, ownerID, name, description string) (*Repo, error) {
 	r := &Repo{
 		Model:       database.Model{ID: id},
 		OwnerID:     ownerID,
@@ -44,29 +37,7 @@ func NewRepo(ownerID, name, description string) (*Repo, error) {
 		Description: description,
 		Archived:    false,
 	}
-
-	if _, err := os.Stat(r.Path()); err == nil {
-		return nil, errors.New("repo already exists")
-	}
-
-	host := containers.Local()
-	if err := host.Exec("git", "init", "--bare", r.Path()); err != nil {
-		return nil, errors.Wrap(err, "failed to initialize git repo")
-	}
-
-	r, err := Repos.Insert(r)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to insert repo")
-	}
-
-	Activities.Insert(&Activity{
-		UserID:      ownerID,
-		Action:      "created",
-		SubjectType: "repo",
-		SubjectID:   r.ID,
-	})
-
-	return r, nil
+	return Repos.Insert(r)
 }
 
 func (r *Repo) Path() string {
@@ -258,20 +229,5 @@ func (c *Content) Lines() []string {
 }
 
 func (c *Content) Markdown() template.HTML {
-	md := goldmark.New(
-		goldmark.WithExtensions(
-			extension.GFM, // GitHub Flavored Markdown (tables, strikethrough, autolinks, task lists)
-		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-	)
-
-	var buf bytes.Buffer
-	if err := md.Convert([]byte(c.Content), &buf); err != nil {
-		return template.HTML(template.HTMLEscapeString(c.Content))
-	}
-
-	p := bluemonday.UGCPolicy()
-	return template.HTML(p.Sanitize(buf.String()))
+	return markup.RenderMarkdown(c.Content)
 }

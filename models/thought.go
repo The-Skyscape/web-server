@@ -6,10 +6,7 @@ import (
 
 	"github.com/The-Skyscape/devtools/pkg/application"
 	"github.com/The-Skyscape/devtools/pkg/authentication"
-	"github.com/microcosm-cc/bluemonday"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
+	"www.theskyscape.com/internal/markup"
 )
 
 // Thought represents a long-form blog post by a user
@@ -148,23 +145,7 @@ func (t *Thought) BlocksToMarkdown() string {
 // Markdown parses the content as markdown and returns sanitized HTML
 func (t *Thought) Markdown() template.HTML {
 	content := t.BlocksToMarkdown()
-
-	md := goldmark.New(
-		goldmark.WithExtensions(
-			extension.GFM, // GitHub Flavored Markdown
-		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-	)
-
-	var buf bytes.Buffer
-	if err := md.Convert([]byte(content), &buf); err != nil {
-		return template.HTML(template.HTMLEscapeString(content))
-	}
-
-	p := bluemonday.UGCPolicy()
-	return template.HTML(p.Sanitize(buf.String()))
+	return markup.RenderMarkdown(content)
 }
 
 // ThoughtView tracks individual views of a thought

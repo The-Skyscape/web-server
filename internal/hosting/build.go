@@ -9,7 +9,89 @@ import (
 
 	"github.com/The-Skyscape/devtools/pkg/containers"
 	"github.com/pkg/errors"
+	"www.theskyscape.com/models"
 )
+
+// Buildable represents an entity that can be built into a Docker image.
+type Buildable interface {
+	GetID() string
+	RepoPath() string
+	IsProject() bool
+}
+
+// appBuildable wraps an App to implement Buildable
+type appBuildable struct {
+	app *models.App
+}
+
+func (a *appBuildable) GetID() string    { return a.app.ID }
+func (a *appBuildable) IsProject() bool  { return false }
+func (a *appBuildable) RepoPath() string {
+	if repo := a.app.Repo(); repo != nil {
+		return repo.Path()
+	}
+	return ""
+}
+
+// projectBuildable wraps a Project to implement Buildable
+type projectBuildable struct {
+	project *models.Project
+}
+
+func (p *projectBuildable) GetID() string    { return p.project.ID }
+func (p *projectBuildable) IsProject() bool  { return true }
+func (p *projectBuildable) RepoPath() string { return p.project.Path() }
+
+// BuildApp builds and pushes a Docker image for an App.
+func BuildApp(app *models.App) (*models.Image, error) {
+	return BuildEntity(&appBuildable{app: app})
+}
+
+// BuildProject builds and pushes a Docker image for a Project.
+func BuildProject(project *models.Project) (*models.Image, error) {
+	return BuildEntity(&projectBuildable{project: project})
+}
+
+// BuildEntity builds and pushes a Docker image for any Buildable entity.
+// Creates Image record and updates its status.
+func BuildEntity(entity Buildable) (*models.Image, error) {
+	repoPath := entity.RepoPath()
+	if repoPath == "" {
+		return nil, errors.New("repo not found")
+	}
+
+	gitHash, err := GetGitHash(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create image record with appropriate ID field
+	img := &models.Image{
+		Status:  "building",
+		GitHash: gitHash,
+	}
+	if entity.IsProject() {
+		img.ProjectID = entity.GetID()
+	} else {
+		img.AppID = entity.GetID()
+	}
+
+	img, err = models.Images.Insert(img)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create image")
+	}
+
+	result, err := Build(entity.GetID(), repoPath)
+	if err != nil {
+		img.Status = "failed"
+		img.Error = result.Error
+		models.Images.Update(img)
+		return nil, err
+	}
+
+	img.Status = "ready"
+	return img, models.Images.Update(img)
+}
 
 // BuildResult contains the outcome of a build
 type BuildResult struct {
@@ -19,7 +101,7 @@ type BuildResult struct {
 }
 
 // Build clones, builds, and pushes a Docker image.
-// Returns the git hash and status - caller is responsible for creating/updating Image records.
+// Returns the git hash and status. Use BuildApp/BuildProject for full orchestration.
 func Build(entityID, repoPath string) (*BuildResult, error) {
 	host := containers.Local()
 
